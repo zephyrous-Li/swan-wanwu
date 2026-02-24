@@ -438,14 +438,10 @@ export default {
   },
   watch: {
     'createForm.modelType': {
-      handler(newVal) {
+      handler() {
         if (!this.isEdit) {
-          const defaultUrl =
-            this.typeObj.inferUrl[newVal] ||
-            this.typeObj.inferUrl[this.provider.key];
-          if (defaultUrl && !this.createForm.endpointUrl) {
-            this.createForm.endpointUrl = defaultUrl;
-          }
+          this.$refs.createForm.clearValidate('endpointUrl');
+          this.setDefaultInferUrl();
         }
       },
       immediate: false,
@@ -453,12 +449,7 @@ export default {
     'provider.key': {
       handler(newVal) {
         if (!this.isEdit && newVal) {
-          const defaultUrl =
-            this.typeObj.inferUrl[this.createForm.modelType] ||
-            this.typeObj.inferUrl[newVal];
-          if (defaultUrl && !this.createForm.endpointUrl) {
-            this.createForm.endpointUrl = defaultUrl;
-          }
+          this.setDefaultInferUrl();
         }
       },
       immediate: false,
@@ -520,6 +511,15 @@ export default {
         this.createForm[key] = data ? data[key] || '' : '';
       }
     },
+    setDefaultInferUrl() {
+      const defaultUrl =
+        this.typeObj.inferUrl[
+          `${this.createForm.modelType}_${this.provider.key}`
+        ] || this.typeObj.inferUrl[this.provider.key];
+      if (defaultUrl) {
+        this.createForm.endpointUrl = defaultUrl;
+      }
+    },
     openDialog(title, row) {
       this.provider = { key: title, name: PROVIDER_OBJ[title] };
       const currentProvider =
@@ -531,12 +531,7 @@ export default {
 
       // 自动填入推理URL默认值
       if (!row) {
-        const defaultUrl =
-          this.typeObj.inferUrl[this.createForm.modelType] ||
-          this.typeObj.inferUrl[title];
-        if (defaultUrl) {
-          this.createForm.endpointUrl = defaultUrl;
-        }
+        this.setDefaultInferUrl();
       }
 
       this.dialogVisible = true;
