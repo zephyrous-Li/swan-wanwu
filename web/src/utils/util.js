@@ -7,7 +7,7 @@ import { basePath } from '@/utils/config';
 
 export function guid() {
   return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function (c) {
-    var r = (Math.random() * 16) | 0,
+    let r = (Math.random() * 16) | 0,
       v = c == 'x' ? r : (r & 0x3) | 0x8;
     return v.toString(16);
   });
@@ -44,7 +44,13 @@ export const fetchCurrentPathIndex = (path, list) => {
   const findIndex = list => {
     for (let i in list) {
       let item = list[i];
-      const formatPath = url => url + '/';
+      const formatPath = url => {
+        // 对于 文本问答/工作流/智能体 前面带了 /appSpace 特殊路由的处理
+        if (url.includes('/appSpace/')) {
+          return url.slice(9) + '/';
+        }
+        return url + '/';
+      };
       if (item.path && formatPath(path).includes(formatPath(item.path))) {
         index = item.index;
       } else {
