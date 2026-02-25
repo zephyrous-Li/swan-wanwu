@@ -482,10 +482,6 @@ export default {
       this.menuList = menus;
       this.setMenuOpeneds(menus);
 
-      console.log(
-        fetchCurrentPathIndex(path, menus),
-        '=============================123',
-      );
       // 给当前 activeIndex 赋值
       this.changeMenuIndex(fetchCurrentPathIndex(path, menus));
     },

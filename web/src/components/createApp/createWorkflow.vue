@@ -240,7 +240,7 @@ export default {
         this.dialogVisible = false;
         const { workflow_id } = res.data || {};
         const querys = { id: workflow_id };
-        this.$router.push({ path: '/workflow/detail', query: querys });
+        this.$router.push({ path: '/workflow', query: querys });
       }
     },
   },
