@@ -1,5 +1,5 @@
 <template>
-  <div class="compare-container">
+  <div class="compare-container page-wrapper">
     <div class="compare-header">
       <div class="compare-header-left">
         <span class="el-icon-arrow-left go-back" @click="goBack"></span>
