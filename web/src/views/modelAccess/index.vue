@@ -362,7 +362,7 @@ export default {
     async getTableData(params) {
       this.loading = true;
       try {
-        const res = await fetchModelList({ publicType: this.type, ...params });
+        const res = await fetchModelList({ filterScope: this.type, ...params });
         const tableData = res.data ? res.data.list || [] : [];
         this.tableData = [...tableData];
       } finally {
