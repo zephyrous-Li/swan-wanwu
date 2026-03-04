@@ -247,6 +247,7 @@ services:
     # ports:
     #   - 6668:6668
     volumes:
+      - wanwu_shared_data_wga_sandbox_rag:/shared/data/wga/sandbox/rag
       - ${WANWU_PROJECT_DIR}/bff-service/log:/app/log
       - ${WANWU_PROJECT_DIR}/bff-service/tmp:/app/tmp
       - ${WANWU_BFF_OAUTH_RSA_PRIVATE_KEY_PATH}:/app/tmp/oauth_rsa_private.pem
@@ -737,6 +738,7 @@ services:
     #   - 10891:10891
     #   - 15000:15000
     volumes:
+      - wanwu_shared_data_wga_sandbox_rag:/shared/data/wga/sandbox/rag
       - ${WANWU_PROJECT_DIR}/rag-wanwu/rag_core/logs:/model_extend/rag_core/logs
       - ${WANWU_PROJECT_DIR}/rag-wanwu/rag_core/graph/logs:/model_extend/rag_core/graph/logs
       - ${WANWU_PROJECT_DIR}/rag-wanwu/rag_core/graph/data:/model_extend/rag_core/graph/data
@@ -794,4 +796,4 @@ volumes:
   wanwu_es_certs:
   wanwu_es_logs:
   wanwu_es_tmp:
-  
+  wanwu_shared_data_wga_sandbox_rag:
