@@ -3372,7 +3372,7 @@
                     "type": "boolean"
                 },
                 "enable_vision": {
-                    "description": "召回结果是否包含多模态文件",
+                    "description": "召回结果是否包含多模态文件(只在callback层做最后的赋值)",
                     "type": "boolean"
                 },
                 "knowledgeIdList": {

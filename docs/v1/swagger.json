@@ -8,6 +8,305 @@
     },
     "basePath": "/v1",
     "paths": {
+        "/agent/skill/conversation": {
+            "post": {
+                "security": [
+                    {
+                        "JWT": []
+                    }
+                ],
+                "description": "创建Skill生成会话",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "skill.conversation"
+                ],
+                "summary": "创建Skill生成会话",
+                "parameters": [
+                    {
+                        "description": "创建会话参数",
+                        "name": "data",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/request.CreateSkillConversationReq"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/response.Response"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/definitions/response.CreateSkillConversationResp"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    }
+                }
+            },
+            "delete": {
+                "security": [
+                    {
+                        "JWT": []
+                    }
+                ],
+                "description": "删除Skill生成会话",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "skill.conversation"
+                ],
+                "summary": "删除Skill生成会话",
+                "parameters": [
+                    {
+                        "description": "会话ID",
+                        "name": "conversationId",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/request.DeleteSkillConversationReq"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/response.Response"
+                        }
+                    }
+                }
+            }
+        },
+        "/agent/skill/conversation/chat": {
+            "post": {
+                "security": [
+                    {
+                        "JWT": []
+                    }
+                ],
+                "description": "Skill生成流式对话",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "text/event-stream"
+                ],
+                "tags": [
+                    "skill.conversation"
+                ],
+                "summary": "Skill生成流式对话",
+                "parameters": [
+                    {
+                        "description": "对话参数",
+                        "name": "data",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/request.SkillConversationChatReq"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "stream",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                }
+            }
+        },
+        "/agent/skill/conversation/detail": {
+            "get": {
+                "security": [
+                    {
+                        "JWT": []
+                    }
+                ],
+                "description": "获取Skill生成会话详情",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "skill.conversation"
+                ],
+                "summary": "获取Skill生成会话详情",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "会话ID",
+                        "name": "conversationId",
+                        "in": "query",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/response.Response"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "allOf": [
+                                                {
+                                                    "$ref": "#/definitions/response.ListResult"
+                                                },
+                                                {
+                                                    "type": "object",
+                                                    "properties": {
+                                                        "list": {
+                                                            "type": "array",
+                                                            "items": {
+                                                                "$ref": "#/definitions/response.SkillConversationDetailInfo"
+                                                            }
+                                                        }
+                                                    }
+                                                }
+                                            ]
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    }
+                }
+            }
+        },
+        "/agent/skill/conversation/list": {
+            "get": {
+                "security": [
+                    {
+                        "JWT": []
+                    }
+                ],
+                "description": "获取Skill生成会话列表",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "skill.conversation"
+                ],
+                "summary": "获取Skill生成会话列表",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "页码",
+                        "name": "pageNo",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "每页数量",
+                        "name": "pageSize",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/response.Response"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "allOf": [
+                                                {
+                                                    "$ref": "#/definitions/response.PageResult"
+                                                },
+                                                {
+                                                    "type": "object",
+                                                    "properties": {
+                                                        "list": {
+                                                            "type": "array",
+                                                            "items": {
+                                                                "$ref": "#/definitions/response.SkillConversationItem"
+                                                            }
+                                                        }
+                                                    }
+                                                }
+                                            ]
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    }
+                }
+            }
+        },
+        "/agent/skill/conversation/save": {
+            "post": {
+                "security": [
+                    {
+                        "JWT": []
+                    }
+                ],
+                "description": "Skill发送到资源库",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "skill.conversation"
+                ],
+                "summary": "Skill发送到资源库",
+                "parameters": [
+                    {
+                        "description": "会话ID和保存的技能ID",
+                        "name": "data",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/request.SkillConversationSaveReq"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/response.Response"
+                        }
+                    }
+                }
+            }
+        },
         "/agent/skill/detail": {
             "get": {
                 "security": [
@@ -9575,7 +9874,6 @@
                 "parameters": [
                     {
                         "type": "integer",
-                        "format": "int32",
                         "description": "模型体验对话ID",
                         "name": "modelExperienceId",
                         "in": "query",
@@ -9756,7 +10054,13 @@
                     },
                     {
                         "type": "string",
-                        "description": "模型作用域类型",
+                        "description": "模型作用域类型: public,private",
+                        "name": "filterScope",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "模型公开范围: 1,2,3",
                         "name": "scopeType",
                         "in": "query"
                     }
@@ -16646,6 +16950,18 @@
                 }
             }
         },
+        "request.CreateSkillConversationReq": {
+            "type": "object",
+            "required": [
+                "title"
+            ],
+            "properties": {
+                "title": {
+                    "description": "会话标题",
+                    "type": "string"
+                }
+            }
+        },
         "request.CreateWorkflowByTemplateReq": {
             "type": "object",
             "required": [
@@ -17163,6 +17479,18 @@
             "properties": {
                 "tableId": {
                     "description": "敏感词表id",
+                    "type": "string"
+                }
+            }
+        },
+        "request.DeleteSkillConversationReq": {
+            "type": "object",
+            "required": [
+                "conversationId"
+            ],
+            "properties": {
+                "conversationId": {
+                    "description": "会话ID",
                     "type": "string"
                 }
             }
@@ -19063,6 +19391,54 @@
                 }
             }
         },
+        "request.SkillConversationChatReq": {
+            "type": "object",
+            "required": [
+                "conversationId",
+                "query"
+            ],
+            "properties": {
+                "conversationId": {
+                    "description": "会话ID",
+                    "type": "string"
+                },
+                "fileInfo": {
+                    "description": "上传的文件信息",
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/request.ConversionStreamFile"
+                    }
+                },
+                "modelConfig": {
+                    "description": "模型",
+                    "allOf": [
+                        {
+                            "$ref": "#/definitions/request.AppModelConfig"
+                        }
+                    ]
+                },
+                "query": {
+                    "description": "用户提问",
+                    "type": "string"
+                }
+            }
+        },
+        "request.SkillConversationSaveReq": {
+            "type": "object",
+            "required": [
+                "skillSaveId"
+            ],
+            "properties": {
+                "conversationId": {
+                    "description": "会话ID",
+                    "type": "string"
+                },
+                "skillSaveId": {
+                    "description": "技能ID",
+                    "type": "string"
+                }
+            }
+        },
         "request.ToolSquareAPIKeyReq": {
             "type": "object",
             "required": [
@@ -20239,6 +20615,28 @@
                 }
             }
         },
+        "response.AssistantResponseFile": {
+            "type": "object",
+            "properties": {
+                "fileUrl": {
+                    "type": "string"
+                },
+                "metadata": {
+                    "description": "扩展信息：\nskill =\u003e {\"name\":\"技能名称\", \"desc\":\"技能描述\", \"author\":\"技能作者\", \"avatar\":{\"path\":\"技能图标\"}, \"inResource\": bool, \"expiredAt\": \"过期时间7天\", \"skillSaveId\": \"保存的技能ID\"}",
+                    "type": "object",
+                    "additionalProperties": true
+                },
+                "mimeType": {
+                    "type": "string"
+                },
+                "name": {
+                    "type": "string"
+                },
+                "size": {
+                    "type": "integer"
+                }
+            }
+        },
         "response.AssistantTemplateInfo": {
             "type": "object",
             "required": [
@@ -20611,6 +21009,12 @@
                 "response": {
                     "type": "string"
                 },
+                "responseList": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/response.ConversationResponse"
+                    }
+                },
                 "searchList": {},
                 "subConversationList": {
                     "type": "array",
@@ -20639,6 +21043,17 @@
                     "type": "string"
                 },
                 "title": {
+                    "type": "string"
+                }
+            }
+        },
+        "response.ConversationResponse": {
+            "type": "object",
+            "properties": {
+                "order": {
+                    "type": "integer"
+                },
+                "response": {
                     "type": "string"
                 }
             }
@@ -21033,6 +21448,15 @@
             "properties": {
                 "tableId": {
                     "description": "敏感词表id",
+                    "type": "string"
+                }
+            }
+        },
+        "response.CreateSkillConversationResp": {
+            "type": "object",
+            "properties": {
+                "conversationId": {
+                    "description": "会话ID",
                     "type": "string"
                 }
             }
@@ -23916,6 +24340,89 @@
                 }
             }
         },
+        "response.SkillConversationDetailInfo": {
+            "type": "object",
+            "properties": {
+                "assistantId": {
+                    "type": "string"
+                },
+                "conversationId": {
+                    "type": "string"
+                },
+                "createdAt": {
+                    "type": "integer"
+                },
+                "createdBy": {
+                    "type": "string"
+                },
+                "fileName": {
+                    "type": "string"
+                },
+                "fileSize": {
+                    "type": "integer"
+                },
+                "id": {
+                    "type": "string"
+                },
+                "prompt": {
+                    "type": "string"
+                },
+                "qa_type": {
+                    "type": "integer"
+                },
+                "requestFiles": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/response.AssistantRequestFile"
+                    }
+                },
+                "response": {
+                    "type": "string"
+                },
+                "responseFiles": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/response.AssistantResponseFile"
+                    }
+                },
+                "responseList": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/response.ConversationResponse"
+                    }
+                },
+                "searchList": {},
+                "subConversationList": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/response.SubConversation"
+                    }
+                },
+                "sysPrompt": {
+                    "type": "string"
+                },
+                "updatedAt": {
+                    "type": "integer"
+                }
+            }
+        },
+        "response.SkillConversationItem": {
+            "type": "object",
+            "properties": {
+                "conversationId": {
+                    "description": "会话ID",
+                    "type": "string"
+                },
+                "createdAt": {
+                    "description": "创建时间",
+                    "type": "string"
+                },
+                "title": {
+                    "description": "会话标题",
+                    "type": "string"
+                }
+            }
+        },
         "response.StatisticChart": {
             "type": "object",
             "properties": {
@@ -23986,6 +24493,9 @@
                 "name": {
                     "description": "事件名称",
                     "type": "string"
+                },
+                "order": {
+                    "type": "integer"
                 },
                 "parentId": {
                     "description": "事件挂载id",
