@@ -23,6 +23,7 @@ services:
       - 6668:6668
     volumes:
       - /etc/localtime:/etc/localtime
+      - wanwu_shared_data_wga_sandbox_rag:/shared/data/wga/sandbox/rag
       - ./bin/${WANWU_ARCH}/bff-service:/app/bin/bff-service
       - ./configs/microservice/bff-service/configs:/app/configs/microservice/bff-service/configs
       - ./configs/microservice/bff-service/static:/app/configs/microservice/bff-service/static
@@ -339,10 +340,10 @@ services:
       REDIS_PASSWORD: ${WANWU_REDIS_PASSWORD}
       URL_RAG_DOC_PARSER: http://rag-wanwu:8681/rag/doc_parser
       URL_MINIO_DOWNLOAD: ${WANWU_WEB_BASE_URL}/minio/download/api
+      WANWU_CALLBACK_URL_TO_BASE64: http://bff-service:6668/callback/v1/file/url/base64  
       GUNICORN_WORKERS: 2
       GUNICORN_TIMEOUT: 600
       GUNICORN_THREADS: 4
-      
 
   workflow:
     restart: always
@@ -427,6 +428,7 @@ services:
       - 10891:10891
       - 15000:15000
     volumes:
+      - wanwu_shared_data_wga_sandbox_rag:/shared/data/wga/sandbox/rag
       - ./rag/rag_open_source:/model_extend
       - ${WANWU_PROJECT_DIR}/rag-wanwu/rag_core/logs:/model_extend/rag_core/logs
       - ${WANWU_PROJECT_DIR}/rag-wanwu/rag_es_server_unify/logs:/model_extend/rag_es_server_unify/logs
@@ -489,5 +491,6 @@ networks:
     external: true
 
 volumes:
-  wanwu_es_certs:
   # wanwu_kibana_data:
+  wanwu_es_certs:
+  wanwu_shared_data_wga_sandbox_rag:
