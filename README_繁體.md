@@ -221,7 +221,7 @@
 
 ### 📦 沙箱啟動
 
-萬悟沙箱可用於一句話創建 Skills 等功能，需要單獨啟動
+萬悟沙箱可用於一句話創建 Skills 等功能，需要單獨啟動；注意，創建 Skills 時選用的模型，在導入時必須指定模型上下文長度 >= 32000
 
 1. 基於上述 Docker 安裝步驟，完成首次運行前的配置
 
@@ -387,6 +387,6 @@
 元景萬悟智能體平台根據Apache License 2.0發布。
 
 ### &#x1F4E9; 聯繫我們
-| QQ 群1(已滿):490071123                                       | QQ 群2:1026898615                                            | QQ 群3:1019579243                                            |
+| QQ 群1(已滿):490071123                                       | QQ 群2(已滿):1026898615                                            | QQ 群3:1019579243                                            |
 | ------------------------------------------------------------ | ------------------------------------------------------------ | ------------------------------------------------------------ |
-| <img width="183" height="258" alt="image" src="https://github.com/user-attachments/assets/010f1d68-78e9-446d-baf1-0a7339efb48e" /> | <img width="183" height="258" alt="image" src="https://github.com/user-attachments/assets/10796f69-5c18-4f21-adbb-b22b6ef88df2" /> | ![image-20260225161530372](assets/image-20260225161530372.png) |
+| <img width="183" height="258" alt="image" src="https://github.com/user-attachments/assets/010f1d68-78e9-446d-baf1-0a7339efb48e" /> | <img width="183" height="258" alt="image" src="https://github.com/user-attachments/assets/10796f69-5c18-4f21-adbb-b22b6ef88df2" /> | <img width="183" height="258" alt="image" src="https://github.com/user-attachments/assets/9badde43-b421-48ce-a998-1fc2e33bdc55" /> |

@@ -1,8 +1,10 @@
 package service
 
 import (
+	"encoding/json"
 	"fmt"
 	"os"
+	"path/filepath"
 
 	"github.com/UnicomAI/wanwu/internal/bff-service/config"
 	"github.com/UnicomAI/wanwu/pkg/util"
@@ -34,10 +36,13 @@ func buildSkillCreatorOptions(modelConfig wga_sandbox_option.ModelConfig, runId,
 	opts := []wga_sandbox_option.Option{
 		wga_sandbox_option.WithRunSession(wga_sandbox_option.RunSession{RunID: runId}),
 		wga_sandbox_option.WithModelConfig(modelConfig),
-		wga_sandbox_option.WithInputDir(inputDir),
 		wga_sandbox_option.WithOutputDir(outputDir),
 		wga_sandbox_option.WithCurrentTask(currentTask),
 		wga_sandbox_option.WithEnableThinking(skillCreatorCfg.EnableThinking),
+	}
+
+	if inputDir != "" {
+		opts = append(opts, wga_sandbox_option.WithInputDir(filepath.Clean(inputDir)+"/."))
 	}
 
 	if skillCreatorCfg.Instruction != "" {
@@ -99,8 +104,9 @@ func filterOpencodeEvents(jsonCh <-chan string) <-chan string {
 				if err != nil {
 					continue
 				}
+				input, _ := json.Marshal(toolPart.State.Input)
 				resultCh <- fmt.Sprintf("工具名称: %s", toolPart.Tool)
-				resultCh <- fmt.Sprintf("<tool>\n\n%s工具参数: \n%s\n%s\n\n\\", "```", toolPart.State.Input, "```")
+				resultCh <- fmt.Sprintf("<tool>\n\n%s工具参数: \n%s\n%s\n\n\\", "```", string(input), "```")
 				// 工具调用结果输出可能较长，暂不输出
 				// if toolPart.State.Output != "" {
 				// 	resultCh <- fmt.Sprintf("%s%s 调用结果：\n %s %s", "```", toolPart.Tool, toolPart.State.Output, "```")

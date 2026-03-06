@@ -237,7 +237,7 @@
 
 ### 📦 沙箱启动
 
-万悟沙箱可用于一句话创建Skills等功能，需要单独启动
+万悟沙箱可用于一句话创建Skills等功能，需要单独启动；注意，创建Skills时选用的模型，在导入时必须指定模型上下文长度 >= 32000
 
 1. 基于上述Docker安装步骤，完成首次运行前的配置
 
@@ -409,6 +409,6 @@
 ------
 
 ### &#x1F4E9; 联系我们
-| QQ 群1(已满):490071123                                       | QQ 群2:1026898615                                            | QQ 群3:1019579243                                            |
+| QQ 群1(已满):490071123                                       | QQ 群2(已满):1026898615                                            | QQ 群3:1019579243                                            |
 | ------------------------------------------------------------ | ------------------------------------------------------------ | ------------------------------------------------------------ |
-| <img width="183" height="258" alt="image" src="https://github.com/user-attachments/assets/010f1d68-78e9-446d-baf1-0a7339efb48e" /> | <img width="183" height="258" alt="image" src="https://github.com/user-attachments/assets/10796f69-5c18-4f21-adbb-b22b6ef88df2" /> | ![5adf6c107875a9efbff2da978817bd32](assets/image-20260225161530372.png) |
+| <img width="183" height="258" alt="image" src="https://github.com/user-attachments/assets/010f1d68-78e9-446d-baf1-0a7339efb48e" /> | <img width="183" height="258" alt="image" src="https://github.com/user-attachments/assets/10796f69-5c18-4f21-adbb-b22b6ef88df2" /> | <img width="183" height="258" alt="image" src="https://github.com/user-attachments/assets/9badde43-b421-48ce-a998-1fc2e33bdc55" /> |

@@ -224,7 +224,7 @@ The platform has been successfully applied in multiple industries such as **fina
 
 ### 📦 Sandbox Startup
 
-The Wanwu sandbox can be used for features like creating Skills with a single command and needs to be started separately.
+The Wanwu sandbox can be used for features like creating Skills with a single command and needs to be started separately; note that when creating Skills, the selected model must have a context length >= 32000 when importing.
 
 1. Based on the above Docker installation steps, complete the configuration before the first run
 
@@ -381,6 +381,6 @@ The Yuanjing Wanwu AI Agent Platform is released under the Apache License 2.0.
 ------
 
 ### &#x1F4E9; Contact Us
-| QQ Group1(Full):490071123                                    | QQ Group2:1026898615                                         | QQ Group3:1019579243                                         |
+| QQ Group1(Full):490071123                                    | QQ Group2:1026898615                                         | QQ Group3(Full):1019579243                                         |
 | ------------------------------------------------------------ | ------------------------------------------------------------ | ------------------------------------------------------------ |
-| <img width="183" height="258" alt="image" src="https://github.com/user-attachments/assets/010f1d68-78e9-446d-baf1-0a7339efb48e" /> | <img width="183" height="258" alt="image" src="https://github.com/user-attachments/assets/10796f69-5c18-4f21-adbb-b22b6ef88df2" /> | ![image-20260225161516074](assets/image-20260225161516074.png) |
+| <img width="183" height="258" alt="image" src="https://github.com/user-attachments/assets/010f1d68-78e9-446d-baf1-0a7339efb48e" /> | <img width="183" height="258" alt="image" src="https://github.com/user-attachments/assets/10796f69-5c18-4f21-adbb-b22b6ef88df2" /> | <img width="183" height="258" alt="image" src="https://github.com/user-attachments/assets/9badde43-b421-48ce-a998-1fc2e33bdc55" /> |

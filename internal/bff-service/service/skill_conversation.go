@@ -28,6 +28,7 @@ import (
 
 const (
 	skillConversationESIndexName = "conversation_detail_infos_skill_*"
+	skillConversationAuthor      = "wanwu"
 )
 
 func getSkillConversationESIndexName() string {
@@ -201,14 +202,12 @@ func SkillConversationChat(ctx *gin.Context, userId, orgId string, req request.S
 	messageId := util.GenUUID()
 	workspaceDir := filepath.Join("/tmp/skills", messageId)
 
-	var inputDir string
 	if len(req.FileInfo) > 0 {
-		inputDir = workspaceDir
-		if err := os.MkdirAll(inputDir, 0755); err != nil {
+		if err := os.MkdirAll(workspaceDir, 0755); err != nil {
 			return grpc_util.ErrorStatus(errs.Code_BFFGeneral, fmt.Sprintf("create workspace directory err: %v", err))
 		}
 		for _, fileInfo := range req.FileInfo {
-			localPath := filepath.Join(inputDir, fileInfo.FileName)
+			localPath := filepath.Join(workspaceDir, fileInfo.FileName)
 			data, err := minio_util.DownloadFileDirect(ctx.Request.Context(), fileInfo.FileUrl)
 			if err != nil {
 				return grpc_util.ErrorStatus(errs.Code_BFFGeneral, fmt.Sprintf("download file %s err: %v", fileInfo.FileName, err))
@@ -220,7 +219,7 @@ func SkillConversationChat(ctx *gin.Context, userId, orgId string, req request.S
 	}
 
 	// 流式问答
-	streamCh, err := RunSkillCreator(ctx, modelConfig, messageId, inputDir, workspaceDir, req.Query, messages)
+	streamCh, err := RunSkillCreator(ctx, modelConfig, messageId, workspaceDir, workspaceDir, req.Query, messages)
 	if err != nil {
 		return grpc_util.ErrorStatus(errs.Code_BFFGeneral, err.Error())
 	}
@@ -259,7 +258,7 @@ func SkillConversationSave(ctx *gin.Context, userId, orgId string, req request.S
 
 	// 保存至资源库自定义Skills
 	return CreateCustomSkill(ctx, userId, orgId, request.CreateCustomSkillReq{
-		Author:     "wanwu",
+		Author:     skillConversationAuthor,
 		ZipUrl:     zipUrl,
 		SaveId:     req.SkillSaveId,
 		SourceType: "skill_conversation",
@@ -306,12 +305,25 @@ func buildSkillChatDoneProcessor(ctx *gin.Context, userId, orgId string, req req
 
 		defer func() {
 			// save to es
+			createdAt := time.Now().UnixMilli()
+			var requestFiles []response.AssistantRequestFile
+			for _, fileInfo := range req.FileInfo {
+				requestFiles = append(requestFiles, response.AssistantRequestFile{
+					FileName: fileInfo.FileName,
+					FileSize: fileInfo.FileSize,
+					FileUrl:  fileInfo.FileUrl,
+				})
+			}
 			b, _ := json.Marshal(&response.SkillConversationDetailInfo{
 				ConversationDetailInfo: response.ConversationDetailInfo{
 					Id:             messageId,
 					ConversationId: req.ConversationId,
 					Prompt:         req.Query,
 					Response:       *responseStr,
+					CreatedBy:      userId,
+					CreatedAt:      createdAt,
+					UpdatedAt:      createdAt,
+					RequestFiles:   requestFiles,
 				},
 				ResponseFiles: lastSSE.ResponseFiles,
 			})
@@ -360,7 +372,7 @@ func buildSkillChatDoneProcessor(ctx *gin.Context, userId, orgId string, req req
 			MetaData: map[string]interface{}{
 				"name":        skillName,
 				"desc":        skillDesc,
-				"author":      userId,
+				"author":      skillConversationAuthor,
 				"avatar":      cacheSkillAvatar(ctx, ""),
 				"inResource":  false,
 				"expiredAt":   util.Time2Str(time.Now().AddDate(0, 0, 7).UnixMilli()), // 7天后过期
