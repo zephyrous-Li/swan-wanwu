@@ -107,7 +107,7 @@ func GetSkillConversationList(ctx *gin.Context, userId, orgId string, req reques
 func GetSkillConversationDetail(ctx *gin.Context, userId, orgId string, req request.GetSkillConversationDetailReq) (*response.ListResult, error) {
 
 	// 查询对话记录
-	detailList, err := getSkillConversationDetailListFromES(ctx, req.ConversationId, true)
+	detailList, err := getSkillConversationDetailListFromES(ctx, req.ConversationId)
 	if err != nil {
 		return nil, err
 	}
@@ -181,7 +181,7 @@ func SkillConversationChat(ctx *gin.Context, userId, orgId string, req request.S
 	}
 
 	// 查询对话记录
-	detailList, err := getSkillConversationDetailListFromES(ctx, req.ConversationId, false)
+	detailList, err := getSkillConversationDetailListFromES(ctx, req.ConversationId)
 	if err != nil {
 		return err
 	}
@@ -235,7 +235,7 @@ func SkillConversationChat(ctx *gin.Context, userId, orgId string, req request.S
 func SkillConversationSave(ctx *gin.Context, userId, orgId string, req request.SkillConversationSaveReq) (*response.CustomSkillIDResp, error) {
 
 	// 查询对话记录
-	detailList, err := getSkillConversationDetailListFromES(ctx, req.ConversationId, true)
+	detailList, err := getSkillConversationDetailListFromES(ctx, req.ConversationId)
 	if err != nil {
 		return nil, err
 	}
@@ -268,11 +268,7 @@ func SkillConversationSave(ctx *gin.Context, userId, orgId string, req request.S
 
 // --- internal ---
 
-func getSkillConversationDetailListFromES(ctx *gin.Context, conversationId string, orderDesc bool) ([]*response.SkillConversationDetailInfo, error) {
-	sortOrder := "asc"
-	if orderDesc {
-		sortOrder = "desc"
-	}
+func getSkillConversationDetailListFromES(ctx *gin.Context, conversationId string) ([]*response.SkillConversationDetailInfo, error) {
 	searchResp, err := assistant.SearchFromES(ctx.Request.Context(), &assistant_service.SearchFromESReq{
 		IndexName: skillConversationESIndexName,
 		Conditions: map[string]string{
@@ -281,7 +277,7 @@ func getSkillConversationDetailListFromES(ctx *gin.Context, conversationId strin
 		PageNo:    1,
 		PageSize:  1000,
 		SortField: "createdAt",
-		SortOrder: sortOrder,
+		SortOrder: "asc",
 	})
 	if err != nil {
 		return nil, err
