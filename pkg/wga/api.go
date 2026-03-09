@@ -63,7 +63,7 @@ func Run(ctx context.Context, id string, opts ...option.Option) (wga_option.RunS
 	if err != nil {
 		return wga_option.RunSession{}, nil, err
 	}
-	return options.RunSession, agent.Run(ctx, &adk.AgentInput{Messages: options.Messages}), nil
+	return options.RunSession, agent.Run(ctx, &adk.AgentInput{Messages: options.Messages, EnableStreaming: true}), nil
 }
 
 func getAgent(id string) (*config.Agent, error) {
