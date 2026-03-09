@@ -1,14 +1,15 @@
 module github.com/UnicomAI/wanwu
 
-go 1.24.0
+go 1.24.13
 
 replace github.com/getkin/kin-openapi => github.com/getkin/kin-openapi v0.118.0
 
 require (
 	github.com/IBM/sarama v1.43.2
 	github.com/ThinkInAIXYZ/go-mcp v0.2.22
+	github.com/ag-ui-protocol/ag-ui/sdks/community/go v0.0.0-20260221022154-c11d702bd168
 	github.com/bwmarrin/snowflake v0.3.0
-	github.com/cloudwego/eino v0.7.34
+	github.com/cloudwego/eino v0.7.37
 	github.com/cloudwego/eino-ext/components/model/openai v0.1.4
 	github.com/cloudwego/eino-ext/components/tool/mcp v0.0.6
 	github.com/dgrijalva/jwt-go v3.2.0+incompatible
@@ -35,7 +36,8 @@ require (
 	github.com/redis/go-redis/v9 v9.8.0
 	github.com/samber/lo v1.51.0
 	github.com/spf13/viper v1.20.1
-	github.com/swaggo/swag v1.16.4
+	github.com/sst/opencode-sdk-go v0.19.2
+	github.com/swaggo/swag v1.16.6
 	github.com/xuri/excelize/v2 v2.8.1
 	github.com/yuin/goldmark v1.4.13
 	go.uber.org/zap v1.27.0
@@ -64,9 +66,11 @@ require (
 	github.com/pmezard/go-difflib v1.0.1-0.20181226105442-5d4384ee4fb2 // indirect
 	github.com/sirupsen/logrus v1.9.3 // indirect
 	github.com/slongfield/pyfmt v0.0.0-20220222012616-ea85ff4c361f // indirect
+	github.com/tidwall/sjson v1.2.5 // indirect
 	github.com/wk8/go-ordered-map/v2 v2.1.8 // indirect
 	github.com/yargevad/filepathx v1.0.0 // indirect
 	golang.org/x/exp v0.0.0-20240404231335-c0f41cb1a7a0 // indirect
+	golang.org/x/mod v0.25.0 // indirect
 )
 
 require (
@@ -77,8 +81,8 @@ require (
 	github.com/PuerkitoBio/purell v1.1.1 // indirect
 	github.com/PuerkitoBio/urlesc v0.0.0-20170810143723-de5bf2ad4578 // indirect
 	github.com/StackExchange/wmi v0.0.0-20190523213315-cbe66965904d // indirect
-	github.com/bytedance/sonic v1.14.1 // indirect
-	github.com/bytedance/sonic/loader v0.3.0 // indirect
+	github.com/bytedance/sonic v1.15.0 // indirect
+	github.com/bytedance/sonic/loader v0.5.0 // indirect
 	github.com/casbin/casbin/v2 v2.89.0 // indirect
 	github.com/casbin/gorm-adapter/v3 v3.24.0 // indirect
 	github.com/casbin/govaluate v1.1.0 // indirect
@@ -171,7 +175,7 @@ require (
 	github.com/syndtr/goleveldb v1.0.0 // indirect
 	github.com/tidwall/gjson v1.18.0 // indirect
 	github.com/tidwall/match v1.1.1 // indirect
-	github.com/tidwall/pretty v1.2.0 // indirect
+	github.com/tidwall/pretty v1.2.1 // indirect
 	github.com/twitchyliquid64/golang-asm v0.15.1 // indirect
 	github.com/ugorji/go/codec v1.2.12 // indirect
 	github.com/xuri/efp v0.0.0-20231025114914-d1ff6096ae53 // indirect
@@ -192,7 +196,7 @@ require (
 	google.golang.org/genproto/googleapis/rpc v0.0.0-20241223144023-3abc09e42ca8 // indirect
 	gopkg.in/alexcesaro/quotedprintable.v3 v3.0.0-20150716171945-2caba252f4dc // indirect
 	gopkg.in/gomail.v2 v2.0.0-20160411212932-81ebce5c23df
-	gopkg.in/yaml.v3 v3.0.1 // indirect
+	gopkg.in/yaml.v3 v3.0.1
 	gorm.io/driver/sqlserver v1.5.3 // indirect
 	gorm.io/plugin/dbresolver v1.3.0 // indirect
 	modernc.org/libc v1.22.2 // indirect

@@ -137,6 +137,9 @@ The platform has been successfully applied in multiple industries such as **fina
   - v0.1.8 and earlier: wanwu-agentscope project
   - v0.2.0 and later: [wanwu-workflow](https://github.com/UnicomAI/wanwu-workflow/tree/dev/wanwu-backend) project
 
+- **Recommended Configuration:**
+  - CPU: 8-core or 16-core; RAM: 32GB; Storage: 200GB or more; GPU: Not required.
+  
 - **Docker Installation (Recommended)**
 
 1. Before the first run
@@ -219,6 +222,18 @@ The platform has been successfully applied in multiple industries such as **fina
 
 ------
 
+### 📦 Sandbox Startup
+
+The Wanwu sandbox can be used for features like creating Skills with a single command and needs to be started separately; note that when creating Skills, the selected model must have a context length >= 32000 when importing.
+
+1. Based on the above Docker installation steps, complete the configuration before the first run
+
+2. Start the sandbox (taking amd64 as an example)
+
+   ```
+   docker compose --env-file .env --env-file .env.image.amd64 -f docker-compose.wga-sandbox.yaml up -d
+   ```
+
 ### ⬆️ Version Upgrade
 
 1. Based on the above Docker installation steps, completely stop the system service
@@ -251,7 +266,7 @@ The platform has been successfully applied in multiple industries such as **fina
 
 2. Modify the `WANWU_DB_NAME` variable in the .env file according to the database
 
-3. Start the database (using amd64 as an example)
+3. Start the database (taking amd64 as an example)
    ```bash
    # tidb
    docker compose --env-file .env --env-file .env.image.amd64 -f docker-compose.tidb.yaml up -d
@@ -355,6 +370,8 @@ The F1 score serving as the comprehensive evaluation metric (the harmonic mean o
 
 - [Coze](https://github.com/coze-dev)
 - [LangChain](https://github.com/langchain-ai/langchain)
+- [AIO Sandbox](https://github.com/agent-infra/sandbox)
+- [OpenCode](https://github.com/anomalyco/opencode)
 
 ------
 
@@ -364,6 +381,6 @@ The Yuanjing Wanwu AI Agent Platform is released under the Apache License 2.0.
 ------
 
 ### &#x1F4E9; Contact Us
-| QQ Group1(Full):490071123                                    | QQ Group2:1026898615                                         |
-| ------------------------------------------------------------ | ------------------------------------------------------------ |
-| <img width="183" height="258" alt="image" src="https://github.com/user-attachments/assets/010f1d68-78e9-446d-baf1-0a7339efb48e" /> | <img width="183" height="258" alt="image" src="https://github.com/user-attachments/assets/10796f69-5c18-4f21-adbb-b22b6ef88df2" /> |
+| QQ Group1(Full):490071123                                    | QQ Group2(Full):1026898615                                         | QQ Group3:1019579243                                         |
+| ------------------------------------------------------------ | ------------------------------------------------------------ | ------------------------------------------------------------ |
+| <img width="183" height="258" alt="image" src="https://github.com/user-attachments/assets/010f1d68-78e9-446d-baf1-0a7339efb48e" /> | <img width="183" height="258" alt="image" src="https://github.com/user-attachments/assets/10796f69-5c18-4f21-adbb-b22b6ef88df2" /> | <img width="183" height="258" alt="image" src="https://github.com/user-attachments/assets/9badde43-b421-48ce-a998-1fc2e33bdc55" /> |
