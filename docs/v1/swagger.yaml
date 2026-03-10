@@ -1469,6 +1469,13 @@ definitions:
     - project_id
     - unique_id
     type: object
+  request.CheckCustomSkillReq:
+    properties:
+      zipUrl:
+        type: string
+    required:
+    - zipUrl
+    type: object
   request.CheckFileListReq:
     properties:
       chunkName:
@@ -1578,18 +1585,9 @@ definitions:
         type: string
       avatar:
         $ref: '#/definitions/request.Avatar'
-      desc:
-        type: string
-      name:
-        type: string
-      saveId:
-        type: string
-      sourceType:
-        type: string
       zipUrl:
         type: string
     required:
-    - author
     - zipUrl
     type: object
   request.CreateDocChildSegmentReq:
@@ -4953,6 +4951,13 @@ definitions:
         - $ref: '#/definitions/response.CustomEmail'
         description: 邮箱
     type: object
+  response.CustomSkillCheckResp:
+    properties:
+      desc:
+        type: string
+      name:
+        type: string
+    type: object
   response.CustomSkillDetail:
     properties:
       author:
@@ -7575,6 +7580,35 @@ paths:
       security:
       - JWT: []
       summary: 创建自定义skill
+      tags:
+      - resource.skill
+  /agent/skill/custom/check:
+    post:
+      consumes:
+      - application/json
+      description: 校验自定义skill zip包是否有效（包含SKILL.md文件）
+      parameters:
+      - description: zip包URL
+        in: body
+        name: data
+        required: true
+        schema:
+          $ref: '#/definitions/request.CheckCustomSkillReq'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/response.Response'
+            - properties:
+                data:
+                  $ref: '#/definitions/response.CustomSkillCheckResp'
+              type: object
+      security:
+      - JWT: []
+      summary: 校验自定义skill zip包
       tags:
       - resource.skill
   /agent/skill/custom/detail:

@@ -403,6 +403,57 @@ const docTemplate = `{
                 }
             }
         },
+        "/agent/skill/custom/check": {
+            "post": {
+                "security": [
+                    {
+                        "JWT": []
+                    }
+                ],
+                "description": "校验自定义skill zip包是否有效（包含SKILL.md文件）",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "resource.skill"
+                ],
+                "summary": "校验自定义skill zip包",
+                "parameters": [
+                    {
+                        "description": "zip包URL",
+                        "name": "data",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/request.CheckCustomSkillReq"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/response.Response"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/definitions/response.CustomSkillCheckResp"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    }
+                }
+            }
+        },
         "/agent/skill/custom/detail": {
             "get": {
                 "security": [
@@ -16832,6 +16883,17 @@ const docTemplate = `{
                 }
             }
         },
+        "request.CheckCustomSkillReq": {
+            "type": "object",
+            "required": [
+                "zipUrl"
+            ],
+            "properties": {
+                "zipUrl": {
+                    "type": "string"
+                }
+            }
+        },
         "request.CheckFileListReq": {
             "type": "object",
             "required": [
@@ -16989,7 +17051,6 @@ const docTemplate = `{
         "request.CreateCustomSkillReq": {
             "type": "object",
             "required": [
-                "author",
                 "zipUrl"
             ],
             "properties": {
@@ -16998,18 +17059,6 @@ const docTemplate = `{
                 },
                 "avatar": {
                     "$ref": "#/definitions/request.Avatar"
-                },
-                "desc": {
-                    "type": "string"
-                },
-                "name": {
-                    "type": "string"
-                },
-                "saveId": {
-                    "type": "string"
-                },
-                "sourceType": {
-                    "type": "string"
                 },
                 "zipUrl": {
                     "type": "string"
@@ -21977,6 +22026,17 @@ const docTemplate = `{
                             "$ref": "#/definitions/response.CustomEmail"
                         }
                     ]
+                }
+            }
+        },
+        "response.CustomSkillCheckResp": {
+            "type": "object",
+            "properties": {
+                "desc": {
+                    "type": "string"
+                },
+                "name": {
+                    "type": "string"
                 }
             }
         },
