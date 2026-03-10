@@ -273,12 +273,7 @@ func SkillConversationSave(ctx *gin.Context, userId, orgId string, req request.S
 	}
 
 	// 保存至资源库自定义Skills
-	return CreateCustomSkill(ctx, userId, orgId, request.CreateCustomSkillReq{
-		Author:     skillConversationAuthor,
-		ZipUrl:     zipUrl,
-		SaveId:     req.SkillSaveId,
-		SourceType: "skill_conversation",
-	})
+	return CreateCustomSkill(ctx, userId, orgId, "", skillConversationAuthor, zipUrl, req.SkillSaveId, "skill_conversation")
 }
 
 // --- internal ---
@@ -370,7 +365,7 @@ func buildSkillChatDoneProcessor(ctx *gin.Context, userId, orgId string, req req
 			return err
 		}
 		// skillName, skillDesc
-		_, skillName, skillDesc, err := extractSkillMarkdownFromZip(zipBytes)
+		_, fm, err := util.ExtractSkillMarkdownFromZip(zipBytes)
 		if err != nil {
 			return err
 		}
@@ -386,8 +381,8 @@ func buildSkillChatDoneProcessor(ctx *gin.Context, userId, orgId string, req req
 			FileUrl:  buildAccessFilePath(filepath.Join(minio.BucketFileUpload, minio.DirFileExpire, fileName)),
 			MIMEType: "application/zip",
 			MetaData: map[string]interface{}{
-				"name":        skillName,
-				"desc":        skillDesc,
+				"name":        fm.Name,
+				"desc":        fm.Description,
 				"author":      skillConversationAuthor,
 				"avatar":      cacheSkillAvatar(ctx, ""),
 				"inResource":  false,

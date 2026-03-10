@@ -17,6 +17,7 @@ func registerAgentSkill(apiV1 *gin.RouterGroup) {
 	// 自定义 skill（CRUD）
 	mid.Sub("resource.skill").Reg(apiV1, "/agent/skill/custom/list", http.MethodGet, v1.GetCustomSkillList, "获取自定义skill列表")
 	mid.Sub("resource.skill").Reg(apiV1, "/agent/skill/custom/detail", http.MethodGet, v1.GetCustomSkillDetail, "获取自定义skill详情")
+	mid.Sub("resource.skill").Reg(apiV1, "/agent/skill/custom/check", http.MethodPost, v1.CheckCustomSkill, "校验自定义skill zip包")
 	mid.Sub("resource.skill").Reg(apiV1, "/agent/skill/custom", http.MethodPost, v1.CreateCustomSkill, "创建自定义skill")
 	mid.Sub("resource.skill").Reg(apiV1, "/agent/skill/custom", http.MethodDelete, v1.DeleteCustomSkill, "删除自定义skill")
 

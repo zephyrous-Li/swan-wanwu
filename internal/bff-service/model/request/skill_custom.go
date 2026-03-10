@@ -1,13 +1,9 @@
 package request
 
 type CreateCustomSkillReq struct {
-	Name       string `json:"name" form:"name"`
-	Avatar     Avatar `json:"avatar" form:"avatar"`
-	Author     string `json:"author" form:"author" validate:"required"`
-	Desc       string `json:"desc" form:"desc"`
-	ZipUrl     string `json:"zipUrl" form:"zipUrl" validate:"required"`
-	SaveId     string `json:"saveId" form:"saveId"`
-	SourceType string `json:"sourceType" form:"sourceType"`
+	Avatar Avatar `json:"avatar" form:"avatar"`
+	Author string `json:"author" form:"author"`
+	ZipUrl string `json:"zipUrl" form:"zipUrl" validate:"required"`
 }
 
 func (c *CreateCustomSkillReq) Check() error {
@@ -27,5 +23,13 @@ type DeleteCustomSkillReq struct {
 }
 
 func (c *DeleteCustomSkillReq) Check() error {
+	return nil
+}
+
+type CheckCustomSkillReq struct {
+	ZipUrl string `json:"zipUrl" form:"zipUrl" validate:"required"`
+}
+
+func (c *CheckCustomSkillReq) Check() error {
 	return nil
 }
