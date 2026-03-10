@@ -150,6 +150,9 @@
   - v0.1.8及以前：wanwu-agentscope 项目
   - v0.2.0开始：[wanwu-workflow](https://github.com/UnicomAI/wanwu-workflow/tree/dev/wanwu-backend) 项目
 
+- **推荐配置：**
+  - CPU：8核或16核 ；内存：32G ；硬盘200G以上；GPU不需要
+  
 - **Docker安装（推荐）**
 
 1. 首次运行前
@@ -231,6 +234,18 @@
     ```
 
 ------
+
+### 📦 沙箱启动
+
+万悟沙箱可用于一句话创建Skills等功能，需要单独启动；注意，创建Skills时选用的模型，在导入时必须指定模型上下文长度 >= 32000
+
+1. 基于上述Docker安装步骤，完成首次运行前的配置
+
+2. 启动沙箱（以amd64为例）
+
+  ```
+  docker compose --env-file .env --env-file .env.image.amd64 -f docker-compose.wga-sandbox.yaml up -d
+  ```
 
 ### ⬆️ 版本升级
 
@@ -383,6 +398,8 @@
 
 - [Coze](https://github.com/coze-dev)
 - [LangChain](https://github.com/langchain-ai/langchain)
+- [AIO Sandbox](https://github.com/agent-infra/sandbox)
+- [OpenCode](https://github.com/anomalyco/opencode)
 
 ------
 
@@ -392,6 +409,6 @@
 ------
 
 ### &#x1F4E9; 联系我们
-| QQ 群1(已满):490071123                                    | QQ 群2:1026898615                                         |
-| ------------------------------------------------------------ | ------------------------------------------------------------ |
-| <img width="183" height="258" alt="image" src="https://github.com/user-attachments/assets/010f1d68-78e9-446d-baf1-0a7339efb48e" /> | <img width="183" height="258" alt="image" src="https://github.com/user-attachments/assets/10796f69-5c18-4f21-adbb-b22b6ef88df2" /> |
+| QQ 群1(已满):490071123                                       | QQ 群2(已满):1026898615                                            | QQ 群3:1019579243                                            |
+| ------------------------------------------------------------ | ------------------------------------------------------------ | ------------------------------------------------------------ |
+| <img width="183" height="258" alt="image" src="https://github.com/user-attachments/assets/010f1d68-78e9-446d-baf1-0a7339efb48e" /> | <img width="183" height="258" alt="image" src="https://github.com/user-attachments/assets/10796f69-5c18-4f21-adbb-b22b6ef88df2" /> | <img width="183" height="258" alt="image" src="https://github.com/user-attachments/assets/9badde43-b421-48ce-a998-1fc2e33bdc55" /> |

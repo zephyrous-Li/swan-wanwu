@@ -23,10 +23,10 @@ type Config struct {
 	OAuth             OAuthConfig                `json:"oauth" mapstructure:"oauth"`
 	Decrypt           DecryptPasswd              `json:"decrypt-passwd" mapstructure:"decrypt-passwd"`
 	I18n              i18n.Config                `json:"i18n" mapstructure:"i18n"`
-	AssistantTemplate AssistantTemplateConfig    `json:"assistant-template" mapstructure:"assistant-template"`
 	CustomInfo        CustomInfoConfig           `json:"custom-info" mapstructure:"custom-info"`
 	DocCenter         DocCenterConfig            `json:"doc-center" mapstructure:"doc-center"`
 	DefaultIcon       DefaultIconConfig          `json:"default-icon" mapstructure:"default-icon"`
+	AssistantTemplate AssistantTemplateConfig    `json:"assistant-template" mapstructure:"assistant-template"`
 	WorkflowTemplate  WorkflowTemplatePathConfig `json:"workflow-template" mapstructure:"workflow-template"`
 	PromptTemplate    PromptTemplatePathConfig   `json:"prompt-template" mapstructure:"prompt-template"`
 	SkillsTemplate    SkillsTemplatePathConfig   `json:"skills-template" mapstructure:"skills-template"`
@@ -34,6 +34,8 @@ type Config struct {
 	PromptTemplates   []*PromptTempConfig        `json:"prompts" mapstructure:"prompts"`
 	AgentSkills       []*SkillsConfig            `json:"skills" mapstructure:"skills"`
 	PromptEngineering PromptEngineeringConfig    `json:"prompt-engineering" mapstructure:"prompt-engineering"`
+	SkillCreator      SkillCreatorConfig         `json:"skill-creator" mapstructure:"skill-creator"`
+	SkillCreatorPath  SkillCreatorPathConfig     `json:"skill-creator-path" mapstructure:"skill-creator-path"`
 	// middleware
 	Minio minio.Config `json:"minio" mapstructure:"minio"`
 	Redis redis.Config `json:"redis" mapstructure:"redis"`
@@ -49,14 +51,7 @@ type Config struct {
 	RagKnowledgeConfig  RagKnowledgeConfig    `json:"rag-knowledge" mapstructure:"rag-knowledge"`
 	DifyKnowledgeConfig DifyKnowledgeConfig   `json:"dify-knowledge" mapstructure:"dify-knowledge"`
 	Workflow            WorkflowServiceConfig `json:"workflow" mapstructure:"workflow"`
-	Models              []*ModelConfig        `json:"models" mapstructure:"models"`
-}
-
-type ModelConfig struct {
-	ModelId   string `json:"model_id" mapstructure:"model_id"`
-	Provider  string `json:"provider" mapstructure:"provider"`
-	ModelType string `json:"model_type" mapstructure:"model_type"`
-	Endpoint  string `json:"endpoint" mapstructure:"endpoint"`
+	WgaSandbox          WgaSandboxConfig      `json:"wga-sandbox" mapstructure:"wga-sandbox"`
 }
 
 type ServerConfig struct {
@@ -126,6 +121,16 @@ type DifyKnowledgeConfig struct {
 	SearchKnowTimeout      int    `json:"search-know-timeout" mapstructure:"search-know-timeout"`
 }
 
+type WgaSandboxConfig struct {
+	Sandbox WgaSandboxSandboxConfig `json:"sandbox" mapstructure:"sandbox"`
+}
+
+type WgaSandboxSandboxConfig struct {
+	Type      string `json:"type" mapstructure:"type"`
+	Host      string `json:"host" mapstructure:"host"`
+	ImageName string `json:"image-name" mapstructure:"image-name"`
+}
+
 type WorkflowTemplatePathConfig struct {
 	ServerMode string `json:"server_mode" mapstructure:"server_mode"`
 	ConfigPath string `json:"configPath" mapstructure:"configPath"`
@@ -146,6 +151,10 @@ type SkillsTemplatePathConfig struct {
 	ConfigPath string `json:"configPath" mapstructure:"configPath"`
 }
 
+type SkillCreatorPathConfig struct {
+	ConfigPath string `json:"configPath" mapstructure:"configPath"`
+}
+
 type PromptTempConfig struct {
 	TemplateId string `json:"templateId" mapstructure:"templateId"`
 	Category   string `json:"category" mapstructure:"category"`
@@ -158,6 +167,7 @@ type PromptTempConfig struct {
 
 type PromptEngineeringConfig struct {
 	Optimization string `json:"optimization" mapstructure:"optimization"`
+	Evaluation   string `json:"evaluation" mapstructure:"evaluation"`
 }
 
 type WorkflowServiceConfig struct {
@@ -222,11 +232,6 @@ type WorkflowModelParamDefaultVal struct {
 	DefaultVal string `json:"default_val" mapstructure:"default_val"`
 }
 
-type UriConfig struct {
-	Port string `json:"port" mapstructure:"port"`
-	Uri  string `json:"uri" mapstructure:"uri"`
-}
-
 type AssistantTemplateConfig struct {
 	ConfigPath string `json:"configPath" mapstructure:"configPath"`
 }
@@ -284,16 +289,17 @@ type CustomAbout struct {
 }
 
 type DefaultIconConfig struct {
-	UserIcon      string `json:"user" mapstructure:"user"`
-	RagIcon       string `json:"rag" mapstructure:"rag"`
-	AgentIcon     string `json:"agent" mapstructure:"agent"`
-	WorkflowIcon  string `json:"workflow" mapstructure:"workflow"`
-	ChatflowIcon  string `json:"chatflow" mapstructure:"chatflow"`
-	McpCustomIcon string `json:"mcpCustom" mapstructure:"mcpCustom"`
-	McpServerIcon string `json:"mcpServer" mapstructure:"mcpServer"`
-	ToolIcon      string `json:"tool" mapstructure:"tool"`
-	PromptIcon    string `json:"prompt" mapstructure:"prompt"`
-	SkillIcon     string `json:"skill" mapstructure:"skill"`
+	UserIcon        string `json:"user" mapstructure:"user"`
+	RagIcon         string `json:"rag" mapstructure:"rag"`
+	AgentIcon       string `json:"agent" mapstructure:"agent"`
+	WorkflowIcon    string `json:"workflow" mapstructure:"workflow"`
+	ChatflowIcon    string `json:"chatflow" mapstructure:"chatflow"`
+	McpCustomIcon   string `json:"mcpCustom" mapstructure:"mcpCustom"`
+	McpServerIcon   string `json:"mcpServer" mapstructure:"mcpServer"`
+	ToolIcon        string `json:"tool" mapstructure:"tool"`
+	PromptIcon      string `json:"prompt" mapstructure:"prompt"`
+	SkillIcon       string `json:"skill" mapstructure:"skill"`
+	CustomSkillIcon string `json:"skillCustom" mapstructure:"skillCustom"`
 }
 
 func LoadConfig(in string) error {
@@ -330,6 +336,11 @@ func LoadConfig(in string) error {
 			return err
 		}
 	}
+	// 加载 skill-creator 配置
+	skillCreatorIn := _c.SkillCreatorPath.ConfigPath
+	if err := util.LoadConfig(skillCreatorIn, _c); err != nil {
+		return fmt.Errorf("load skill-creator config err: %v", err)
+	}
 	return nil
 }
 
@@ -338,19 +349,6 @@ func Cfg() *Config {
 		log.Panicf("cfg nil")
 	}
 	return _c
-}
-
-// GetDocs 返回 docs 的深拷贝
-func (d *DocCenterConfig) GetDocs() map[string]string {
-	if d.docs == nil {
-		return nil
-	}
-	// 深拷贝
-	result := make(map[string]string, len(d.docs))
-	for k, v := range d.docs {
-		result[k] = v
-	}
-	return result
 }
 
 func (c *Config) WorkflowTemp(templateId string) (WorkflowTemplateConfig, bool) {
@@ -380,10 +378,15 @@ func (c *Config) AgentSkill(skillId string) (SkillsConfig, bool) {
 	return SkillsConfig{}, false
 }
 
-func (c *Config) GetModelsMap() map[string]*ModelConfig {
-	modelsMap := make(map[string]*ModelConfig)
-	for _, m := range c.Models {
-		modelsMap[m.ModelId] = m
+// GetDocs 返回 docs 的深拷贝
+func (d *DocCenterConfig) GetDocs() map[string]string {
+	if d.docs == nil {
+		return nil
 	}
-	return modelsMap
+	// 深拷贝
+	result := make(map[string]string, len(d.docs))
+	for k, v := range d.docs {
+		result[k] = v
+	}
+	return result
 }

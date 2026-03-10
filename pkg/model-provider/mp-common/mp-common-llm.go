@@ -9,6 +9,7 @@ import (
 	"io"
 	"strings"
 
+	"github.com/UnicomAI/wanwu/internal/bff-service/config"
 	"github.com/UnicomAI/wanwu/pkg/log"
 	"github.com/UnicomAI/wanwu/pkg/util"
 	"github.com/go-resty/resty/v2"
@@ -36,12 +37,34 @@ const (
 	TagText2Image          string = "文生图"
 	TagVisionSupport       string = "图文问答"
 	TagToolCall            string = "工具调用"
+	TagScopeTypePrivate    string = "个人"
+	TagScopeTypePublic     string = "全局公开"
+	TagScopeTypeOrg        string = "组织公开"
+	TagScopeTypeLocal      string = "本地"
 )
 
 type Tag struct {
 	Text string `json:"text"`
 }
 
+func GetTagsByScopeType(scopeType string) []Tag {
+	var tags []Tag
+	switch scopeType {
+	case config.ModelScopeTypePrivate:
+		tags = append(tags, Tag{
+			Text: TagScopeTypePrivate,
+		})
+	case config.ModelScopeTypePublic:
+		tags = append(tags, Tag{
+			Text: TagScopeTypePublic,
+		})
+	case config.ModelScopeTypeOrg:
+		tags = append(tags, Tag{
+			Text: TagScopeTypeOrg,
+		})
+	}
+	return tags
+}
 func GetTagsByFunctionCall(fcType string) []Tag {
 	var tags []Tag
 	if FCType(fcType) == FCTypeToolCall {
