@@ -10,7 +10,7 @@ import (
 )
 
 const (
-	akConfigDir = "configs/microservice/bff-service/configs/agent-skills"
+	builtinSkillsConfigDir = "configs/microservice/bff-service/configs/agent-skills"
 )
 
 type SkillsConfig struct {
@@ -23,26 +23,22 @@ type SkillsConfig struct {
 	SkillMarkdown []byte `json:"-" mapstructure:"-"`
 }
 
+type SkillCreatorConfig struct {
+	Instruction    string        `json:"instruction" mapstructure:"instruction"`
+	EnableThinking bool          `json:"enable_thinking" mapstructure:"enable_thinking"`
+	Skills         []SkillConfig `json:"skills" mapstructure:"skills"`
+}
+
+type SkillConfig struct {
+	Dir string `json:"dir" mapstructure:"dir"`
+}
+
 func (stf *SkillsConfig) AgentSkillZipToBytes(skillsId string) ([]byte, error) {
-	return util.DirToBytes(filepath.Join(akConfigDir, skillsId))
+	return util.ZipDir(filepath.Join(builtinSkillsConfigDir, skillsId))
 }
 
-// --- internal ---
-
-func (stf *SkillsConfig) load() error {
-	markdownPath := filepath.Join(akConfigDir, stf.MdPath)
-	b, err := os.ReadFile(markdownPath)
-	if err != nil {
-		return fmt.Errorf("load skill %v markdown path %v err: %v", stf.SkillId, markdownPath, err)
-	}
-
-	// 处理 front matter 格式
-	stf.SkillMarkdown = []byte(fixFrontMatterFormat(string(b)))
-	return nil
-}
-
-// fixFrontMatterFormat 确保 front matter 格式正确（配合前端正确渲染）
-func fixFrontMatterFormat(content string) string {
+// FixFrontMatterFormat 确保 front matter 格式正确（配合前端正确渲染）
+func FixFrontMatterFormat(content string) string {
 	// 如果内容不以 --- 开头，直接返回
 	if !strings.HasPrefix(content, "---") {
 		return content
@@ -72,4 +68,18 @@ func fixFrontMatterFormat(content string) string {
 	result := "---\n\n" + strings.Join(processedLines, "") + "---" + content[secondEnd:]
 
 	return result
+}
+
+// --- internal ---
+
+func (stf *SkillsConfig) load() error {
+	markdownPath := filepath.Join(builtinSkillsConfigDir, stf.MdPath)
+	b, err := os.ReadFile(markdownPath)
+	if err != nil {
+		return fmt.Errorf("load skill %v markdown path %v err: %v", stf.SkillId, markdownPath, err)
+	}
+
+	// 处理 front matter 格式
+	stf.SkillMarkdown = []byte(FixFrontMatterFormat(string(b)))
+	return nil
 }

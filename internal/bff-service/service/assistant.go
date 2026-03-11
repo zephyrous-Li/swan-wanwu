@@ -8,6 +8,7 @@ import (
 	app_service "github.com/UnicomAI/wanwu/api/proto/app-service"
 	assistant_service "github.com/UnicomAI/wanwu/api/proto/assistant-service"
 	"github.com/UnicomAI/wanwu/api/proto/common"
+	iam_service "github.com/UnicomAI/wanwu/api/proto/iam-service"
 	knowledgeBase_service "github.com/UnicomAI/wanwu/api/proto/knowledgebase-service"
 	mcp_service "github.com/UnicomAI/wanwu/api/proto/mcp-service"
 	model_service "github.com/UnicomAI/wanwu/api/proto/model-service"
@@ -476,9 +477,10 @@ func assistantMCPConvert(ctx *gin.Context, assistantMCPInfos []*assistant_servic
 	// 提取MCP ID列表
 	var MCPCustomIds, MCPServerIds []string
 	for _, m := range assistantMCPInfos {
-		if m.McpType == constant.MCPTypeMCP {
+		switch m.McpType {
+		case constant.MCPTypeMCP:
 			MCPCustomIds = append(MCPCustomIds, m.McpId)
-		} else if m.McpType == constant.MCPTypeMCPServer {
+		case constant.MCPTypeMCPServer:
 			MCPServerIds = append(MCPServerIds, m.McpId)
 		}
 	}
@@ -783,6 +785,7 @@ func GetConversationDetailList(ctx *gin.Context, userId, orgId string, req reque
 			Prompt:              item.Prompt,
 			SysPrompt:           item.SysPrompt,
 			Response:            item.Response,
+			ResponseList:        buildResponseList(item.ConversationResponse),
 			QaType:              item.QaType,
 			CreatedBy:           item.CreatedBy,
 			CreatedAt:           item.CreatedAt,
@@ -806,6 +809,20 @@ func GetConversationDetailList(ctx *gin.Context, userId, orgId string, req reque
 	}
 
 	return response.PageResult{Total: resp.Total, List: convertedList, PageNo: req.PageNo, PageSize: req.PageSize}, nil
+}
+
+func buildResponseList(conversationResponse []*assistant_service.ConversationResponse) []*response.ConversationResponse {
+	if len(conversationResponse) == 0 {
+		return make([]*response.ConversationResponse, 0)
+	}
+	var retList []*response.ConversationResponse
+	for _, resp := range conversationResponse {
+		retList = append(retList, &response.ConversationResponse{
+			Response: resp.Response,
+			Order:    resp.Order,
+		})
+	}
+	return retList
 }
 
 func buildSearchList(searchListStr string) interface{} {
@@ -837,6 +854,7 @@ func buildSubConversationList(conversationList []*assistant_service.SubConversat
 			TimeCost:         conversation.TimeCost,
 			Status:           conversation.Status,
 			ConversationType: conversation.ConversationType,
+			Order:            conversation.Order,
 		})
 	}
 	return subConversationList
@@ -1090,7 +1108,7 @@ func transKnowledgeBases2Model(ctx *gin.Context, kbConfig *assistant_service.Ass
 		}, err
 	}
 
-	knowledgeBases := buildKnowledgeBases(kbInfoList, kbConfig.KnowledgeBaseIds, kbConfig.AppKnowledgeBaseList)
+	knowledgeBases := buildKnowledgeBases(ctx, kbInfoList, kbConfig.KnowledgeBaseIds, kbConfig.AppKnowledgeBaseList)
 
 	return request.AppKnowledgebaseConfig{
 		Knowledgebases: knowledgeBases,
@@ -1110,7 +1128,7 @@ func transKnowledgeBases2Model(ctx *gin.Context, kbConfig *assistant_service.Ass
 
 }
 
-func buildKnowledgeBases(kbInfoList *knowledgeBase_service.KnowledgeDetailSelectListResp, kbIdList []string, kbConfigList []*assistant_service.AppKnowledgeBase) []request.AppKnowledgeBase {
+func buildKnowledgeBases(ctx *gin.Context, kbInfoList *knowledgeBase_service.KnowledgeDetailSelectListResp, kbIdList []string, kbConfigList []*assistant_service.AppKnowledgeBase) []request.AppKnowledgeBase {
 	if len(kbInfoList.List) == 0 {
 		return make([]request.AppKnowledgeBase, 0)
 	}
@@ -1125,6 +1143,16 @@ func buildKnowledgeBases(kbInfoList *knowledgeBase_service.KnowledgeDetailSelect
 			if info == nil {
 				continue
 			}
+			share := info.ShareCount > 1
+			var orgName string
+			if share {
+				orgInfo, err := iam.GetOrgInfo(ctx, &iam_service.GetOrgInfoReq{OrgId: info.CreateOrgId})
+				if err != nil {
+					log.Errorf("get org info error: %v", err)
+				} else {
+					orgName = buildShareOrgName(share, orgInfo.Name)
+				}
+			}
 			params := buildAssistantMetaDataFilterParams(kbConfig)
 			knowledgeBases = append(knowledgeBases, request.AppKnowledgeBase{
 				ID:                   kbConfig.KnowledgeBaseId,
@@ -1132,6 +1160,8 @@ func buildKnowledgeBases(kbInfoList *knowledgeBase_service.KnowledgeDetailSelect
 				GraphSwitch:          info.GraphSwitch,
 				External:             info.External,
 				Category:             info.Category,
+				Share:                share,
+				OrgName:              orgName,
 				MetaDataFilterParams: params,
 			})
 		}

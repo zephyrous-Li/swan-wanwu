@@ -1475,6 +1475,20 @@ export default {
       yes: '是',
       no: '否',
     },
+    toolDialog: {
+      tool: '工具',
+      addTool: '新增工具',
+      searchTool: '搜索工具',
+      add: '添加',
+      added: '已添加',
+      createAutoTool: '创建自定义工具',
+      importMcp: '导入MCP',
+      createWorkflow: '创建工作流',
+      errorApiKey: '该内置工具暂未绑定API Key，会导致调用失败!',
+      addSuccess: '工具添加成功',
+      builtinTools: '内置工具',
+      customTools: '自定义工具',
+    },
     agentDetail: {
       workFlowInstruction: '工作流配置说明',
       recommend: '更多推荐',
@@ -1642,6 +1656,8 @@ export default {
   safety: {
     title: '安全护栏',
     tips: '支持用户自定义敏感词表，配置行业敏感词，实时拦截高风险内容的输入和输出，保障内容安全合规。可在创建应用时关联配置。',
+    personal: '个人敏感词',
+    global: '全局敏感词',
     create: {
       createTitle: '新建词表',
       editTitle: '编辑词表',

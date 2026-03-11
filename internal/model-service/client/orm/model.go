@@ -94,6 +94,7 @@ func (c *Client) UpdateModel(ctx context.Context, tab *model_client.ModelImporte
 		"model_icon_path": tab.ModelIconPath,
 		"publish_date":    tab.PublishDate,
 		"provider_config": tab.ProviderConfig,
+		"scope_type":      tab.ScopeType,
 	}).Error; err != nil {
 		return toErrStatus("model_update_err", err.Error())
 	}
@@ -150,6 +151,7 @@ func (c *Client) ListModels(ctx context.Context, tab *model_client.ModelImported
 	db := sqlopt.SQLOptions(
 		sqlopt.WithUserOrgOrPublicScope(tab.UserID, tab.OrgID),
 		sqlopt.WithProvider(tab.Provider),
+		sqlopt.WithScopeType(tab.ScopeType),
 		sqlopt.WithModelType(tab.ModelType),
 		sqlopt.LikeDisplayNameOrModel(tab.DisplayName),
 	).Apply(c.db.WithContext(ctx))
@@ -167,11 +169,12 @@ func (c *Client) ListTypeModels(ctx context.Context, tab *model_client.ModelImpo
 	modelRerankTypes := []string{"rerank", "multimodal-rerank"}
 	modelEmbedTypes := []string{"embedding", "multimodal-embedding"}
 	var modelTypeOpt sqlopt.SQLOption
-	if tab.ModelType == "rerank" {
+	switch tab.ModelType {
+	case "rerank":
 		modelTypeOpt = sqlopt.WithModelTypes(modelRerankTypes)
-	} else if tab.ModelType == "embedding" {
+	case "embedding":
 		modelTypeOpt = sqlopt.WithModelTypes(modelEmbedTypes)
-	} else {
+	default:
 		modelTypeOpt = sqlopt.WithModelType(tab.ModelType)
 	}
 	if err := sqlopt.SQLOptions(
