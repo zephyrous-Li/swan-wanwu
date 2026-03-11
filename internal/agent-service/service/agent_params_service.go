@@ -6,6 +6,8 @@ import (
 	assistant_service "github.com/UnicomAI/wanwu/api/proto/assistant-service"
 	"github.com/UnicomAI/wanwu/internal/agent-service/model/request"
 	"github.com/UnicomAI/wanwu/pkg/log"
+	openapi3_util "github.com/UnicomAI/wanwu/pkg/openapi3-util"
+	"github.com/getkin/kin-openapi/openapi3"
 	"github.com/samber/lo"
 )
 
@@ -138,13 +140,28 @@ func buildPluginToolList(pluginTool []string) []*request.PluginToolInfo {
 	}
 	var pluginToolList []*request.PluginToolInfo
 	for _, tool := range pluginTool {
-		var toolInfo = &request.PluginToolInfo{}
-		err := json.Unmarshal([]byte(tool), &toolInfo)
-		if err != nil {
-			log.Errorf("buildPluginToolList pluginTool %s err %s", tool, err)
+		var rawTool struct {
+			APISchema map[string]interface{} `json:"api_schema"`
+			APIAuth   *openapi3_util.Auth    `json:"api_auth,omitempty"`
+		}
+		if err := json.Unmarshal([]byte(tool), &rawTool); err != nil {
+			log.Errorf("buildPluginToolList unmarshal raw tool (%s) err: %s", tool, err)
 			continue
 		}
-		pluginToolList = append(pluginToolList, toolInfo)
+		schemaData, err := json.Marshal(rawTool.APISchema)
+		if err != nil {
+			log.Errorf("buildPluginToolList marshal tool (%s) api_schema err: %s", tool, err)
+			continue
+		}
+		apiSchema, err := openapi3.NewLoader().LoadFromData(schemaData)
+		if err != nil {
+			log.Errorf("buildPluginToolList load tool (%s) api_schema err: %s", tool, err)
+			continue
+		}
+		pluginToolList = append(pluginToolList, &request.PluginToolInfo{
+			APISchema: apiSchema,
+			APIAuth:   rawTool.APIAuth,
+		})
 	}
 	return pluginToolList
 }
