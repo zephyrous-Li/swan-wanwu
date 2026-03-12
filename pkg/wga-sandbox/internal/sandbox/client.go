@@ -297,7 +297,7 @@ func (c *client) downloadData(ctx context.Context, remotePath string) ([]byte, e
 // }
 
 func (c *client) delete(ctx context.Context, remotePath string) error {
-	_, err := c.exec(ctx, "rm -rf "+remotePath, "/")
+	_, err := c.exec(ctx, fmt.Sprintf("rm -rf \"%s\"", remotePath), "/")
 	return err
 }
 
