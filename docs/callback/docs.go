@@ -1676,6 +1676,10 @@ const docTemplate = `{
                 "model"
             ],
             "properties": {
+                "chat_template_kwargs": {
+                    "type": "object",
+                    "additionalProperties": true
+                },
                 "do_sample": {
                     "description": "Yuanjing",
                     "type": "boolean"
@@ -3868,14 +3872,10 @@ const docTemplate = `{
         "request.WgaSandboxRunReq": {
             "type": "object",
             "required": [
-                "currentTask",
                 "model"
             ],
             "properties": {
                 "agentName": {
-                    "type": "string"
-                },
-                "currentTask": {
                     "type": "string"
                 },
                 "enableThinking": {
@@ -4196,6 +4196,10 @@ const docTemplate = `{
                             "$ref": "#/definitions/mp.ProviderModelConfig"
                         }
                     ]
+                },
+                "importSource": {
+                    "description": "模型导入来源(builtin=平台内置,external=外部URL)",
+                    "type": "string"
                 },
                 "isActive": {
                     "description": "启用状态（true: 启用，false: 禁用）",

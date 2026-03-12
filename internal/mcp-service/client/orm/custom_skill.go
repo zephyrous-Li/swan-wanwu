@@ -12,18 +12,20 @@ import (
 )
 
 func (c *Client) CreateCustomSkill(ctx context.Context, customSkill *model.CustomSkill) (string, *err_code.Status) {
-	// 检查是否已存在（根据source_type、save_id、user_id、org_id判断唯一性）
-	var count int64
-	if err := sqlopt.SQLOptions(
-		sqlopt.WithUserID(customSkill.UserId),
-		sqlopt.WithOrgID(customSkill.OrgId),
-		sqlopt.WithCustomSkillSaveId(customSkill.SaveId),
-		sqlopt.WithCustomSkillSourceType(customSkill.SourceType),
-	).Apply(c.db).WithContext(ctx).Model(&model.CustomSkill{}).Count(&count).Error; err != nil {
-		return "", toErrStatus("mcp_custom_skill_check_exists", err.Error())
-	}
-	if count > 0 {
-		return "", toErrStatus("mcp_custom_skill_save_id_exists")
+	// 如果saveId不为空，检查是否已存在（根据source_type、save_id、user_id、org_id判断唯一性）
+	if customSkill.SaveId != "" {
+		var count int64
+		if err := sqlopt.SQLOptions(
+			sqlopt.WithUserID(customSkill.UserId),
+			sqlopt.WithOrgID(customSkill.OrgId),
+			sqlopt.WithCustomSkillSaveId(customSkill.SaveId),
+			sqlopt.WithCustomSkillSourceType(customSkill.SourceType),
+		).Apply(c.db).WithContext(ctx).Model(&model.CustomSkill{}).Count(&count).Error; err != nil {
+			return "", toErrStatus("mcp_custom_skill_check_exists", err.Error())
+		}
+		if count > 0 {
+			return "", toErrStatus("mcp_custom_skill_save_id_exists")
+		}
 	}
 
 	status := c.transaction(ctx, func(tx *gorm.DB) *err_code.Status {
@@ -81,6 +83,17 @@ func (c *Client) GetCustomSkillBySaveIds(ctx context.Context, saveIds []string) 
 		sqlopt.WithCustomSkillSaveIds(saveIds),
 	).Apply(c.db).WithContext(ctx).Order("created_at DESC").Find(&list).Error; err != nil {
 		return nil, toErrStatus("mcp_custom_skill_get_by_save_ids", err.Error())
+	}
+
+	return list, nil
+}
+
+func (c *Client) GetCustomSkillBySkillIds(ctx context.Context, skillIds []string) ([]*model.CustomSkill, *err_code.Status) {
+	var list []*model.CustomSkill
+	if err := sqlopt.SQLOptions(
+		sqlopt.WithCustomSkillSkillId(skillIds),
+	).Apply(c.db).WithContext(ctx).Find(&list).Error; err != nil {
+		return nil, toErrStatus("mcp_custom_skill_get_by_skill_ids", err.Error())
 	}
 
 	return list, nil

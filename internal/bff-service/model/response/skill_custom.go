@@ -8,3 +8,8 @@ type CustomSkillDetail struct {
 type CustomSkillIDResp struct {
 	SkillId string `json:"skillId"`
 }
+
+type CustomSkillCheckResp struct {
+	Name string `json:"name"`
+	Desc string `json:"desc"`
+}

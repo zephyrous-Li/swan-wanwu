@@ -117,7 +117,7 @@ func CreateCustomSkill(ctx *gin.Context) {
 	if !gin_util.Bind(ctx, &req) {
 		return
 	}
-	resp, err := service.CreateCustomSkill(ctx, getUserID(ctx), getOrgID(ctx), req)
+	resp, err := service.CreateCustomSkill(ctx, getUserID(ctx), getOrgID(ctx), req.Avatar.Key, req.Author, req.ZipUrl, "", "skill_import")
 	gin_util.Response(ctx, resp, err)
 }
 
@@ -139,4 +139,40 @@ func DeleteCustomSkill(ctx *gin.Context) {
 	}
 	err := service.DeleteCustomSkill(ctx, req.SkillId)
 	gin_util.Response(ctx, nil, err)
+}
+
+// CheckCustomSkill
+//
+//	@Tags			resource.skill
+//	@Summary		校验自定义skill zip包
+//	@Description	校验自定义skill zip包是否有效（包含SKILL.md文件）
+//	@Security		JWT
+//	@Accept			json
+//	@Produce		json
+//	@Param			data	body		request.CheckCustomSkillReq	true	"zip包URL"
+//	@Success		200		{object}	response.Response{data=response.CustomSkillCheckResp}
+//	@Router			/agent/skill/custom/check [post]
+func CheckCustomSkill(ctx *gin.Context) {
+	var req request.CheckCustomSkillReq
+	if !gin_util.Bind(ctx, &req) {
+		return
+	}
+	resp, err := service.CheckCustomSkill(ctx, getUserID(ctx), getOrgID(ctx), req.ZipUrl)
+	gin_util.Response(ctx, resp, err)
+}
+
+// GetSkillSelect
+//
+//	@Tags			resource.skill
+//	@Summary		获取skill选择列表
+//	@Description	获取skill选择列表
+//	@Security		JWT
+//	@Accept			json
+//	@Produce		json
+//	@Param			name	query		string	false	"skill名称"
+//	@Success		200		{object}	response.Response{data=response.ListResult{list=[]response.SkillInfo}}
+//	@Router			/agent/skill/select [get]
+func GetSkillSelect(ctx *gin.Context) {
+	resp, err := service.GetSkillSelect(ctx, getUserID(ctx), getOrgID(ctx), ctx.Query("name"))
+	gin_util.Response(ctx, resp, err)
 }

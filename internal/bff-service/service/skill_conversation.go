@@ -23,6 +23,8 @@ import (
 	sse_util "github.com/UnicomAI/wanwu/pkg/sse-util"
 	"github.com/UnicomAI/wanwu/pkg/util"
 	wga_sandbox_option "github.com/UnicomAI/wanwu/pkg/wga-sandbox/wga-sandbox-option"
+	"github.com/cloudwego/eino/adk"
+	"github.com/cloudwego/eino/schema"
 	"github.com/gin-gonic/gin"
 )
 
@@ -70,6 +72,16 @@ func DeleteSkillConversation(ctx *gin.Context, userId, orgId, conversationId str
 		Identity: &assistant_service.Identity{
 			UserId: userId,
 			OrgId:  orgId,
+		},
+	})
+	return err
+}
+
+func ClearSkillConversation(ctx *gin.Context, userId, orgId, conversationId string) error {
+	_, err := assistant.DeleteFromES(ctx.Request.Context(), &assistant_service.DeleteFromESReq{
+		IndexName: skillConversationESIndexName,
+		Conditions: map[string]string{
+			"conversationId": conversationId,
 		},
 	})
 	return err
@@ -186,17 +198,21 @@ func SkillConversationChat(ctx *gin.Context, userId, orgId string, req request.S
 	if err != nil {
 		return err
 	}
-	messages := make([]wga_sandbox_option.Message, 0, len(detailList)*2)
+	messages := make([]adk.Message, 0, len(detailList)*2+1)
 	for _, detail := range detailList {
-		messages = append(messages, wga_sandbox_option.Message{
-			Role:    "user",
+		messages = append(messages, &schema.Message{
+			Role:    schema.User,
 			Content: detail.Prompt,
-		}, wga_sandbox_option.Message{
-			Role:    "assistant",
+		}, &schema.Message{
+			Role:    schema.Assistant,
 			Content: detail.Response,
 		})
-
 	}
+	// 当前任务
+	messages = append(messages, &schema.Message{
+		Role:    schema.User,
+		Content: req.Query,
+	})
 
 	// 存储路径 /tmp/skills/<uuid>
 	messageId := util.GenUUID()
@@ -219,7 +235,7 @@ func SkillConversationChat(ctx *gin.Context, userId, orgId string, req request.S
 	}
 
 	// 流式问答
-	streamCh, err := RunSkillCreator(ctx, modelConfig, messageId, workspaceDir, workspaceDir, req.Query, messages)
+	streamCh, err := RunSkillCreator(ctx, modelConfig, messageId, workspaceDir, workspaceDir, messages)
 	if err != nil {
 		return grpc_util.ErrorStatus(errs.Code_BFFGeneral, err.Error())
 	}
@@ -257,12 +273,7 @@ func SkillConversationSave(ctx *gin.Context, userId, orgId string, req request.S
 	}
 
 	// 保存至资源库自定义Skills
-	return CreateCustomSkill(ctx, userId, orgId, request.CreateCustomSkillReq{
-		Author:     skillConversationAuthor,
-		ZipUrl:     zipUrl,
-		SaveId:     req.SkillSaveId,
-		SourceType: "skill_conversation",
-	})
+	return CreateCustomSkill(ctx, userId, orgId, "", skillConversationAuthor, zipUrl, req.SkillSaveId, "skill_conversation")
 }
 
 // --- internal ---
@@ -354,7 +365,7 @@ func buildSkillChatDoneProcessor(ctx *gin.Context, userId, orgId string, req req
 			return err
 		}
 		// skillName, skillDesc
-		_, skillName, skillDesc, err := extractSkillMarkdownFromZip(zipBytes)
+		_, fm, err := util.ExtractSkillMarkdownFromZip(zipBytes)
 		if err != nil {
 			return err
 		}
@@ -370,8 +381,8 @@ func buildSkillChatDoneProcessor(ctx *gin.Context, userId, orgId string, req req
 			FileUrl:  buildAccessFilePath(filepath.Join(minio.BucketFileUpload, minio.DirFileExpire, fileName)),
 			MIMEType: "application/zip",
 			MetaData: map[string]interface{}{
-				"name":        skillName,
-				"desc":        skillDesc,
+				"name":        fm.Name,
+				"desc":        fm.Description,
 				"author":      skillConversationAuthor,
 				"avatar":      cacheSkillAvatar(ctx, ""),
 				"inResource":  false,
