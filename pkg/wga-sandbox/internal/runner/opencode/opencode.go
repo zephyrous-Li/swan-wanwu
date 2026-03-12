@@ -271,7 +271,7 @@ func (r *Runner) setupTool(ctx context.Context, tool wga_sandbox_option.Tool) er
 		skillPath := fmt.Sprintf("%s/SKILL.md", skillDir)
 		authContent := formatAuthContent(tool.APIAuth)
 		encoded := base64.StdEncoding.EncodeToString([]byte(authContent))
-		cmd := fmt.Sprintf("echo '%s' | base64 -d >> %s", encoded, skillPath)
+		cmd := fmt.Sprintf("echo '%s' | base64 -d >> \"%s\"", encoded, skillPath)
 		if _, err := r.sb.ExecuteSync(ctx, cmd); err != nil {
 			return fmt.Errorf("failed to update SKILL.md for tool %s: %w", tool.Name, err)
 		}

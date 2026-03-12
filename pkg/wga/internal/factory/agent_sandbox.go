@@ -87,7 +87,7 @@ func (a *sandboxAgent) buildSandboxOpts() []wga_sandbox_option.Option {
 	if a.cfg.Configure.Sandbox != nil {
 		cfg := a.cfg.Configure.Sandbox
 		switch cfg.Type {
-		case "oneshot":
+		case string(wga_sandbox_option.SandboxTypeOneshot):
 			opts = append(opts, wga_sandbox_option.WithSandbox(
 				wga_sandbox_option.SandboxOneshot(cfg.ImageName),
 			))

@@ -41,7 +41,7 @@ func newReuseSandbox(apiEndpoint, uuid string) Sandbox {
 
 func (s *reuseSandbox) Prepare(ctx context.Context) error {
 	s.workDir = filepath.Join(workspaceBase, s.uuid, "workspace")
-	_, err := s.client.exec(ctx, "mkdir -p "+s.workDir, "/")
+	_, err := s.client.exec(ctx, fmt.Sprintf("mkdir -p \"%s\"", s.workDir), "/")
 	if err != nil {
 		return fmt.Errorf("failed to create workspace: %w", err)
 	}
@@ -50,7 +50,7 @@ func (s *reuseSandbox) Prepare(ctx context.Context) error {
 
 func (s *reuseSandbox) Cleanup(ctx context.Context) error {
 	workspacePath := filepath.Join(workspaceBase, s.uuid)
-	_, err := s.client.exec(ctx, "rm -rf "+workspacePath, "/")
+	_, err := s.client.exec(ctx, fmt.Sprintf("rm -rf \"%s\"", workspacePath), "/")
 	if err != nil {
 		return fmt.Errorf("failed to cleanup workspace: %w", err)
 	}
@@ -154,11 +154,11 @@ func (s *reuseSandbox) copyDirToSandbox(ctx context.Context, localDir, sandboxPa
 	}
 	defer func() { _ = s.client.delete(ctx, tarPath) }()
 
-	if _, err := s.client.exec(ctx, "mkdir -p "+sandboxPath, "/"); err != nil {
+	if _, err := s.client.exec(ctx, fmt.Sprintf("mkdir -p \"%s\"", sandboxPath), "/"); err != nil {
 		return fmt.Errorf("failed to create remote directory: %w", err)
 	}
 
-	cmd := fmt.Sprintf("cd %s && tar -xf %s && rm %s", sandboxPath, tarPath, tarPath)
+	cmd := fmt.Sprintf("cd \"%s\" && tar -xf \"%s\" && rm \"%s\"", sandboxPath, tarPath, tarPath)
 	if _, err := s.client.exec(ctx, cmd, s.workDir); err != nil {
 		return fmt.Errorf("failed to extract tar: %w", err)
 	}
@@ -187,7 +187,7 @@ func (s *reuseSandbox) copyDirFromSandbox(ctx context.Context, localPath string)
 	tarName := filepath.Base(s.workDir) + ".tar"
 	tarPath := filepath.Join(filepath.Dir(s.workDir), tarName)
 
-	cmd := fmt.Sprintf("cd %s && tar -cf %s %s", filepath.Dir(s.workDir), tarName, filepath.Base(s.workDir))
+	cmd := fmt.Sprintf("cd \"%s\" && tar -cf \"%s\" \"%s\"", filepath.Dir(s.workDir), tarName, filepath.Base(s.workDir))
 	if _, err := s.client.exec(ctx, cmd, "/"); err != nil {
 		return fmt.Errorf("failed to create tar: %w", err)
 	}
@@ -222,7 +222,7 @@ type sandboxInfo struct {
 }
 
 func (s *reuseSandbox) getSandboxInfo(ctx context.Context, sandboxPath string) (*sandboxInfo, error) {
-	cmd := fmt.Sprintf("if [ -d %s ]; then echo DIR; elif [ -f %s ]; then echo FILE; else echo NOTFOUND; fi", sandboxPath, sandboxPath)
+	cmd := fmt.Sprintf("if [ -d \"%s\" ]; then echo DIR; elif [ -f \"%s\" ]; then echo FILE; else echo NOTFOUND; fi", sandboxPath, sandboxPath)
 	result, err := s.client.exec(ctx, cmd, "/")
 	if err != nil {
 		return nil, err
@@ -239,7 +239,7 @@ func (s *reuseSandbox) getSandboxInfo(ctx context.Context, sandboxPath string) (
 
 // hasOnlyHiddenFiles 检查沙箱目录是否为空或只包含隐藏文件/目录。
 func (s *reuseSandbox) hasOnlyHiddenFiles(ctx context.Context) (bool, error) {
-	cmd := fmt.Sprintf("ls -A %s | grep -v '^[.]' || true", s.workDir)
+	cmd := fmt.Sprintf("ls -A \"%s\" | grep -v '^[.]' || true", s.workDir)
 	result, err := s.client.exec(ctx, cmd, "/")
 	if err != nil {
 		return false, err

@@ -40,9 +40,10 @@ func WgaSandboxRun(ctx *gin.Context, req *request.WgaSandboxRunReq) error {
 
 	sandboxCfg := config.Cfg().WgaSandbox.Sandbox
 	var sandbox wga_sandbox_option.SandboxConfig
-	if sandboxCfg.Type == "oneshot" {
+	switch sandboxCfg.Type {
+	case string(wga_sandbox_option.SandboxTypeOneshot):
 		sandbox = wga_sandbox_option.SandboxOneshot(sandboxCfg.ImageName)
-	} else {
+	default:
 		sandbox = wga_sandbox_option.SandboxReuse(sandboxCfg.Host)
 	}
 
