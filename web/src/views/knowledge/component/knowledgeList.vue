@@ -47,7 +47,7 @@
               class="logo"
               :src="
                 avatarSrc(
-                  n.avatar.path,
+                  n.avatar?.path,
                   require('@/assets/imgs/knowledgeIcon.png'),
                 )
               "

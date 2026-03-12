@@ -52,7 +52,7 @@
               class="avatar"
               :src="
                 avatarSrc(
-                  item.avatar.path,
+                  item.avatar?.path,
                   require('@/assets/imgs/knowledgeIcon.png'),
                 )
               "
