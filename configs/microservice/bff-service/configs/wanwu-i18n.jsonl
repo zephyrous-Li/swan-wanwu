@@ -210,6 +210,7 @@
 {"code":250008,"key":"model_list_type_models_err","langs":{"zh":"模型类型列表异常:%v"}}
 {"code":250009,"key":"model_get_by_ids_err","langs":{"zh":"根据id列表获取模型列表信息异常:%v"}}
 {"code":250010,"key":"model_get_by_uuid_err","langs":{"zh":"根据uuid获取模型列表信息异常:%v"}}
+{"code":250012,"key":"model_get_by_uuids_err","langs":{"zh":"根据uuids获取模型列表信息异常:%v"}}
 {"code":140000,"key":"","langs":{"zh":"系统异常，请稍后重试"}}
 {"code":140001,"key":"know_doc_unsupported_file_format","langs":{"zh":"文件格式不支持"}}
 {"code":140001,"key":"know_doc_file_size_exceed","langs":{"zh":"文件大小超过限制"}}
@@ -512,7 +513,7 @@
 {"code":300013,"key":"api_key_list","langs":{"zh":"获取ApiKey列表错误:%v"}}
 {"code":300013,"key":"api_key_update_status","langs":{"zh":"更新ApiKey状态错误:%v"}}
 {"code":300013,"key":"api_key_get_by_key","langs":{"zh":"获取ApiKey信息错误:%v"}}
-{"code":0,"key":"app_statistic_model_calls","langs":{"zh":"模型调用次数统计表"}}
+{"code":0,"key":"app_statistic_api_calls","langs":{"zh":"模型调用次数统计表"}}
 {"code":0,"key":"app_statistic_call_count_total","langs":{"zh":"模型调用总数"}}
 {"code":0,"key":"app_statistic_call_success","langs":{"zh":"模型调用成功数"}}
 {"code":0,"key":"app_statistic_call_failure","langs":{"zh":"模型调用失败数"}}

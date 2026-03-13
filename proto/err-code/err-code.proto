@@ -192,6 +192,7 @@ enum Code {
   ModelListTypeModels = 250008; // 模型llm/rerank/embedding列表错误
   ModelGetModelByIds = 250009; // 根据模型ID列表查询错误
   ModelGetModelByUUID = 250010; // 根据模型UUID查询错误
+  ModelListModelsByUuids = 250012; // 根据模型UUID列表查询错误
 
   ModelExperienceDialog=250014; // 模型体验对话错误
   ModelExperienceDialogRecord=250011; // 模型体验对话记录错误

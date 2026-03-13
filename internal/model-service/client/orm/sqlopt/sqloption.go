@@ -52,6 +52,12 @@ func WithUUID(uuid string) SQLOption {
 	})
 }
 
+func WithUUIDs(uuids []string) SQLOption {
+	return funcSQLOption(func(db *gorm.DB) *gorm.DB {
+		return db.Where("uuid IN ?", uuids)
+	})
+}
+
 func WithOrgID(orgID string) SQLOption {
 	return funcSQLOption(func(db *gorm.DB) *gorm.DB {
 		if orgID != "" {

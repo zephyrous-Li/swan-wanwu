@@ -138,7 +138,15 @@ func (c *Client) GetModelByUUID(ctx context.Context, uuid string) (*model_client
 	return info, nil
 }
 
-func (c *Client) GetModelByIds(ctx context.Context, modelIds []uint32) ([]*model_client.ModelImported, *errs.Status) {
+func (c *Client) ListModelsByUuids(ctx context.Context, uuids []string) ([]*model_client.ModelImported, *errs.Status) {
+	var models []*model_client.ModelImported
+	if err := sqlopt.WithUUIDs(uuids).Apply(c.db).WithContext(ctx).Find(&models).Error; err != nil {
+		return nil, toErrStatus("model_get_by_uuids_err", err.Error())
+	}
+	return models, nil
+}
+
+func (c *Client) ListModelsByIds(ctx context.Context, modelIds []uint32) ([]*model_client.ModelImported, *errs.Status) {
 	var models []*model_client.ModelImported
 	if err := sqlopt.WithIDs(modelIds).Apply(c.db).WithContext(ctx).Find(&models).Error; err != nil {
 		return nil, toErrStatus("model_get_by_ids_err", err.Error())

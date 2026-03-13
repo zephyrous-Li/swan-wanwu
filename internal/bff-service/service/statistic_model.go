@@ -81,7 +81,7 @@ func GetModelStatisticList(ctx *gin.Context, userId, orgId, startDate, endDate s
 		return nil, err
 	}
 	// 调用模型服务获取模型信息
-	modelResp, err := model.GetModelByIds(ctx, &model_service.GetModelByIdsReq{
+	modelResp, err := model.ListModelsByIds(ctx, &model_service.ListModelsByIdsReq{
 		ModelIds: modelIdsRes,
 	})
 	if err != nil {

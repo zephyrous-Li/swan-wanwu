@@ -144,7 +144,7 @@ func ListTypeModels(ctx *gin.Context, userId, orgId string, req *request.ListTyp
 }
 
 func CheckModelUserPermission(ctx *gin.Context, userId, orgId string, modelIds []string) ([]string, error) {
-	resp, err := model.GetModelByIds(ctx.Request.Context(), &model_service.GetModelByIdsReq{ModelIds: modelIds})
+	resp, err := model.ListModelsByIds(ctx.Request.Context(), &model_service.ListModelsByIdsReq{ModelIds: modelIds})
 	if err != nil {
 		return nil, err
 	}
@@ -194,6 +194,18 @@ func GetModelIdByUuid(ctx *gin.Context, uuid string) (string, error) {
 		return "", err
 	}
 	return resp.ModelId, nil
+}
+
+func ListModelIdsByUuids(ctx *gin.Context, uuids []string) ([]string, error) {
+	resp, err := model.ListModelsByUuids(ctx.Request.Context(), &model_service.ListModelsByUuidsReq{Uuids: uuids})
+	if err != nil {
+		return nil, err
+	}
+	modelIds := make([]string, 0, len(resp.Models))
+	for _, model := range resp.Models {
+		modelIds = append(modelIds, model.ModelId)
+	}
+	return modelIds, nil
 }
 
 // --- internal ---

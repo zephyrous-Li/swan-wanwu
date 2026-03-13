@@ -85,12 +85,12 @@ func (s *Service) ChangeModelStatus(ctx context.Context, req *model_service.Mode
 	return nil, nil
 }
 
-func (s *Service) GetModelByIds(ctx context.Context, req *model_service.GetModelByIdsReq) (*model_service.ModelInfos, error) {
+func (s *Service) ListModelsByIds(ctx context.Context, req *model_service.ListModelsByIdsReq) (*model_service.ModelInfos, error) {
 	var modelIDs []uint32
 	for _, modelID := range req.ModelIds {
 		modelIDs = append(modelIDs, util.MustU32(modelID))
 	}
-	modelInfos, err := s.cli.GetModelByIds(ctx, modelIDs)
+	modelInfos, err := s.cli.ListModelsByIds(ctx, modelIDs)
 	if err != nil {
 		return nil, errStatus(errs.Code_ModelGetModelByIds, err)
 	}
@@ -117,6 +117,14 @@ func (s *Service) GetModelByUuid(ctx context.Context, req *model_service.GetMode
 		return nil, errStatus(errs.Code_ModelGetModelByUUID, err)
 	}
 	return toModelInfo(modelInfo), nil
+}
+
+func (s *Service) ListModelsByUuids(ctx context.Context, req *model_service.ListModelsByUuidsReq) (*model_service.ModelInfos, error) {
+	modelInfos, err := s.cli.ListModelsByUuids(ctx, req.Uuids)
+	if err != nil {
+		return nil, errStatus(errs.Code_ModelListModelsByUuids, err)
+	}
+	return toModelInfos(modelInfos), nil
 }
 
 func (s *Service) ListModels(ctx context.Context, req *model_service.ListModelsReq) (*model_service.ModelInfos, error) {
