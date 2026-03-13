@@ -47,15 +47,12 @@ func AuthModelByUuid(fields []string) func(ctx *gin.Context) {
 			ctx.Next()
 			return
 		}
-		var modelIds []string
-		for _, uuid := range uuids {
-			modelId, err := service.GetModelIdByUuid(ctx, uuid)
-			if err != nil {
-				gin_util.ResponseErrWithStatus(ctx, http.StatusBadRequest, err)
-				ctx.Abort()
-				return
-			}
-			modelIds = append(modelIds, modelId)
+
+		modelIds, err := service.ListModelIdsByUuids(ctx, uuids)
+		if err != nil {
+			gin_util.ResponseErrWithStatus(ctx, http.StatusBadRequest, err)
+			ctx.Abort()
+			return
 		}
 
 		if err := checkModelPermission(ctx, modelIds); err != nil {

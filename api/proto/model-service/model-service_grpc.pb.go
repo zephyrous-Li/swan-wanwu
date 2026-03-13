@@ -26,8 +26,9 @@ const (
 	ModelService_ChangeModelStatus_FullMethodName               = "/model_service.ModelService/ChangeModelStatus"
 	ModelService_GetModel_FullMethodName                        = "/model_service.ModelService/GetModel"
 	ModelService_GetModelByUuid_FullMethodName                  = "/model_service.ModelService/GetModelByUuid"
+	ModelService_ListModelsByUuids_FullMethodName               = "/model_service.ModelService/ListModelsByUuids"
 	ModelService_ListModels_FullMethodName                      = "/model_service.ModelService/ListModels"
-	ModelService_GetModelByIds_FullMethodName                   = "/model_service.ModelService/GetModelByIds"
+	ModelService_ListModelsByIds_FullMethodName                 = "/model_service.ModelService/ListModelsByIds"
 	ModelService_ListTypeModels_FullMethodName                  = "/model_service.ModelService/ListTypeModels"
 	ModelService_SaveModelExperienceDialog_FullMethodName       = "/model_service.ModelService/SaveModelExperienceDialog"
 	ModelService_GetModelExperienceDialog_FullMethodName        = "/model_service.ModelService/GetModelExperienceDialog"
@@ -53,10 +54,12 @@ type ModelServiceClient interface {
 	GetModel(ctx context.Context, in *GetModelReq, opts ...grpc.CallOption) (*ModelInfo, error)
 	// 根据uuid获取modelId
 	GetModelByUuid(ctx context.Context, in *GetModelByUuidReq, opts ...grpc.CallOption) (*ModelInfo, error)
+	// 根据uuids查询modelId列表
+	ListModelsByUuids(ctx context.Context, in *ListModelsByUuidsReq, opts ...grpc.CallOption) (*ModelInfos, error)
 	// 导入模型列表展示
 	ListModels(ctx context.Context, in *ListModelsReq, opts ...grpc.CallOption) (*ModelInfos, error)
 	// 根据模型ID列表查询
-	GetModelByIds(ctx context.Context, in *GetModelByIdsReq, opts ...grpc.CallOption) (*ModelInfos, error)
+	ListModelsByIds(ctx context.Context, in *ListModelsByIdsReq, opts ...grpc.CallOption) (*ModelInfos, error)
 	// llm/rerank/embedding模型列表展示
 	ListTypeModels(ctx context.Context, in *ListTypeModelsReq, opts ...grpc.CallOption) (*ModelInfos, error)
 	// 保存模型体验对话（创建/更新）
@@ -141,6 +144,16 @@ func (c *modelServiceClient) GetModelByUuid(ctx context.Context, in *GetModelByU
 	return out, nil
 }
 
+func (c *modelServiceClient) ListModelsByUuids(ctx context.Context, in *ListModelsByUuidsReq, opts ...grpc.CallOption) (*ModelInfos, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(ModelInfos)
+	err := c.cc.Invoke(ctx, ModelService_ListModelsByUuids_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 func (c *modelServiceClient) ListModels(ctx context.Context, in *ListModelsReq, opts ...grpc.CallOption) (*ModelInfos, error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
 	out := new(ModelInfos)
@@ -151,10 +164,10 @@ func (c *modelServiceClient) ListModels(ctx context.Context, in *ListModelsReq, 
 	return out, nil
 }
 
-func (c *modelServiceClient) GetModelByIds(ctx context.Context, in *GetModelByIdsReq, opts ...grpc.CallOption) (*ModelInfos, error) {
+func (c *modelServiceClient) ListModelsByIds(ctx context.Context, in *ListModelsByIdsReq, opts ...grpc.CallOption) (*ModelInfos, error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
 	out := new(ModelInfos)
-	err := c.cc.Invoke(ctx, ModelService_GetModelByIds_FullMethodName, in, out, cOpts...)
+	err := c.cc.Invoke(ctx, ModelService_ListModelsByIds_FullMethodName, in, out, cOpts...)
 	if err != nil {
 		return nil, err
 	}
@@ -247,10 +260,12 @@ type ModelServiceServer interface {
 	GetModel(context.Context, *GetModelReq) (*ModelInfo, error)
 	// 根据uuid获取modelId
 	GetModelByUuid(context.Context, *GetModelByUuidReq) (*ModelInfo, error)
+	// 根据uuids查询modelId列表
+	ListModelsByUuids(context.Context, *ListModelsByUuidsReq) (*ModelInfos, error)
 	// 导入模型列表展示
 	ListModels(context.Context, *ListModelsReq) (*ModelInfos, error)
 	// 根据模型ID列表查询
-	GetModelByIds(context.Context, *GetModelByIdsReq) (*ModelInfos, error)
+	ListModelsByIds(context.Context, *ListModelsByIdsReq) (*ModelInfos, error)
 	// llm/rerank/embedding模型列表展示
 	ListTypeModels(context.Context, *ListTypeModelsReq) (*ModelInfos, error)
 	// 保存模型体验对话（创建/更新）
@@ -293,11 +308,14 @@ func (UnimplementedModelServiceServer) GetModel(context.Context, *GetModelReq) (
 func (UnimplementedModelServiceServer) GetModelByUuid(context.Context, *GetModelByUuidReq) (*ModelInfo, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method GetModelByUuid not implemented")
 }
+func (UnimplementedModelServiceServer) ListModelsByUuids(context.Context, *ListModelsByUuidsReq) (*ModelInfos, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method ListModelsByUuids not implemented")
+}
 func (UnimplementedModelServiceServer) ListModels(context.Context, *ListModelsReq) (*ModelInfos, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method ListModels not implemented")
 }
-func (UnimplementedModelServiceServer) GetModelByIds(context.Context, *GetModelByIdsReq) (*ModelInfos, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method GetModelByIds not implemented")
+func (UnimplementedModelServiceServer) ListModelsByIds(context.Context, *ListModelsByIdsReq) (*ModelInfos, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method ListModelsByIds not implemented")
 }
 func (UnimplementedModelServiceServer) ListTypeModels(context.Context, *ListTypeModelsReq) (*ModelInfos, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method ListTypeModels not implemented")
@@ -449,6 +467,24 @@ func _ModelService_GetModelByUuid_Handler(srv interface{}, ctx context.Context, 
 	return interceptor(ctx, in, info, handler)
 }
 
+func _ModelService_ListModelsByUuids_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(ListModelsByUuidsReq)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(ModelServiceServer).ListModelsByUuids(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: ModelService_ListModelsByUuids_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(ModelServiceServer).ListModelsByUuids(ctx, req.(*ListModelsByUuidsReq))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 func _ModelService_ListModels_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(ListModelsReq)
 	if err := dec(in); err != nil {
@@ -467,20 +503,20 @@ func _ModelService_ListModels_Handler(srv interface{}, ctx context.Context, dec 
 	return interceptor(ctx, in, info, handler)
 }
 
-func _ModelService_GetModelByIds_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(GetModelByIdsReq)
+func _ModelService_ListModelsByIds_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(ListModelsByIdsReq)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
 	if interceptor == nil {
-		return srv.(ModelServiceServer).GetModelByIds(ctx, in)
+		return srv.(ModelServiceServer).ListModelsByIds(ctx, in)
 	}
 	info := &grpc.UnaryServerInfo{
 		Server:     srv,
-		FullMethod: ModelService_GetModelByIds_FullMethodName,
+		FullMethod: ModelService_ListModelsByIds_FullMethodName,
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(ModelServiceServer).GetModelByIds(ctx, req.(*GetModelByIdsReq))
+		return srv.(ModelServiceServer).ListModelsByIds(ctx, req.(*ListModelsByIdsReq))
 	}
 	return interceptor(ctx, in, info, handler)
 }
@@ -643,12 +679,16 @@ var ModelService_ServiceDesc = grpc.ServiceDesc{
 			Handler:    _ModelService_GetModelByUuid_Handler,
 		},
 		{
+			MethodName: "ListModelsByUuids",
+			Handler:    _ModelService_ListModelsByUuids_Handler,
+		},
+		{
 			MethodName: "ListModels",
 			Handler:    _ModelService_ListModels_Handler,
 		},
 		{
-			MethodName: "GetModelByIds",
-			Handler:    _ModelService_GetModelByIds_Handler,
+			MethodName: "ListModelsByIds",
+			Handler:    _ModelService_ListModelsByIds_Handler,
 		},
 		{
 			MethodName: "ListTypeModels",

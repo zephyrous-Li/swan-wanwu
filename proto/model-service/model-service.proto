@@ -22,10 +22,12 @@ service ModelService {
     rpc GetModel(GetModelReq) returns (ModelInfo) {}
     // 根据uuid获取modelId
     rpc GetModelByUuid(GetModelByUuidReq) returns (ModelInfo) {}
+    // 根据uuids查询modelId列表
+    rpc ListModelsByUuids(ListModelsByUuidsReq) returns (ModelInfos) {}
     // 导入模型列表展示
     rpc ListModels(ListModelsReq) returns (ModelInfos) {}
     // 根据模型ID列表查询
-    rpc GetModelByIds(GetModelByIdsReq) returns (ModelInfos) {}
+    rpc ListModelsByIds(ListModelsByIdsReq) returns (ModelInfos) {}
     // llm/rerank/embedding模型列表展示
     rpc ListTypeModels(ListTypeModelsReq) returns (ModelInfos) {}
 
@@ -87,6 +89,10 @@ message GetModelByUuidReq {
     string uuid = 1;
 }
 
+message ListModelsByUuidsReq {
+    repeated string uuids = 3;
+}
+
 message ListModelsReq{
     string modelType = 1;       // 模型类型
     string provider = 2;        // 模型供应商
@@ -105,7 +111,7 @@ message ModelStatusReq {
     string orgId = 4;
 }
 
-message GetModelByIdsReq{
+message ListModelsByIdsReq{
     string userId = 1;
     string orgId = 2;
     repeated string modelIds = 3;

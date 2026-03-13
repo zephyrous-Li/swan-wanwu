@@ -14,7 +14,8 @@ type IClient interface {
 	ChangeModelStatus(ctx context.Context, req *model.ModelImported) *errs.Status
 	GetModel(ctx context.Context, req *model.ModelImported) (*model.ModelImported, *errs.Status)
 	GetModelByUUID(ctx context.Context, uuid string) (*model.ModelImported, *errs.Status)
-	GetModelByIds(ctx context.Context, modelIds []uint32) ([]*model.ModelImported, *errs.Status)
+	ListModelsByUuids(ctx context.Context, uuids []string) ([]*model.ModelImported, *errs.Status)
+	ListModelsByIds(ctx context.Context, modelIds []uint32) ([]*model.ModelImported, *errs.Status)
 	ListModels(ctx context.Context, req *model.ModelImported) ([]*model.ModelImported, *errs.Status)
 	ListTypeModels(ctx context.Context, req *model.ModelImported) ([]*model.ModelImported, *errs.Status)
 
