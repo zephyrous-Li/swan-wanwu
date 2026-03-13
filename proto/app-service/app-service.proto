@@ -393,8 +393,8 @@ message RecordModelStatisticReq {
   int64 promptTokens = 7;
   int64 completionTokens = 8;
   int64 totalTokens = 9;
-  int32 firstTokenLatency = 10;
-  int32 costs = 11;
+  int64 firstTokenLatency = 10;
+  int64 costs = 11;
   bool isSuccess = 12;
   bool isStream = 13;
 }

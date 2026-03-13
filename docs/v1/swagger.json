@@ -24930,6 +24930,9 @@
                 },
                 "totalTokens": {
                     "type": "integer"
+                },
+                "uuid": {
+                    "type": "string"
                 }
             }
         },
