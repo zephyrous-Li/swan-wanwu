@@ -25,6 +25,7 @@
           style="margin-left: 15px; width: 600px"
           clearable
           multiple
+          filterable
         >
           <el-option
             v-for="item in modelList"
@@ -122,7 +123,7 @@
             {{ $t('statisticsDashboard.modelList') }}
           </span>
           <div style="margin-top: -20px">
-            <ModelList :params="formatParams({ ...params, ...modelParams })" />
+            <ModelList ref="modelList" />
           </div>
         </div>
       </div>
@@ -242,9 +243,10 @@ export default {
     async fetchModels() {
       const res = await fetchModelList({
         filterScope: '',
-        modelType: this.params.modelType,
+        modelType: this.modelParams.modelType,
       });
-      this.modelList = res.data ? res.data.list || [] : [];
+      const modelList = res.data ? res.data.list || [] : [];
+      this.modelList = modelList.filter(item => item.allowEdit);
     },
     handleSetTime(val) {
       this.loading = true;
@@ -271,6 +273,7 @@ export default {
         .finally(() => {
           this.loading = false;
         });
+      this.$refs.modelList.getTableData(params);
     },
   },
 };

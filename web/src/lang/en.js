@@ -1625,6 +1625,7 @@ export default {
     modelList: '模型列表',
     modelData: '模型统计数据',
     modelName: '模型名称',
+    provider: '供应商',
     org: '组织',
     callCount: '模型调用次数',
     frequency: '次',

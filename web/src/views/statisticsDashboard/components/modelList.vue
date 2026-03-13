@@ -20,12 +20,29 @@
             prop="model"
             :label="$t('statisticsDashboard.modelName')"
             align="left"
-          />
+          >
+            <template slot-scope="scope">
+              {{ scope.row.model || '--' }}
+            </template>
+          </el-table-column>
+          <el-table-column
+            prop="provider"
+            :label="$t('statisticsDashboard.provider')"
+            align="left"
+          >
+            <template slot-scope="scope">
+              {{ providerObj[scope.row.provider] || '--' }}
+            </template>
+          </el-table-column>
           <el-table-column
             prop="orgName"
             :label="$t('statisticsDashboard.org')"
             align="left"
-          />
+          >
+            <template slot-scope="scope">
+              {{ scope.row.orgName || '--' }}
+            </template>
+          </el-table-column>
           <el-table-column
             prop="callCount"
             :label="
@@ -125,39 +142,25 @@
 import Pagination from '@/components/pagination.vue';
 import { formatAmount, resDownloadFile } from '@/utils/util.js';
 import { fetchModelList, exportModelData } from '@/api/statisticsDashboard';
+import { PROVIDER_OBJ } from '@/views/modelAccess/constants';
 
 export default {
   components: { Pagination },
-  props: {
-    params: {},
-  },
   data() {
     return {
       listApi: fetchModelList,
       loading: false,
       tableData: [],
+      providerObj: PROVIDER_OBJ,
     };
-  },
-  watch: {
-    params: {
-      handler(val, oldVal) {
-        if (oldVal !== undefined && oldVal.startDate !== undefined) {
-          this.getTableData();
-        }
-      },
-      deep: true,
-      immediate: true,
-    },
   },
   methods: {
     formatAmount,
-    async getTableData() {
+    async getTableData(params) {
       if (this.$refs.pagination) {
         this.loading = true;
         try {
-          this.tableData = await this.$refs.pagination.getTableData(
-            this.params,
-          );
+          this.tableData = await this.$refs.pagination.getTableData(params);
         } finally {
           this.loading = false;
         }
