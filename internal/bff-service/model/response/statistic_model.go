@@ -21,6 +21,7 @@ type ModelStatisticTrend struct {
 }
 
 type ModelStatisticItem struct {
+	UUID                 string  `json:"uuid"`
 	ModelId              string  `json:"modelId"`
 	Model                string  `json:"model"`
 	Provider             string  `json:"provider"`

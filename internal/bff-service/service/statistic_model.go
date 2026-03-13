@@ -67,8 +67,11 @@ func GetModelStatisticList(ctx *gin.Context, userId, orgId, startDate, endDate s
 	items := make([]response.ModelStatisticItem, 0, len(resp.Items))
 	// 收集items中的orgId然后获取OrgIds对应的OrgNames
 	var orgIds []string
+	// 收集items中的modelId然后获取模型的displayName
+	var modelIdsRes []string
 	for _, item := range resp.Items {
 		orgIds = append(orgIds, item.OrgId)
+		modelIdsRes = append(modelIdsRes, item.ModelId)
 	}
 	// 调用IAM服务获取组织信息
 	orgResp, err := iam.GetOrgByOrgIDs(ctx, &iam_service.GetOrgByOrgIDsReq{
@@ -76,6 +79,20 @@ func GetModelStatisticList(ctx *gin.Context, userId, orgId, startDate, endDate s
 	})
 	if err != nil {
 		return nil, err
+	}
+	// 调用模型服务获取模型信息
+	modelResp, err := model.GetModelByIds(ctx, &model_service.GetModelByIdsReq{
+		ModelIds: modelIdsRes,
+	})
+	if err != nil {
+		return nil, err
+	}
+	// 创建modelId到modelInfo的映射
+	displayNameMap := make(map[string]string)
+	uuidMap := make(map[string]string)
+	for _, model := range modelResp.Models {
+		displayNameMap[model.ModelId] = model.DisplayName
+		uuidMap[model.ModelId] = model.Uuid
 	}
 	// 创建orgId到orgName的映射
 	orgNameMap := make(map[string]string)
@@ -89,8 +106,9 @@ func GetModelStatisticList(ctx *gin.Context, userId, orgId, startDate, endDate s
 		roundedAvgCosts := float32(math.Round(float64(item.AvgCosts)*100) / 100)
 		roundedAvgFirstTokenLatency := float32(math.Round(float64(item.AvgFirstTokenLatency)*100) / 100)
 		items = append(items, response.ModelStatisticItem{
+			UUID:                 uuidMap[item.Model], // 前端不需要展示uuid,excel导出需要
 			ModelId:              item.ModelId,
-			Model:                item.Model,
+			Model:                getModelDisplayName(displayNameMap, item.ModelId),
 			Provider:             item.Provider,
 			OrgName:              orgNameMap[item.OrgId],
 			CallCount:            item.CallCount,
@@ -116,6 +134,24 @@ func ExportModelStatisticList(ctx *gin.Context, userId, orgId, startDate, endDat
 	if err != nil {
 		return nil, err
 	}
+	// 调用模型服务获取模型信息
+	modelResp, err := model.GetModelByIds(ctx, &model_service.GetModelByIdsReq{
+		ModelIds: modelIds,
+	})
+	if err != nil {
+		return nil, err
+	}
+	// 创建modelId到modelInfo的映射
+	modelMap := make(map[string]string)
+	for _, model := range modelResp.Models {
+		modelMap[model.ModelId] = model.Uuid
+	}
+	//替换列表中的ModelId为Model的Uuid
+	for i, item := range resp.List.([]response.ModelStatisticItem) {
+		if uuid, ok := modelMap[item.ModelId]; ok {
+			resp.List.([]response.ModelStatisticItem)[i].ModelId = uuid
+		}
+	}
 	return writeModelListExcel(resp.List.([]response.ModelStatisticItem))
 }
 
@@ -132,8 +168,8 @@ func recordModelStatistic(_ *gin.Context, modelInfo *model_service.ModelInfo, is
 			PromptTokens:      int64(promptTokens),
 			CompletionTokens:  int64(completionTokens),
 			TotalTokens:       int64(totalTokens),
-			FirstTokenLatency: int32(firstTokenLatency),
-			Costs:             int32(costs),
+			FirstTokenLatency: int64(firstTokenLatency),
+			Costs:             int64(costs),
 			IsSuccess:         isSuccess,
 			IsStream:          isStream,
 		})
@@ -152,11 +188,11 @@ func convertModelStatisticOverviewItem(item *app_service.ModelStatisticOverviewI
 
 func writeModelListExcel(items []response.ModelStatisticItem) (*excelize.File, error) {
 	sheet := "模型统计列表"
-	title := []any{"模型ID", "模型", "模型供应商", "组织", "调用次数", "调用失败次数", "失败率", "Prompt Tokens", "Completion Tokens", "总Tokens", "平均耗时(非流式)", "平均首Token时延(流式)"}
+	title := []any{"UUID", "模型", "模型供应商", "组织", "调用次数", "调用失败次数", "失败率", "Prompt Tokens", "Completion Tokens", "总Tokens", "平均耗时(非流式)", "平均首Token时延(流式)"}
 	var rows [][]any
 	for _, item := range items {
 		rows = append(rows, []any{
-			item.ModelId,
+			item.UUID,
 			item.Model,
 			item.Provider,
 			item.OrgName,
@@ -202,4 +238,11 @@ func writeExcelRow(f *excelize.File, sheet string, row int, values []any) error 
 		}
 	}
 	return nil
+}
+
+func getModelDisplayName(displayNameMap map[string]string, modelId string) string {
+	if displayName, ok := displayNameMap[modelId]; ok && displayName != "" {
+		return displayName
+	}
+	return "该模型已被删除"
 }

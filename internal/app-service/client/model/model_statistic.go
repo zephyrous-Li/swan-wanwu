@@ -23,9 +23,9 @@ type ModelRecord struct {
 	// total tokens
 	TotalTokens int64 `gorm:"index:idx_model_record_total_tokens"`
 	// 首token时延 (流式ms)
-	FirstTokenLatency int32 `gorm:"index:idx_model_record_first_token_latency"`
+	FirstTokenLatency int64 `gorm:"index:idx_model_record_first_token_latency"`
 	// 耗时 (非流式ms)
-	Costs int32 `gorm:"index:idx_model_record_costs"`
+	Costs int64 `gorm:"index:idx_model_record_costs"`
 	// call count
 	CallCount int32 `gorm:"index:idx_model_record_call_count"`
 	// 流式调用次数

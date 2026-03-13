@@ -71,8 +71,8 @@ type ModelRecordStats struct {
 	NonStreamCount    int32  `json:"nonStreamCount"`    // 非流失调用次数
 	StreamFailure     int32  `json:"streamFailure"`     // 流式调用失败次数
 	NonStreamFailure  int32  `json:"nonStreamFailure"`  // 非流式调用失败次数
-	FirstTokenLatency int32  `json:"firstTokenLatency"` // 首token时延(总)
-	Costs             int32  `json:"costs"`             // 耗时(总)
+	FirstTokenLatency int64  `json:"firstTokenLatency"` // 首token时延(总)
+	Costs             int64  `json:"costs"`             // 耗时(总)
 }
 
 // GetModelStatistic 获取模型统计（概览+趋势）
@@ -125,7 +125,7 @@ func (c *Client) GetModelStatisticList(ctx context.Context, userId, orgId, start
 
 // RecordModelStatistic 记录模型统计数据
 func (c *Client) RecordModelStatistic(ctx context.Context, userId, orgId, modelId, model, modelType string,
-	promptTokens, completionTokens, totalTokens int64, firstTokenLatency, costs int32, isSuccess bool, isStream bool, provider string) *errs.Status {
+	promptTokens, completionTokens, totalTokens, firstTokenLatency, costs int64, isSuccess bool, isStream bool, provider string) *errs.Status {
 	err := recordModelStatistic(ctx, userId, orgId, modelId, model, modelType,
 		promptTokens, completionTokens, totalTokens, firstTokenLatency, costs, isSuccess, isStream, provider)
 	if err != nil {
@@ -167,7 +167,7 @@ func getRedisModelStatsItemValue(value string) (*ModelRecordStats, error) {
 }
 
 func recordModelStatistic(ctx context.Context, userId, orgId, modelId, model, modelType string,
-	promptTokens, completionTokens, totalTokens int64, firstTokenLatency, costs int32, isSuccess bool, isStream bool, provider string) error {
+	promptTokens, completionTokens, totalTokens, firstTokenLatency, costs int64, isSuccess bool, isStream bool, provider string) error {
 	today := util.Time2Date(time.Now().UnixMilli())
 	key := getRedisModelStatsKey(today)
 	field := getRedisModelStatsItemField(modelId, userId, orgId, provider)
@@ -323,16 +323,19 @@ func getModelStatisticList(ctx context.Context, db *gorm.DB, userId, orgId, star
 	var total int64
 	countQuery := sqlopt.SQLOptions(opts...).Apply(db).WithContext(ctx).
 		Model(&model.ModelRecord{}).
-		Select("COUNT(DISTINCT model_id, user_id,org_id)")
+		Select("COUNT(DISTINCT model_id)")
 	countQuery.Count(&total)
 	var stats []model.ModelRecord
 	query := sqlopt.SQLOptions(opts...).Apply(db).WithContext(ctx).
-		Select("model_id,model, user_id,org_id,provider, SUM(call_count) as call_count, SUM(call_failure) as call_failure, " +
+		Select("model_id, ANY_VALUE(model) as model, " +
+			"ANY_VALUE(org_id) as org_id, ANY_VALUE(provider) as provider, " +
+			"SUM(call_count) as call_count, SUM(call_failure) as call_failure, " +
 			"SUM(prompt_tokens) as prompt_tokens, SUM(completion_tokens) as completion_tokens, " +
 			"SUM(total_tokens) as total_tokens, SUM(costs) as costs, " +
 			"SUM(first_token_latency) as first_token_latency, " +
-			"SUM(stream_count) as stream_count, SUM(non_stream_count) as non_stream_count").
-		Group("model_id, model,user_id,org_id,provider").Offset(int(offset)).Limit(int(limit))
+			"SUM(stream_count) as stream_count, SUM(non_stream_count) as non_stream_count," +
+			"SUM(stream_failure) as stream_failure, SUM(non_stream_failure) as non_stream_failure").
+		Group("model_id").Order("call_count DESC").Offset(int(offset)).Limit(int(limit))
 
 	if err := query.Find(&stats).Error; err != nil {
 		return nil, 0, fmt.Errorf("get model stat list err: %v", err)

@@ -24891,6 +24891,9 @@ const docTemplate = `{
                 },
                 "totalTokens": {
                     "type": "integer"
+                },
+                "uuid": {
+                    "type": "string"
                 }
             }
         },
