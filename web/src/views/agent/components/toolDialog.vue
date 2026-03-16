@@ -41,7 +41,12 @@
               :key="item[type + 'Id'] || item.id"
               class="toolContent_item"
             >
-              <template v-if="type === 'workflow' || type === 'skill'">
+              <template
+                v-if="
+                  type === AGENT_TOOL_TYPE.WORKFLOW ||
+                  type === AGENT_TOOL_TYPE.SKILL
+                "
+              >
                 <div class="tool_box">
                   <div class="tool_img">
                     <img
@@ -51,7 +56,11 @@
                   </div>
                   <div>
                     <div>
-                      {{ type === 'skill' ? item.skillName : item.name }}
+                      {{
+                        type === AGENT_TOOL_TYPE.SKILL
+                          ? item.skillName
+                          : item.name
+                      }}
                     </div>
                     <span class="tag" v-if="tagMap[item.appType]">
                       {{ tagMap[item.appType] }}
@@ -84,13 +93,17 @@
                         v-if="item.avatar && item.avatar.path"
                       />
                     </div>
-                    <div :class="type === 'tool' && 'tool-name-container'">
+                    <div
+                      :class="
+                        type === AGENT_TOOL_TYPE.TOOL && 'tool-name-container'
+                      "
+                    >
                       <h3 class="tool-name">{{ item.toolName }}</h3>
                       <span
                         v-if="item.loading"
                         class="el-icon-loading loading-text"
                       ></span>
-                      <span v-if="type === 'tool'" class="tag">
+                      <span v-if="type === AGENT_TOOL_TYPE.TOOL" class="tag">
                         {{
                           item.toolType === 'builtin'
                             ? $t('agent.toolDialog.builtinTools')
@@ -163,6 +176,7 @@ export default {
   props: ['assistantId'],
   data() {
     return {
+      AGENT_TOOL_TYPE,
       toolName: '',
       dialogVisible: false,
       toolIndex: 0,
