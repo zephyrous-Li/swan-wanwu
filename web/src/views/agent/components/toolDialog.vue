@@ -5,6 +5,7 @@
       :visible.sync="dialogVisible"
       width="50%"
       :before-close="handleClose"
+      custom-class="tool-dialog"
     >
       <div class="tool-typ">
         <div class="toolbtn">
@@ -40,7 +41,7 @@
               :key="item[type + 'Id'] || item.id"
               class="toolContent_item"
             >
-              <template v-if="type === 'workflow'">
+              <template v-if="type === 'workflow' || type === 'skill'">
                 <div class="tool_box">
                   <div class="tool_img">
                     <img
@@ -49,7 +50,9 @@
                     />
                   </div>
                   <div>
-                    <div>{{ item.name }}</div>
+                    <div>
+                      {{ type === 'skill' ? item.skillName : item.name }}
+                    </div>
                     <span class="tag" v-if="tagMap[item.appType]">
                       {{ tagMap[item.appType] }}
                     </span>
@@ -146,6 +149,7 @@ import {
   addWorkFlowInfo,
   addMcp,
   addCustomBuiltIn,
+  addSkill,
   toolList,
   toolActionList,
   mcptoolList,
@@ -153,6 +157,7 @@ import {
   getWorkflowList,
 } from '@/api/agent';
 import { avatarSrc } from '@/utils/util';
+import { getSkillSelectList } from '@/api/templateSquare';
 export default {
   props: ['assistantId'],
   data() {
@@ -163,14 +168,17 @@ export default {
       activeValue: 'tool',
       workFlowInfos: [],
       mcpInfos: [],
+      skillInfos: [],
       customInfos: [],
       mcpList: [],
       workFlowList: [],
       customList: [],
+      skillList: [],
       builtInInfos: [],
       customCount: 0,
       mcpCount: 0,
       workflowCount: 0,
+      skillCount: 0,
       toolList: [
         {
           value: 'tool',
@@ -184,6 +192,10 @@ export default {
           value: 'workflow',
           name: this.$t('appSpace.workflow'),
         },
+        {
+          value: 'skill',
+          name: 'Skills',
+        },
       ],
     };
   },
@@ -194,6 +206,7 @@ export default {
         builtIn: this.builtInInfos,
         mcp: this.mcpInfos,
         workflow: this.workFlowInfos,
+        skill: this.skillInfos,
       };
     },
     tagMap() {
@@ -207,6 +220,7 @@ export default {
     this.getMcpSelect('');
     this.getWorkflowList('');
     this.getCustomList('');
+    this.getSkillList('');
   },
   methods: {
     avatarSrc,
@@ -215,8 +229,10 @@ export default {
         return this.customCount;
       } else if (type === 'mcp') {
         return this.mcpCount;
-      } else {
+      } else if (type === 'workflow') {
         return this.workflowCount;
+      } else {
+        return this.skillCount;
       }
     },
     handleToolChange(id) {
@@ -276,8 +292,10 @@ export default {
         this.$router.push({ path: '/tool?tool=custom' });
       } else if (this.activeValue === 'mcp') {
         this.$router.push({ path: '/mcpService?mcp=integrate' });
-      } else {
+      } else if (this.activeValue === 'workflow') {
         this.$router.push({ path: '/appSpace/workflow' });
+      } else {
+        this.$router.push({ path: '/skill?type=custom' });
       }
     },
     createText() {
@@ -285,14 +303,18 @@ export default {
         return this.$t('agent.toolDialog.createAutoTool');
       } else if (this.activeValue === 'mcp') {
         return this.$t('agent.toolDialog.importMcp');
-      } else {
+      } else if (this.activeValue === 'workflow') {
         return this.$t('agent.toolDialog.createWorkflow');
+      } else {
+        return this.$t('agent.toolDialog.addSkill');
       }
     },
     openTool(e, item, type, action) {
       if (!e) return;
       if (type === 'workflow') {
         this.addWorkFlow(item);
+      } else if (type === 'skill') {
+        this.addSkillItem(item);
       } else if (type === 'mcp') {
         this.addMcpItem(item, action);
       } else {
@@ -351,13 +373,31 @@ export default {
         this.$emit('updateDetail');
       }
     },
+    // 添加skill
+    addSkillItem(n) {
+      addSkill({
+        assistantId: this.assistantId,
+        skillId: n.skillId,
+        skillType: n.skillType,
+      }).then(res => {
+        if (res.code === 0) {
+          this.$set(n, 'checked', true);
+          this.skillCount++;
+          this.$forceUpdate();
+          this.$message.success(this.$t('agent.toolDialog.addSuccess'));
+          this.$emit('updateDetail');
+        }
+      });
+    },
     searchTool() {
       if (this.activeValue === 'tool') {
         this.getCustomList(this.toolName);
       } else if (this.activeValue === 'mcp') {
         this.getMcpSelect(this.toolName);
-      } else {
+      } else if (this.activeValue === 'workflow') {
         this.getWorkflowList(this.toolName);
+      } else {
+        this.getSkillList(this.toolName);
       }
     },
     getMcpSelect(name) {
@@ -402,15 +442,27 @@ export default {
         }
       });
     },
+    getSkillList(name) {
+      getSkillSelectList({ name }).then(res => {
+        if (res.code === 0) {
+          this.skillInfos = (res.data.list || []).map(m => ({
+            ...m,
+            checked: this.skillList.some(item => item.skillId === m.skillId),
+          }));
+        }
+      });
+    },
     showDialog(row) {
       this.dialogVisible = true;
       this.setWorkflow(row.workFlowInfos);
       this.mcpList = row.mcpInfos || [];
       this.workFlowList = row.workFlowInfos || [];
       this.customList = row.customInfos || [];
+      this.skillList = row.skillInfos || [];
       this.customCount = this.customList.length;
       this.mcpCount = this.mcpList.length;
       this.workflowCount = this.workFlowList.length;
+      this.skillCount = this.skillList.length;
     },
     setWorkflow(data) {
       this.workFlowInfos = this.workFlowInfos.map(m => ({
@@ -430,13 +482,20 @@ export default {
         this.getCustomList('');
       } else if (this.activeValue === 'mcp') {
         this.getMcpSelect('');
-      } else {
+      } else if (this.activeValue === 'workflow') {
         this.getWorkflowList('');
+      } else {
+        this.getSkillList('');
       }
     },
   },
 };
 </script>
+<style lang="scss">
+.tool-dialog {
+  min-width: 700px;
+}
+</style>
 <style lang="scss" scoped>
 ::v-deep {
   .el-dialog__body {

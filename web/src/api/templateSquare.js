@@ -224,3 +224,12 @@ export const clearSkillConversation = data => {
     data,
   });
 };
+
+// 获取skill选择列表（包含内置|自定义）
+export const getSkillSelectList = data => {
+  return request({
+    url: `${USER_API}/agent/skill/select`,
+    method: 'get',
+    params: data,
+  });
+};

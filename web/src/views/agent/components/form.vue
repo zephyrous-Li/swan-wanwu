@@ -676,6 +676,8 @@ import {
   delCustomBuiltIn,
   switchCustomBuiltIn,
   getAgentPublishedInfo,
+  enableSkill,
+  deleteSkill,
 } from '@/api/agent';
 import ToolDialog from './toolDialog';
 import ToolDetail from './toolDetail';
@@ -946,6 +948,7 @@ export default {
       workFlowInfos: [],
       actionInfos: [],
       mcpInfos: [],
+      skillInfos: [],
       allTools: [], //所有的工具
       workflowList: [],
       modelParams: {},
@@ -976,6 +979,10 @@ export default {
         action: {
           displayName: this.$t('menu.app.custom'),
           propName: 'actionName',
+        },
+        skill: {
+          displayName: this.$t('tempSquare.skills.name'),
+          propName: 'skillName',
         },
         // 可以继续添加其他类型
         default: {
@@ -1157,6 +1164,8 @@ export default {
         this.workflowSwitch(n.workFlowId, enable);
       } else if (type === 'mcp') {
         this.mcpSwitch(n, enable);
+      } else if (type === 'skill') {
+        this.skillSwitch(n, enable);
       } else {
         this.customSwitch(n, enable);
       }
@@ -1191,6 +1200,7 @@ export default {
         })
         .catch(() => {});
     },
+
     workflowSwitch(id, enable) {
       enableWorkFlow({
         assistantId: this.editForm.assistantId,
@@ -1204,11 +1214,26 @@ export default {
         })
         .catch(() => {});
     },
+    skillSwitch(n, enable) {
+      enableSkill({
+        assistantId: this.editForm.assistantId,
+        enable,
+        skillId: n.skillId,
+        skillType: n.skillType,
+      })
+        .then(res => {
+          if (res.code === 0) {
+            this.getAppDetail();
+          }
+        })
+        .catch(() => {});
+    },
     addTool() {
       const data = {
         mcpInfos: this.mcpInfos,
         workFlowInfos: this.workFlowInfos,
         customInfos: this.actionInfos,
+        skillInfos: this.skillInfos,
       };
       this.$refs.toolDialog.showDialog(data);
     },
@@ -1299,6 +1324,8 @@ export default {
         this.doDeleteWorkflow(n.workFlowId);
       } else if (type === 'mcp') {
         this.mcpRemove(n);
+      } else if (type === 'skill') {
+        this.skillRemove(n);
       } else {
         this.customRemove(n);
       }
@@ -1324,6 +1351,20 @@ export default {
         actionName: n.actionName,
         mcpId: n.mcpId,
         mcpType: n.mcpType,
+      })
+        .then(res => {
+          if (res.code === 0) {
+            this.$message.success(this.$t('agent.form.deleteSuccess'));
+            this.getAppDetail();
+          }
+        })
+        .catch(err => {});
+    },
+    skillRemove(n) {
+      deleteSkill({
+        assistantId: this.editForm.assistantId,
+        skillId: n.skillId,
+        skillType: n.skillType,
       })
         .then(res => {
           if (res.code === 0) {
@@ -1513,6 +1554,7 @@ export default {
         //回显自定义插件
         this.workFlowInfos = data.workFlowInfos || [];
         this.mcpInfos = data.mcpInfos || [];
+        this.skillInfos = data.skillInfos || [];
         this.actionInfos = data.toolInfos || [];
         this.allTools = [
           ...this.workFlowInfos.map(item => ({
@@ -1526,6 +1568,10 @@ export default {
           ...this.actionInfos.map(item => ({
             ...item,
             type: 'action',
+          })),
+          ...this.skillInfos.map(item => ({
+            ...item,
+            type: 'skill',
           })),
         ];
 
