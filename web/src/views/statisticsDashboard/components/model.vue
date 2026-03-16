@@ -123,7 +123,10 @@
             {{ $t('statisticsDashboard.modelList') }}
           </span>
           <div style="margin-top: -20px">
-            <ModelList ref="modelList" />
+            <ModelList
+              :params="formatParams({ ...params, ...modelParams })"
+              ref="modelList"
+            />
           </div>
         </div>
       </div>

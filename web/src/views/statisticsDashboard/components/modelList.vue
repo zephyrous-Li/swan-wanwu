@@ -146,6 +146,9 @@ import { PROVIDER_OBJ } from '@/views/modelAccess/constants';
 
 export default {
   components: { Pagination },
+  props: {
+    params: {},
+  },
   data() {
     return {
       listApi: fetchModelList,
