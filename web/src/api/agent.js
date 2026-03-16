@@ -212,6 +212,33 @@ export const enableMcp = data => {
   });
 };
 
+// 添加skill
+export const addSkill = data => {
+  return service({
+    url: `${USER_API}/assistant/skill`,
+    method: 'post',
+    data,
+  });
+};
+
+//启停skill
+export const enableSkill = data => {
+  return service({
+    url: `${USER_API}/assistant/skill/switch`,
+    method: 'put',
+    data,
+  });
+};
+
+// 删除skill
+export const deleteSkill = data => {
+  return service({
+    url: `${USER_API}/assistant/skill`,
+    method: 'delete',
+    data,
+  });
+};
+
 // 删除自定义、内置工具
 export const delCustomBuiltIn = data => {
   return service({

@@ -669,6 +669,7 @@ export default {
     promptCompareLimit: '最多可添加4个提示词',
     comparePrompt: '对比提示词',
     skills: {
+      name: 'skill',
       app: {
         builtIn: '内置',
         custom: '自定义',
@@ -1508,6 +1509,7 @@ export default {
       addSuccess: '工具添加成功',
       builtinTools: '内置工具',
       customTools: '自定义工具',
+      addSkill: '创建Skill',
     },
     agentDetail: {
       workFlowInstruction: '工作流配置说明',
