@@ -158,6 +158,7 @@ import {
 } from '@/api/agent';
 import { avatarSrc } from '@/utils/util';
 import { getSkillSelectList } from '@/api/templateSquare';
+import { AGENT_TOOL_TYPE } from '@/views/agent/constants';
 export default {
   props: ['assistantId'],
   data() {
@@ -165,7 +166,7 @@ export default {
       toolName: '',
       dialogVisible: false,
       toolIndex: 0,
-      activeValue: 'tool',
+      activeValue: AGENT_TOOL_TYPE.TOOL,
       workFlowInfos: [],
       mcpInfos: [],
       skillInfos: [],
@@ -181,19 +182,19 @@ export default {
       skillCount: 0,
       toolList: [
         {
-          value: 'tool',
+          value: AGENT_TOOL_TYPE.TOOL,
           name: this.$t('agent.toolDialog.tool'),
         },
         {
-          value: 'mcp',
+          value: AGENT_TOOL_TYPE.MCP,
           name: 'MCP',
         },
         {
-          value: 'workflow',
+          value: AGENT_TOOL_TYPE.WORKFLOW,
           name: this.$t('appSpace.workflow'),
         },
         // {
-        //   value: 'skill',
+        //   value: AGENT_TOOL_TYPE.SKILL,
         //   name: 'Skills',
         // },
       ],
@@ -202,16 +203,16 @@ export default {
   computed: {
     contentMap() {
       return {
-        tool: this.customInfos,
+        [AGENT_TOOL_TYPE.TOOL]: this.customInfos,
         builtIn: this.builtInInfos,
-        mcp: this.mcpInfos,
-        workflow: this.workFlowInfos,
-        skill: this.skillInfos,
+        [AGENT_TOOL_TYPE.MCP]: this.mcpInfos,
+        [AGENT_TOOL_TYPE.WORKFLOW]: this.workFlowInfos,
+        [AGENT_TOOL_TYPE.SKILL]: this.skillInfos,
       };
     },
     tagMap() {
       return {
-        workflow: this.$t('appSpace.workflow'),
+        [AGENT_TOOL_TYPE.WORKFLOW]: this.$t('appSpace.workflow'),
         chatflow: this.$t('appSpace.chat'),
       };
     },
@@ -225,11 +226,11 @@ export default {
   methods: {
     avatarSrc,
     showToolNum(type) {
-      if (type === 'tool') {
+      if (type === AGENT_TOOL_TYPE.TOOL) {
         return this.customCount;
-      } else if (type === 'mcp') {
+      } else if (type === AGENT_TOOL_TYPE.MCP) {
         return this.mcpCount;
-      } else if (type === 'workflow') {
+      } else if (type === AGENT_TOOL_TYPE.WORKFLOW) {
         return this.workflowCount;
       } else {
         return this.skillCount;
@@ -237,7 +238,7 @@ export default {
     },
     handleToolChange(id) {
       let toolId = id[0];
-      if (this.activeValue === 'tool') {
+      if (this.activeValue === AGENT_TOOL_TYPE.TOOL) {
         const targetItem = this.customInfos.find(
           item => item.toolId === toolId,
         );
@@ -248,7 +249,7 @@ export default {
           );
           this.getToolAction(toolId, toolType, index);
         }
-      } else if (this.activeValue === 'mcp') {
+      } else if (this.activeValue === AGENT_TOOL_TYPE.MCP) {
         const targetItem = this.mcpInfos.find(item => item.toolId === toolId);
         if (targetItem) {
           const { toolId, toolType } = targetItem;
@@ -288,22 +289,22 @@ export default {
         });
     },
     goCreate() {
-      if (this.activeValue === 'tool') {
+      if (this.activeValue === AGENT_TOOL_TYPE.TOOL) {
         this.$router.push({ path: '/tool?tool=custom' });
-      } else if (this.activeValue === 'mcp') {
+      } else if (this.activeValue === AGENT_TOOL_TYPE.MCP) {
         this.$router.push({ path: '/mcpService?mcp=integrate' });
-      } else if (this.activeValue === 'workflow') {
+      } else if (this.activeValue === AGENT_TOOL_TYPE.WORKFLOW) {
         this.$router.push({ path: '/appSpace/workflow' });
       } else {
         this.$router.push({ path: '/skill?type=custom' });
       }
     },
     createText() {
-      if (this.activeValue === 'tool') {
+      if (this.activeValue === AGENT_TOOL_TYPE.TOOL) {
         return this.$t('agent.toolDialog.createAutoTool');
-      } else if (this.activeValue === 'mcp') {
+      } else if (this.activeValue === AGENT_TOOL_TYPE.MCP) {
         return this.$t('agent.toolDialog.importMcp');
-      } else if (this.activeValue === 'workflow') {
+      } else if (this.activeValue === AGENT_TOOL_TYPE.WORKFLOW) {
         return this.$t('agent.toolDialog.createWorkflow');
       } else {
         return this.$t('agent.toolDialog.addSkill');
@@ -311,11 +312,11 @@ export default {
     },
     openTool(e, item, type, action) {
       if (!e) return;
-      if (type === 'workflow') {
+      if (type === AGENT_TOOL_TYPE.WORKFLOW) {
         this.addWorkFlow(item);
-      } else if (type === 'skill') {
+      } else if (type === AGENT_TOOL_TYPE.SKILL) {
         this.addSkillItem(item);
-      } else if (type === 'mcp') {
+      } else if (type === AGENT_TOOL_TYPE.MCP) {
         this.addMcpItem(item, action);
       } else {
         if (item.needApiKeyInput && !item.apiKey.length) {
@@ -390,11 +391,11 @@ export default {
       });
     },
     searchTool() {
-      if (this.activeValue === 'tool') {
+      if (this.activeValue === AGENT_TOOL_TYPE.TOOL) {
         this.getCustomList(this.toolName);
-      } else if (this.activeValue === 'mcp') {
+      } else if (this.activeValue === AGENT_TOOL_TYPE.MCP) {
         this.getMcpSelect(this.toolName);
-      } else if (this.activeValue === 'workflow') {
+      } else if (this.activeValue === AGENT_TOOL_TYPE.WORKFLOW) {
         this.getWorkflowList(this.toolName);
       } else {
         this.getSkillList(this.toolName);
@@ -472,17 +473,17 @@ export default {
     },
     handleClose() {
       this.toolIndex = -1;
-      this.activeValue = 'tool';
+      this.activeValue = AGENT_TOOL_TYPE.TOOL;
       this.dialogVisible = false;
     },
     clickTool(item, i) {
       this.toolIndex = i;
       this.activeValue = item.value;
-      if (this.activeValue === 'tool') {
+      if (this.activeValue === AGENT_TOOL_TYPE.TOOL) {
         this.getCustomList('');
-      } else if (this.activeValue === 'mcp') {
+      } else if (this.activeValue === AGENT_TOOL_TYPE.MCP) {
         this.getMcpSelect('');
-      } else if (this.activeValue === 'workflow') {
+      } else if (this.activeValue === AGENT_TOOL_TYPE.WORKFLOW) {
         this.getWorkflowList('');
       } else {
         this.getSkillList('');

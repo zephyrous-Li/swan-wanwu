@@ -14,3 +14,9 @@ export const AGENT_CONFIG_RECOMMEND_CONFIG_MODEL_CONFIG_DEFAULT_CONFIG = {
   maxTokens: 512,
   maxTokensEnable: true,
 };
+export const AGENT_TOOL_TYPE = {
+  TOOL: 'tool',
+  MCP: 'mcp',
+  WORKFLOW: 'workflow',
+  SKILL: 'skill',
+};

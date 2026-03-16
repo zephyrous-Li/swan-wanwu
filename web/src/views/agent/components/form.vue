@@ -696,6 +696,7 @@ import commonMixin from '@/mixins/common';
 
 import { avatarSrc } from '@/utils/util';
 import modelSelect from '@/components/modelSelect.vue';
+import { AGENT_TOOL_TYPE } from '@/views/agent/constants';
 export default {
   mixins: [commonMixin],
   components: {
@@ -1160,11 +1161,11 @@ export default {
       });
     },
     toolSwitch(n, type, enable) {
-      if (type === 'workflow') {
+      if (type === AGENT_TOOL_TYPE.WORKFLOW) {
         this.workflowSwitch(n.workFlowId, enable);
-      } else if (type === 'mcp') {
+      } else if (type === AGENT_TOOL_TYPE.MCP) {
         this.mcpSwitch(n, enable);
-      } else if (type === 'skill') {
+      } else if (type === AGENT_TOOL_TYPE.SKILL) {
         this.skillSwitch(n, enable);
       } else {
         this.customSwitch(n, enable);
@@ -1320,11 +1321,11 @@ export default {
       this.wfDialogVisible = true;
     },
     toolRemove(n, type) {
-      if (type === 'workflow') {
+      if (type === AGENT_TOOL_TYPE.WORKFLOW) {
         this.doDeleteWorkflow(n.workFlowId);
-      } else if (type === 'mcp') {
+      } else if (type === AGENT_TOOL_TYPE.MCP) {
         this.mcpRemove(n);
-      } else if (type === 'skill') {
+      } else if (type === AGENT_TOOL_TYPE.SKILL) {
         this.skillRemove(n);
       } else {
         this.customRemove(n);
@@ -1559,11 +1560,11 @@ export default {
         this.allTools = [
           ...this.workFlowInfos.map(item => ({
             ...item,
-            type: 'workflow',
+            type: AGENT_TOOL_TYPE.WORKFLOW,
           })),
           ...this.mcpInfos.map(item => ({
             ...item,
-            type: 'mcp',
+            type: AGENT_TOOL_TYPE.MCP,
           })),
           ...this.actionInfos.map(item => ({
             ...item,
@@ -1571,7 +1572,7 @@ export default {
           })),
           ...this.skillInfos.map(item => ({
             ...item,
-            type: 'skill',
+            type: AGENT_TOOL_TYPE.SKILL,
           })),
         ];
 
