@@ -192,10 +192,10 @@ export default {
           value: 'workflow',
           name: this.$t('appSpace.workflow'),
         },
-        {
-          value: 'skill',
-          name: 'Skills',
-        },
+        // {
+        //   value: 'skill',
+        //   name: 'Skills',
+        // },
       ],
     };
   },
