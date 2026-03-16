@@ -126,7 +126,7 @@
           </div>
         </div>
 
-        <!-- 回答故障  code:7-->
+        <!-- 回答故障  error为true的情况-->
         <div class="session-error" v-if="n.error">
           <i class="el-icon-warning"></i>
           &nbsp;{{ n.response }}

@@ -410,6 +410,7 @@ export default {
                 sessionCom.replaceLastData(lastIndex, {
                   ...commonData,
                   response: data.message,
+                  error: true,
                 });
               }
             }
@@ -758,9 +759,11 @@ export default {
                 ...commonData,
                 response: data.message,
                 subConversions: subConversionsList,
+                error: true,
               };
               sessionCom.replaceLastData(lastIndex, fillData);
               this._currentMainFinish = undefined;
+              this._print && this._print.stop();
             }
           }
         },
@@ -871,6 +874,7 @@ export default {
                 let fillData = {
                   ...commonData,
                   response: data.message,
+                  error: true,
                 };
                 this.$refs['session-com'].replaceLastData(lastIndex, fillData);
               } else {
@@ -1498,6 +1502,7 @@ export default {
                 response: data.message,
                 subConversions: subConversionsList,
                 responseFiles: JSON.parse(JSON.stringify(this.responseFiles)),
+                error: true,
               };
               sessionCom.replaceLastData(lastIndex, fillData);
               this._currentMainFinish = undefined;
