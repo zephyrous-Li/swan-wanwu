@@ -17,7 +17,9 @@ def is_url(value: str) -> bool:
 
 
 def get_mime_type(url: str) -> str:
-    url_lower = url.lower()
+    # 解析 URL，单独提取出 path（路径）部分，并转为小写
+    # 例如：/audio.mp3?token=123 -> /audio.mp3
+    url_lower = urlparse(url).path.lower()
     if url_lower.endswith(".mp3") or url_lower.endswith(".mpeg"):
         return "audio/mpeg"
     elif url_lower.endswith(".wav"):
@@ -95,13 +97,13 @@ def url_to_base64_with_mime(url: str) -> str:
         return url
 
 
-def process_audio(audio: str) -> str:
-    if is_url(audio):
-        return url_to_base64(audio)
-    return audio
+def process_url_to_base64(url: str) -> str:
+    if is_url(url):
+        return url_to_base64(url)
+    return url
 
 
-def process_audio_mime(audio: str) -> str:
+def process_audio_to_base64_with_mime(audio: str) -> str:
     if is_url(audio):
         return url_to_base64_with_mime(audio)
     return audio

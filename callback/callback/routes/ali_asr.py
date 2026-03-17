@@ -1,10 +1,10 @@
 import http
 
-from flask import jsonify, request
+from flask import g, jsonify, request
 
 from callback.services.ali_asr import AliASR
-from callback.utils.url_util import process_audio_mime
-from utils.log import logger
+from callback.utils.decorators import require_bearer_auth
+from callback.utils.url_util import process_audio_to_base64_with_mime
 from utils.response import BizError
 
 from . import callback_bp
@@ -13,6 +13,7 @@ asr = AliASR()
 
 
 @callback_bp.route("/ali-asr/qwen3-asr-flash", methods=["POST"])
+@require_bearer_auth
 def ali_asr_recognize():
     """
     【工具】阿里云 ASR 语音识别
@@ -58,22 +59,10 @@ def ali_asr_recognize():
     if not audio:
         raise BizError("Missing audio", code=http.HTTPStatus.BAD_REQUEST)
 
-    audio_processed = process_audio_mime(audio)
-
-    auth_header = request.headers.get("Authorization")
-    api_key = None
-
-    if auth_header and auth_header.startswith("Bearer "):
-        api_key = auth_header.split(" ")[1]
-
-    if not api_key:
-        raise BizError(
-            "Authorization header required with Bearer token",
-            code=http.HTTPStatus.UNAUTHORIZED,
-        )
+    audio_processed = process_audio_to_base64_with_mime(audio)
 
     result = asr.recognize(
-        audio=audio_processed, api_key=api_key, model="qwen3-asr-flash"
+        audio=audio_processed, api_key=g.api_key, model="qwen3-asr-flash"
     )
 
     return jsonify(result)

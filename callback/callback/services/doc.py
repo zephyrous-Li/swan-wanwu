@@ -22,7 +22,7 @@ from utils.log import logger
 from utils.response import BizError
 
 
-def process_documents(query, file_urls, sentence_size, overlap_size):
+def process_documents(query, file_urls):
     """
     解析文档并生成 Prompt
     """
@@ -34,10 +34,7 @@ def process_documents(query, file_urls, sentence_size, overlap_size):
     all_docs = []
 
     with concurrent.futures.ThreadPoolExecutor(max_workers=5) as executor:
-        future_to_url = {
-            executor.submit(parse_doc, url, sentence_size, overlap_size): url
-            for url in file_urls
-        }
+        future_to_url = {executor.submit(parse_doc, url): url for url in file_urls}
 
         for future in concurrent.futures.as_completed(future_to_url):
             url = future_to_url[future]
@@ -127,7 +124,7 @@ def generate_file_to_minio(formatted_markdown, filename, to_format="txt"):
         return full_filename, object_path, download_link
 
 
-def parse_doc(file_url, sentence_size, overlap_size):
+def parse_doc(file_url):
     """
     解析单个文档
 
@@ -142,6 +139,8 @@ def parse_doc(file_url, sentence_size, overlap_size):
     """
 
     url = config.callback_cfg["URL"]["RAG_DOC_PARSER"]
+    sentence_size = int(config.callback_cfg["DOC"]["CHUNK_SIZE"])
+    overlap_size = float(config.callback_cfg["DOC"]["OVERLAP_RATIO"])
     payload = json.dumps(
         {
             "url": file_url,
@@ -157,7 +156,7 @@ def parse_doc(file_url, sentence_size, overlap_size):
                 "\u3001",  # 顿号
                 "\uff0e",  # 全角句号
                 "\u3002",  # 句号
-                "."
+                ".",
             ],
         }
     )
@@ -165,3 +164,35 @@ def parse_doc(file_url, sentence_size, overlap_size):
     response = requests.post(url, headers=headers, data=payload, verify=False)
     docs = response.json().get("docs", [])
     return docs
+
+
+def parse_doc_only(file_url):
+    """
+    解析单个文档，不进行切分
+
+    参数:
+    file_url (str): 文件URL
+
+    返回:
+    str: 解析后的完整文档内容
+    """
+    url = config.callback_cfg["URL"]["RAG_DOC_PARSER"]
+    sentence_size = int(config.callback_cfg["DOC"]["CHUNK_SIZE"])
+    overlap_size = float(config.callback_cfg["DOC"]["OVERLAP_RATIO"])
+    payload = json.dumps(
+        {
+            "url": file_url,
+            "sentence_size": sentence_size,
+            "overlap_size": overlap_size,
+            "separators": [],
+        }
+    )
+    headers = {"Content-Type": "application/json;charset=utf-8"}
+    response = requests.post(url, headers=headers, data=payload, verify=False)
+    docs = response.json().get("docs", [])
+
+    if not docs:
+        raise BizError("No document content parsed.")
+
+    full_text = "\n".join([doc.get("text", "") for doc in docs])
+    return full_text

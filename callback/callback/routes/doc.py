@@ -54,12 +54,63 @@ def req_chat_doc():
 
     query = data.get("query")
     file_url = data.get("upload_file_url")
-    sentence_size = int(config.callback_cfg["DOC"]["CHUNK_SIZE"])
-    overlap_size = float(config.callback_cfg["DOC"]["OVERLAP_RATIO"])
 
-    prompt = doc_service.process_documents(query, file_url, sentence_size, overlap_size)
+    prompt = doc_service.process_documents(query, file_url)
 
     return jsonify({"prompt": prompt})
+
+
+@callback_bp.route("/doc_parse", methods=["POST"])
+def req_parse_doc():
+    """
+    解析文档返回内容
+    ---
+    description: |
+      接收文档 URL，对文档进行解析并返回完整文档内容，不进行切分。
+    tags:
+      - doc
+    requestBody:
+      description: 请求参数
+      required: true
+      content:
+        application/json:
+          schema:
+            type: object
+            required:
+              - upload_file_url
+            properties:
+              upload_file_url:
+                type: string
+                description: 已上传文档的下载 URL
+                example: "https://example.com/upload/file.pdf"
+    responses:
+      200:
+        description: 解析成功
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                code:
+                  type: integer
+                  description: 状态码
+                msg:
+                  type: string
+                  description: 响应提示信息，例如 "解析成功"
+                data:
+                  type: string
+                  description: 解析后的完整文档内容
+    """
+    data = request.get_json()
+
+    file_url = data.get("upload_file_url")
+
+    if not file_url:
+        raise BizError("upload_file_url is required")
+
+    content = doc_service.parse_doc_only(file_url)
+
+    return response_ok(content)
 
 
 @callback_bp.route("/generate_file", methods=["POST"])

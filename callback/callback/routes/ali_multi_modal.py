@@ -1,10 +1,9 @@
 import http
-from email import generator
 
-from flask import jsonify, request
+from flask import g, jsonify, request
 
 from callback.services import ali_multi_modal as ali_service
-from configs.config import config
+from callback.utils.decorators import require_bearer_auth
 from utils.response import BizError
 
 from . import callback_bp
@@ -13,6 +12,7 @@ generator = ali_service.AliGenAI()
 
 
 @callback_bp.route("/wan-t2i/wan2.6-t2i", methods=["POST"])
+@require_bearer_auth
 def wan26_t2i():
     """
     通义万相文生图:wan2.6-t2i
@@ -63,9 +63,6 @@ def wan26_t2i():
               type: object
               description: 返回生成结果
     """
-    auth_header = request.headers.get("Authorization")
-    api_key = get_api_key(auth_header)
-
     data = request.get_json()
     prompt = data.get("prompt")
     if not prompt:
@@ -74,8 +71,8 @@ def wan26_t2i():
     size = data.get("size", "1280*1280")
     n = data.get("n", 1)
 
-    res = generator.image_generate(
-        api_key=api_key,
+    res = generator.text_to_image_generate(
+        api_key=g.api_key,
         prompt=prompt,
         model="wan2.6-t2i",
         negative_prompt=negative_prompt,
@@ -86,6 +83,7 @@ def wan26_t2i():
 
 
 @callback_bp.route("/qwen-t2i/qwen-image-max", methods=["POST"])
+@require_bearer_auth
 def qwen_image_max():
     """
     通义千问文生图:qwen-image-max
@@ -136,9 +134,6 @@ def qwen_image_max():
               type: object
               description: 返回生成结果
     """
-    auth_header = request.headers.get("Authorization")
-    api_key = get_api_key(auth_header)
-
     data = request.get_json()
     prompt = data.get("prompt")
     if not prompt:
@@ -147,8 +142,8 @@ def qwen_image_max():
     size = data.get("size", "1664*928")
     n = data.get("n", 1)
 
-    res = generator.multi_modal_conversation(
-        api_key=api_key,
+    res = generator.qwen_text_to_image(
+        api_key=g.api_key,
         prompt=prompt,
         model="qwen-image-max",
         negative_prompt=negative_prompt,
@@ -159,6 +154,7 @@ def qwen_image_max():
 
 
 @callback_bp.route("/qwen-i2i/qwen-image-edit-max", methods=["POST"])
+@require_bearer_auth
 def qwen_image_edit_max():
     """
     通义千问图片编辑: qwen-image-edit-max
@@ -200,7 +196,7 @@ def qwen_image_edit_max():
                 example: "模糊，低质量，变形"
               size:
                 type: string
-                description: 输出图像分辨率格式为“宽*高”（如“1024*1536”，宽高范围[512,2048]），常见比例推荐为：1:1（1024*1024、1536*1536）、2:3（768*1152、1024*1536）、3:2（1152*768、1536*1024）、3:4（960*1280、1080*1440）、4:3（1280*960、1440*1080）、9:16（720*1280、1080*1920）、16:9（1280*720、1920*1080）以及 21:9（1344*576、2048*872）。
+                description: 输出图像分辨率格式为"宽*高"（如"1024*1536"，宽高范围[512,2048]），常见比例推荐为：1:1（1024*1024、1536*1536）、2:3（768*1152、1024*1536）、3:2（1152*768、1536*1024）、3:4（960*1280、1080*1440）、4:3（1280*960、1440*1080）、9:16（720*1280、1080*1920）、16:9（1280*720、1920*1080）以及 21:9（1344*576、2048*872）。
                 default: "1024*1024"
                 example: "1024*1024"
               n:
@@ -217,9 +213,6 @@ def qwen_image_edit_max():
               type: object
               description: 返回生成结果 (通常包含 task_id 或生成的图片地址)
     """
-    auth_header = request.headers.get("Authorization")
-    api_key = get_api_key(auth_header)
-
     data = request.get_json()
     prompt = data.get("prompt")
     if not prompt:
@@ -231,8 +224,8 @@ def qwen_image_edit_max():
     if not images or not isinstance(images, list):
         raise BizError("missing images", code=http.HTTPStatus.BAD_REQUEST)
 
-    res = generator.image_generate(
-        api_key=api_key,
+    res = generator.image_to_image_generate(
+        api_key=g.api_key,
         prompt=prompt,
         model="qwen-image-edit-max",
         images=images,
@@ -244,6 +237,7 @@ def qwen_image_edit_max():
 
 
 @callback_bp.route("/wan-i2i/wan2.6-image", methods=["POST"])
+@require_bearer_auth
 def wan26_image():
     """
     通义万相图片编辑: wan2.6-image
@@ -285,7 +279,7 @@ def wan26_image():
                 example: "模糊，低质量，变形"
               size:
                 type: string
-                description: 输出图像分辨率格式为“宽*高”（如“1024*1536”，宽高范围[512,2048]），常见比例推荐为：1:1（1024*1024、1536*1536）、2:3（768*1152、1024*1536）、3:2（1152*768、1536*1024）、3:4（960*1280、1080*1440）、4:3（1280*960、1440*1080）、9:16（720*1280、1080*1920）、16:9（1280*720、1920*1080）以及 21:9（1344*576、2048*872）。
+                description: 输出图像分辨率格式为"宽*高"（如"1024*1536"，宽高范围[512,2048]），常见比例推荐为：1:1（1024*1024、1536*1536）、2:3（768*1152、1024*1536）、3:2（1152*768、1536*1024）、3:4（960*1280、1080*1440）、4:3（1280*960、1440*1080）、9:16（720*1280、1080*1920）、16:9（1280*720、1920*1080）以及 21:9（1344*576、2048*872）。
                 default: "1280*1280"
                 example: "1280*1280"
               n:
@@ -302,9 +296,6 @@ def wan26_image():
               type: object
               description: 返回生成结果 (通常包含 task_id 或生成的图片地址)
     """
-    auth_header = request.headers.get("Authorization")
-    api_key = get_api_key(auth_header)
-
     data = request.get_json()
     prompt = data.get("prompt")
     if not prompt:
@@ -316,20 +307,20 @@ def wan26_image():
     if not images or not isinstance(images, list):
         raise BizError("missing images", code=http.HTTPStatus.BAD_REQUEST)
 
-    res = generator.image_generate(
-        api_key=api_key,
+    res = generator.image_to_image_generate(
+        api_key=g.api_key,
         prompt=prompt,
         model="wan2.6-image",
         images=images,
         negative_prompt=negative_prompt,
         size=size,
         n=n,
-        enable_interleave=False,  # 图像编辑模式
     )
     return jsonify(res)
 
 
 @callback_bp.route("/wan-i2v/wan2.6-i2v-flash", methods=["POST"])
+@require_bearer_auth
 def wan26_i2v_flash():
     """
     通义万相图生视频: wan2.6-i2v-flash
@@ -400,9 +391,6 @@ def wan26_i2v_flash():
       500:
         description: 服务器内部错误
     """
-    auth_header = request.headers.get("Authorization")
-    api_key = get_api_key(auth_header)
-
     data = request.get_json()
     prompt = data.get("prompt")
     negative_prompt = data.get("negative_prompt", "")
@@ -417,7 +405,7 @@ def wan26_i2v_flash():
     shot_type = data.get("shot_type")
 
     res = generator.image_to_video_generate(
-        api_key=api_key,
+        api_key=g.api_key,
         prompt=prompt,
         model="wan2.6-i2v-flash",
         img_url=image,
@@ -432,6 +420,7 @@ def wan26_i2v_flash():
 
 
 @callback_bp.route("/wan-i2v/wan2.2-kf2v-flash", methods=["POST"])
+@require_bearer_auth
 def wan22_kf2v_flash():
     """
     通义万相首尾帧生成视频: wan2.2-kf2v-flash
@@ -498,9 +487,6 @@ def wan22_kf2v_flash():
       500:
         description: 服务器内部错误
     """
-    auth_header = request.headers.get("Authorization")
-    api_key = get_api_key(auth_header)
-
     data = request.get_json()
     prompt = data.get("prompt")
     negative_prompt = data.get("negative_prompt", "")
@@ -512,10 +498,10 @@ def wan22_kf2v_flash():
 
     template = data.get("template")
     resolution = data.get("resolution")
-    duration = 5  # 该模型固定为5s
+    duration = 5
 
     res = generator.first_and_last_image_to_video(
-        api_key=api_key,
+        api_key=g.api_key,
         prompt=prompt,
         model="wan2.2-kf2v-flash",
         first_frame_url=first_frame_image,
@@ -529,6 +515,7 @@ def wan22_kf2v_flash():
 
 
 @callback_bp.route("/wan-t2v/wan2.6-t2v", methods=["POST"])
+@require_bearer_auth
 def wan26_t2v():
     """
     通义万相文生视频: wan2.6-t2v
@@ -595,9 +582,6 @@ def wan26_t2v():
       500:
         description: 服务器内部错误
     """
-    auth_header = request.headers.get("Authorization")
-    api_key = get_api_key(auth_header)
-
     data = request.get_json()
     prompt = data.get("prompt")
     if not prompt:
@@ -610,7 +594,7 @@ def wan26_t2v():
     shot_type = data.get("shot_type")
 
     res = generator.text_to_video_generate(
-        api_key=api_key,
+        api_key=g.api_key,
         prompt=prompt,
         model="wan2.6-t2v",
         audio_url=audio_url,
@@ -620,15 +604,3 @@ def wan26_t2v():
         shot_type=shot_type,
     )
     return jsonify(res)
-
-
-def get_api_key(auth_header):
-    api_key = ""
-    # 2. 校验格式是否正确 (Bearer <token>)
-    if auth_header and auth_header.startswith("Bearer "):
-        # 3. 提取 Token (通过空格分割，取第二部分)
-        api_key = auth_header.split(" ")[1]
-
-        return api_key
-    else:
-        raise BizError("missing api key", code=http.HTTPStatus.UNAUTHORIZED)
