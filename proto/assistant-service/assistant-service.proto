@@ -752,6 +752,7 @@ message ModelParams {
   optional double presencePenalty = 6;//存在惩罚
   optional int32 maxTokens = 7;//模型输出最大token数，这个字段暂时不设置，因为模型可能触发接口调用不确定是否会超，先不传
   repeated ConversionHistory history = 8; //聊天历史
+  optional int32 enableThinking = 9;//是否开启思考过程
 }
 
 message ConversionHistory {

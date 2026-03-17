@@ -170,6 +170,7 @@ func buildModelParams(params map[string]interface{}, modelParams *assistant_serv
 	modelParams.TopP = toDouble(params["top_p"])
 	modelParams.FrequencyPenalty = toDouble(params["frequency_penalty"])
 	modelParams.PresencePenalty = toDouble(params["presence_penalty"])
+	modelParams.EnableThinking = toInt32(params["enable_thinking"])
 	return modelParams
 }
 
@@ -182,4 +183,21 @@ func toDouble(data interface{}) *float64 {
 		return nil
 	}
 	return &f
+}
+
+// 0 为false，1 为true，不传时为 nil
+func toInt32(data interface{}) *int32 {
+	if data == nil {
+		return nil
+	}
+	b, ok := data.(bool)
+	if !ok {
+		return nil
+	}
+	if b {
+		i := int32(1)
+		return &i
+	}
+	i := int32(0)
+	return &i
 }
