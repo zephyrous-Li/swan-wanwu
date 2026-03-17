@@ -62,7 +62,7 @@
 <script>
 import StreamMessageField from '@/components/stream/streamMessageField.vue';
 import sseMethod from '@/mixins/sseMethod.js';
-import { avatarSrc } from '@/utils/util';
+import { avatarSrc, getModelDefaultIcon } from '@/utils/util';
 
 export default {
   name: 'ModelChatPane',
@@ -145,7 +145,7 @@ export default {
       ) {
         return avatarSrc(this.modelDetail.avatar.path);
       }
-      return require('@/assets/imgs/model_default_icon.png');
+      return getModelDefaultIcon();
     },
     apiParams() {
       return {
@@ -167,7 +167,7 @@ export default {
     },
     getModelAvatar(avatar) {
       if (!avatar || !avatar.path) {
-        return require('@/assets/imgs/model_default_icon.png');
+        return getModelDefaultIcon();
       }
       return avatarSrc(avatar.path);
     },

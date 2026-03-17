@@ -160,7 +160,7 @@
                 :src="
                   item.avatar && item.avatar.path
                     ? avatarSrc(item.avatar.path)
-                    : require('@/assets/imgs/model_default_icon.png')
+                    : defaultLogo
                 "
               />
               <div
@@ -298,7 +298,7 @@ import {
   TAB_LIST,
   SCOPE_TYPE_OBJ,
 } from './constants';
-import { avatarSrc } from '@/utils/util';
+import { avatarSrc, getModelDefaultIcon } from '@/utils/util';
 
 export default {
   components: { Pagination, CreateSelectDialog, CreateDialog },
@@ -312,6 +312,7 @@ export default {
       basePath: this.$basePath,
       modelTypeObj: MODEL_TYPE_OBJ,
       providerObj: PROVIDER_OBJ,
+      defaultLogo: getModelDefaultIcon(),
       tableData: [],
       params: {
         provider: '',

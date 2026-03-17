@@ -1,9 +1,10 @@
 import router from '@/router/index';
 import { menuList } from '@/views/layout/menu';
-import { checkPerm, PERMS } from '@/router/permission';
+import { checkPerm } from '@/router/permission';
 import { i18n } from '@/lang';
 import { Message } from 'element-ui';
 import { basePath } from '@/utils/config';
+import { store } from '@/store';
 
 export function guid() {
   return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function (c) {
@@ -107,6 +108,14 @@ export const replaceIcon = logoPath => {
 
 export const replaceTitle = title => {
   document.title = title || i18n.t('header.title');
+};
+
+export const getModelDefaultIcon = () => {
+  const { defaultIcon = {} } = store.state.user.commonInfo.data || {};
+  return (
+    avatarSrc(defaultIcon.modelIcon) ||
+    require('@/assets/imgs/model_default_icon.png')
+  );
 };
 
 export const copy = text => {

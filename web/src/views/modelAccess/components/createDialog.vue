@@ -354,7 +354,7 @@
 <script>
 import { addModel, editModel } from '@/api/modelAccess';
 import { uploadAvatar } from '@/api/user';
-import { avatarSrc } from '@/utils/util';
+import { avatarSrc, getModelDefaultIcon } from '@/utils/util';
 import {
   PROVIDER_TYPE,
   PROVIDER_OBJ,
@@ -400,7 +400,7 @@ export default {
     return {
       isSystem: this.$store.state.user.permission.isSystem || false,
       allowEdit: true,
-      defaultLogo: require('@/assets/imgs/model_default_icon.png'),
+      defaultLogo: getModelDefaultIcon(),
       dialogVisible: false,
       modelType: [],
       scopeTypeList: SCOPE_TYPE_LIST,
