@@ -576,7 +576,7 @@ export default {
       maxVideoLimit: '最大视频片限制',
       maxPicLimit: '最大图片限制',
       maxAudioLimit: '最大音频限制',
-      think: '切换深度思考开启/关闭功能',
+      think: '深度思考开关',
     },
     supportFileType: {
       pic: '图片',
