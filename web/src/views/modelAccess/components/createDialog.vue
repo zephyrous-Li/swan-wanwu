@@ -308,6 +308,24 @@
             ></el-option>
           </el-select>
         </el-form-item>
+        <el-form-item
+          :label="$t('modelAccess.table.think')"
+          prop="thinkingSupport"
+        >
+          <el-select
+            v-model="createForm.thinkingSupport"
+            :placeholder="$t('common.select.placeholder')"
+            :disabled="!allowEdit"
+            style="width: 100%"
+          >
+            <el-option
+              v-for="item in supportList"
+              :key="item.key"
+              :label="item.name"
+              :value="item.key"
+            ></el-option>
+          </el-select>
+        </el-form-item>
         <!--<el-form-item :label="$t('modelAccess.table.publishTime')" prop="publishDate">
           <el-date-picker
             v-model="createForm.publishDate"
@@ -429,6 +447,7 @@ export default {
         // publishDate: '',
         functionCalling: DEFAULT_CALLING,
         visionSupport: DEFAULT_SUPPORT,
+        thinkingSupport: DEFAULT_SUPPORT,
       },
       rules: {
         model: [
@@ -639,6 +658,7 @@ export default {
         modelType: LLM,
         functionCalling: DEFAULT_CALLING,
         visionSupport: DEFAULT_SUPPORT,
+        thinkingSupport: DEFAULT_SUPPORT,
         scopeType: PRIVATE,
         contextSize: 8000,
         maxTokens: 4096,
@@ -665,6 +685,7 @@ export default {
             functionCalling,
             modelType,
             visionSupport,
+            thinkingSupport,
             contextSize,
             maxTokens,
             /*maxTextLength,
@@ -678,6 +699,7 @@ export default {
             provider: this.provider.key || '',
             config: {
               endpointUrl,
+              thinkingSupport,
               ...(this.provider.key !== OLLAMA &&
                 !this.showAppAndAccessKey() && { apiKey }),
               ...(modelType === LLM && { functionCalling, maxTokens }),
@@ -697,6 +719,7 @@ export default {
             'endpointUrl',
             'functionCalling',
             'visionSupport',
+            'thinkingSupport',
             'contextSize',
             'maxTokens',
             /*'maxTextLength',
