@@ -1,40 +1,64 @@
-# utils/decorators.py
 import http
-import sys
 from functools import wraps
+from typing import Callable, Optional
 
-from flask import g, jsonify, request
+from flask import g, request
 
-from callback.services.tavily_news import TavilyNewsAgency
 from utils.response import BizError
 
 
-def require_api_key(f: str) -> str:
+def extract_bearer_token() -> Optional[str]:
     """
-    鉴权装饰器：
-    1. 校验 Header 中的 API Key。
-    2. 实例化 TavilyNewsAgency 并挂载到 g.agency。
+    从 Request Header 中提取 Bearer Token
+    格式: Authorization: Bearer <API_KEY>
+    """
+    auth_header = request.headers.get("Authorization")
+    if not auth_header:
+        return None
+
+    parts = auth_header.split(None, 1)
+    if len(parts) == 2 and parts[0].lower() == "bearer":
+        return parts[1]
+    return None
+
+
+def require_bearer_auth(f: Callable) -> Callable:
+    """
+    通用 Bearer Token 鉴权装饰器
+    从 Authorization Header 中提取 Bearer Token 并挂载到 g.api_key
     """
 
     @wraps(f)
     def decorated_function(*args, **kwargs):
-        api_key = None
-        # 兼容 Bearer Token 格式 (Authorization: Bearer <key>)
-        auth_header = request.headers.get("Authorization")
-        if auth_header and auth_header.startswith("Bearer "):
-            api_key = auth_header.split(" ")[1]
-
-        # 校验 Key 是否存在
+        api_key = extract_bearer_token()
         if not api_key:
             raise BizError(
-                "Authentication required:Please provide tavily api key.",
+                "Unauthorized: Missing or invalid Bearer token",
                 code=http.HTTPStatus.UNAUTHORIZED,
             )
+        g.api_key = api_key
+        return f(*args, **kwargs)
 
-        # 实例化对象并挂载到 Flask 全局上下文 g 中
-        # 这样视图函数就可以直接用 g.agency 了
+    return decorated_function
+
+
+def require_api_key(f: Callable) -> Callable:
+    """
+    鉴权装饰器（Tavily 专用）：
+    1. 校验 Header 中的 API Key。
+    2. 实例化 TavilyNewsAgency 并挂载到 g.agency。
+    """
+    from callback.services.tavily_news import TavilyNewsAgency
+
+    @wraps(f)
+    def decorated_function(*args, **kwargs):
+        api_key = extract_bearer_token()
+        if not api_key:
+            raise BizError(
+                "Authentication required: Please provide tavily api key.",
+                code=http.HTTPStatus.UNAUTHORIZED,
+            )
         g.agency = TavilyNewsAgency(api_key=api_key)
-
         return f(*args, **kwargs)
 
     return decorated_function

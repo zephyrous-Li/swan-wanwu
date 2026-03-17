@@ -570,6 +570,134 @@
         },
         "security": []
       }
+    },
+    "/openapi/v1/unicom-ocr": {
+      "post": {
+        "summary": "元景-OCR识别",
+        "operationId": "unicom_ocr",
+        "deprecated": false,
+        "description": "联通OCR识别接口，支持图片url、二进制文件、base64编码三种方式输入图片进行文字识别。",
+        "tags": [
+          "OCR"
+        ],
+        "parameters": [
+          {
+            "name": "Authorization",
+            "in": "header",
+            "description": "Bearer {$ACCESS_TOKEN}",
+            "required": true,
+            "example": "",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "multipart/form-data": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "url": {
+                    "type": "string",
+                    "description": "图片url地址，url、file、data三选一"
+                  },
+                  "file": {
+                    "type": "string",
+                    "format": "binary",
+                    "description": "图片二进制文件，url、file、data三选一"
+                  },
+                  "data": {
+                    "type": "string",
+                    "description": "base64编码图片，url、file、data三选一"
+                  }
+                },
+                "description": "url、file、data三选一"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "text/html": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "code": {
+                      "type": "integer",
+                      "description": "状态码，0表示成功，1表示图片格式异常，2表示图片无内容或识别出错"
+                    },
+                    "message": {
+                      "type": "string",
+                      "description": "code对应的返回详细信息"
+                    },
+                    "version": {
+                      "type": "string",
+                      "description": "服务版本号，目前为20240904"
+                    },
+                    "timestamp": {
+                      "type": "string",
+                      "description": "该次请求的时间戳"
+                    },
+                    "id": {
+                      "type": "string",
+                      "description": "该次请求对应的唯一id值"
+                    },
+                    "sha1": {
+                      "type": "string",
+                      "description": "该次请求中包含文件的sha1值"
+                    },
+                    "time_cost": {
+                      "type": "number",
+                      "description": "该次请求处理耗时，以秒为单位"
+                    },
+                    "data": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "page_num": {
+                            "type": "integer",
+                            "description": "该元素所在页码"
+                          },
+                          "length": {
+                            "type": "integer",
+                            "description": "元素中包含文本的长度"
+                          },
+                          "type": {
+                            "type": "string",
+                            "description": "元素类型"
+                          },
+                          "text": {
+                            "type": "string",
+                            "description": "元素中包含的文本"
+                          }
+                        }
+                      },
+                      "description": "识别结果列表"
+                    }
+                  },
+                  "required": [
+                    "code",
+                    "message",
+                    "version",
+                    "timestamp",
+                    "id",
+                    "sha1",
+                    "time_cost",
+                    "data"
+                  ]
+                }
+              }
+            },
+            "headers": {}
+          }
+        },
+        "security": []
+      }
     }
   },
   "components": {

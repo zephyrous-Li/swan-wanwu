@@ -3,7 +3,7 @@ import http
 from flask import jsonify, request
 
 from callback.services.bytedance_asr import ByteDanceASR
-from callback.utils.url_util import process_audio
+from callback.utils.url_util import process_url_to_base64
 from utils.log import logger
 from utils.response import BizError
 
@@ -61,7 +61,7 @@ def bytedance_asr_recognize():
     if not audio:
         raise BizError("Missing audio", code=http.HTTPStatus.BAD_REQUEST)
 
-    audio_processed = process_audio(audio)
+    audio_processed = process_url_to_base64(audio)
 
     app_key = request.headers.get("X-Api-App-Key")
     access_key = request.headers.get("X-Api-Access-Key")

@@ -32,7 +32,7 @@ tools:
     desc: "Tavily 是专为 AI 构建的搜索引擎。它能连接实时网络数据，为 AI 提供事实性强、来源可信且经过优化的上下文搜索结果。"
     avatar_path: "tool/tavilysearch/logo.png"
     detail: "专为 RAG（检索增强生成）和 Agent 场景优化，支持一步获取包含来源引用的准确答案和原始内容，无广告干扰。可前往 https://tavily.com/ 申请 API Key"
-    tags: "search"
+    tags: "联网搜索"
     need_api_key_input: true
     auth_type: "api_key_header"
     api_key_header_prefix: "bearer"
@@ -46,7 +46,7 @@ tools:
     desc: "博查AI搜索是一个基于大模型和实时搜索技术的答案引擎。你可以用自然语言提问，它会理解问题、细分检索并直接生成准确的答案。"
     avatar_path: "tool/bochawebsearch/logo.png"
     detail: "从近百亿网页和生态内容源中搜索高质量世界知识，例如新闻、图片、百科、文库等。可前往 https://open.bochaai.com/ 申请API Key"
-    tags: "search"
+    tags: "联网搜索"
     need_api_key_input: true
     auth_type: "api_key_header"
     api_key_header_prefix: "bearer"
@@ -88,7 +88,7 @@ tools:
     desc: "联通元景多模态生成服务，包括文生图、图生图及首尾帧生成视频等功能"
     avatar_path: "tool/yuanjingmultimodal/logo.png"
     detail: "联通元景多模态生成服务，包括文生图、图生图、首尾帧图生视频等功能。可前往 https://maas.ai-yuanjing.com/ 申请API Key"
-    tags: "文生图,图生图,图生视频"
+    tags: "文生图,图生图,图生视频,OCR"
     need_api_key_input: true
     auth_type: "api_key_header"
     api_key_header_prefix: "bearer"
