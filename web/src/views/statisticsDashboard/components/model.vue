@@ -32,7 +32,32 @@
             :key="item.modelId"
             :label="item.displayName || item.model"
             :value="item.modelId"
-          />
+          >
+            <div class="model-option-content">
+              <div class="model-option-content-left">
+                <img
+                  class="model-img"
+                  :src="convertModelIcon(item?.avatar.path)"
+                />
+                <span class="model-name">
+                  {{ item.displayName || item.model }}
+                </span>
+              </div>
+
+              <div
+                class="model-select-tags"
+                v-if="item.tags && item.tags.length > 0"
+              >
+                <span
+                  v-for="(tag, tagIdx) in item.tags"
+                  :key="tagIdx"
+                  class="model-select-tag"
+                >
+                  {{ tag.text }}
+                </span>
+              </div>
+            </div>
+          </el-option>
         </el-select>
       </div>
       <div>
@@ -138,7 +163,7 @@
 import Search from '@/components/searchDate.vue';
 import UserEchart from '@/components/echart/userEchart.vue';
 import ModelList from './modelList.vue';
-import { formatAmount } from '@/utils/util.js';
+import { avatarSrc, formatAmount, getModelDefaultIcon } from '@/utils/util.js';
 import { getModelData } from '@/api/statisticsDashboard';
 import { MODEL_TYPE } from '@/views/modelAccess/constants';
 import { fetchModelList } from '@/api/modelAccess';
@@ -278,10 +303,14 @@ export default {
         });
       this.$refs.modelList.getTableData(params);
     },
+    convertModelIcon(iconPath) {
+      return iconPath ? avatarSrc(iconPath) : getModelDefaultIcon();
+    },
   },
 };
 </script>
 <style lang="scss" scoped>
+@import '@/style/modelSelect.scss';
 .statistics_common {
   position: relative;
   height: 100%;
