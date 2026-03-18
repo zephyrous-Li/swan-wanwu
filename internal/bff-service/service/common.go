@@ -425,6 +425,15 @@ func cacheKnowledgeAvatar(ctx *gin.Context, avatarObjectPath string, knowledgeTy
 	return CacheAvatar(ctx, avatarObjectPath, true)
 }
 
+func cacheModelAvatar(ctx *gin.Context, avatarObjectPath string) request.Avatar {
+	avatar := request.Avatar{}
+	if avatarObjectPath == "" {
+		avatar.Path = config.Cfg().DefaultIcon.ModelIcon
+		return avatar
+	}
+	return CacheAvatar(ctx, avatarObjectPath, true)
+}
+
 // resizeImage 压缩图像
 func resizeImage(imageData []byte) ([]byte, error) {
 	// 先解码获取图像尺寸

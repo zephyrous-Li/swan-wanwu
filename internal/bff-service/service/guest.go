@@ -78,6 +78,7 @@ func GetLogoCustomInfo(ctx *gin.Context, mode string) (response.LogoCustomInfo, 
 				WorkflowIcon: config.Cfg().DefaultIcon.WorkflowIcon,
 				PromptIcon:   config.Cfg().DefaultIcon.PromptIcon,
 				ChatflowIcon: config.Cfg().DefaultIcon.ChatflowIcon,
+				ModelIcon:    config.Cfg().DefaultIcon.ModelIcon,
 			},
 		}
 		break

@@ -81,6 +81,7 @@ type CustomDefaultIcon struct {
 	WorkflowIcon string `json:"workflowIcon"`
 	PromptIcon   string `json:"promptIcon"`
 	ChatflowIcon string `json:"chatflowIcon"`
+	ModelIcon    string `json:"modelIcon"`
 }
 
 type CustomEmail struct {
