@@ -162,6 +162,7 @@
                   $t('knowledgeManage.create.modelSearchPlaceholder')
                 "
                 @visible-change="visibleChange"
+                @change="handleModelChange($event)"
                 :loading-text="$t('knowledgeManage.create.modelLoading')"
                 class="cover-input-icon model-select"
                 :loading="modelLoading"
@@ -450,18 +451,7 @@ export default {
       initialEditForm: null,
       apiURL: '',
       modelLoading: false,
-      wfDialogVisible: false,
-      workFlowInfos: [],
-      workflowList: [],
-      modelParams: '',
       modelOptions: [],
-      selectKnowledge: [],
-      loadingPercent: 10,
-      nameStatus: '',
-      saved: false, //按钮
-      loading: false, //按钮
-      t: null,
-      logoFileList: [],
       debounceTimer: null, //防抖计时器
       isUpdating: false, // 防止重复更新标记
       isSettingFromDetail: false, // 防止详情数据触发更新标记
@@ -683,6 +673,9 @@ export default {
     sendVisual(data) {
       this.editForm.visionConfig.picNum = data.picNum;
     },
+    handleModelChange(val) {
+      this.setModelInfo(val);
+    },
     setModelInfo(val) {
       if (!val) return;
       const selectedModel = this.modelOptions.find(
@@ -691,6 +684,11 @@ export default {
       if (selectedModel) {
         this.editForm.modelParams = val;
         this.editForm.visionsupport = selectedModel.config.visionSupport;
+        if (selectedModel?.config?.thinkingSupport === 'support') {
+          this.$set(this.editForm.modelConfig, 'thinkingEnable', true);
+        } else {
+          this.$delete(this.editForm.modelConfig, 'thinkingEnable');
+        }
       } else {
         this.editForm.modelParams = '';
         if (val) this.$message.warning(this.$t('agent.form.modelNotSupport'));
@@ -776,11 +774,6 @@ export default {
     visibleChange(val) {
       if (val) {
         this.getModelData();
-      }
-    },
-    rerankVisible(val) {
-      if (val) {
-        this.getRerankData();
       }
     },
     async getModelData() {

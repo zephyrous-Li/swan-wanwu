@@ -942,27 +942,15 @@ export default {
           maxHistory: 3,
         },
       },
-      hasPluginPermission: false,
       modelLoading: false,
-      wfDialogVisible: false,
       multiAgentInfos: [],
       workFlowInfos: [],
       actionInfos: [],
       mcpInfos: [],
       skillInfos: [],
       allTools: [], //所有的工具
-      workflowList: [],
-      modelParams: {},
       modelOptions: [],
-      selectKnowledge: [],
-      knowledgeData: [],
       optimizeTarget: 'instructions',
-      loadingPercent: 10,
-      nameStatus: '',
-      saved: false, //按钮
-      loading: false, //按钮
-      t: null,
-      logoFileList: [],
       imageUrl: '',
       defaultLogo: require('@/assets/imgs/bg-logo.png'),
       debounceTimer: null, //防抖计时器
@@ -1011,7 +999,6 @@ export default {
     const permission = accessCert
       ? JSON.parse(accessCert).user.permission.orgPermission
       : '';
-    this.hasPluginPermission = permission.indexOf('plugin') !== -1;
   },
   beforeDestroy() {
     store.dispatch('app/initState');
@@ -1119,6 +1106,11 @@ export default {
         this.editForm.functionCalling = selectedModel.config.functionCalling;
         const maxTokens = selectedModel.config.maxTokens;
         this.limitMaxTokens = maxTokens && maxTokens > 0 ? maxTokens : 4096;
+        if (selectedModel?.config?.thinkingSupport === 'support') {
+          this.$set(this.editForm.modelConfig, 'thinkingEnable', true);
+        } else {
+          this.$delete(this.editForm.modelConfig, 'thinkingEnable');
+        }
       } else {
         this.editForm.modelParams = '';
         if (val) this.$message.warning(this.$t('agent.form.modelNotSupport'));
@@ -1238,11 +1230,6 @@ export default {
       };
       this.$refs.toolDialog.showDialog(data);
     },
-    rerankVisible(val) {
-      if (val) {
-        this.getRerankData();
-      }
-    },
     getRerankData() {
       getRerankList().then(res => {
         if (res.code === 0) {
@@ -1316,9 +1303,6 @@ export default {
       if (res.code === 0) {
         this.doCreateWorkFlow(n.appId, res.data.base64OpenAPISchema, index);
       }
-    },
-    preAddWorkflow() {
-      this.wfDialogVisible = true;
     },
     toolRemove(n, type) {
       if (type === AGENT_TOOL_TYPE.WORKFLOW) {
