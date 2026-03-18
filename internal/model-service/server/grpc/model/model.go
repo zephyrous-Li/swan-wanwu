@@ -184,7 +184,7 @@ func (s *Service) ListTypeModels(ctx context.Context, req *model_service.ListTyp
 }
 
 func toModelInfo(modelInfo *model.ModelImported) *model_service.ModelInfo {
-	return &model_service.ModelInfo{
+	modelInfoRet := &model_service.ModelInfo{
 		ModelId:        util.Int2Str(modelInfo.ID),
 		Uuid:           modelInfo.UUID,
 		Provider:       modelInfo.Provider,
@@ -203,6 +203,10 @@ func toModelInfo(modelInfo *model.ModelImported) *model_service.ModelInfo {
 		ScopeType:      util.Int2Str(modelInfo.ScopeType),
 		ImportSource:   modelInfo.ImportSource,
 	}
+	if modelInfo.DisplayName == "" {
+		modelInfoRet.DisplayName = modelInfo.Model
+	}
+	return modelInfoRet
 }
 
 func toModelInfos(modelInfos []*model.ModelImported) *model_service.ModelInfos {
