@@ -27,7 +27,10 @@ func (cfg *Rerank) Tags() []mp_common.Tag {
 }
 
 func (cfg *Rerank) NewReq(req *mp_common.TextRerankReq) (mp_common.ITextRerankReq, error) {
-	m := map[string]interface{}{}
+	m, err := req.Data()
+	if err != nil {
+		return nil, err
+	}
 	instruction := "Given a web search query, retrieve relevant passages that answer the query"
 	if req.Instruction == nil {
 		m["instruction"] = instruction
@@ -46,7 +49,7 @@ func (cfg *Rerank) Rerank(ctx context.Context, req mp_common.ITextRerankReq, hea
 }
 
 func (cfg *Rerank) rerankUrl() string {
-	ret, _ := url.JoinPath(cfg.EndpointUrl, "/rerank")
+	ret, _ := url.JoinPath(cfg.EndpointUrl, "/yuanjing/reranker")
 	return ret
 }
 

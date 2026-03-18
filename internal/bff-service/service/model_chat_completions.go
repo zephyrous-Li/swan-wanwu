@@ -88,8 +88,6 @@ func ModelChatCompletions(ctx *gin.Context, modelID string, req *mp_common.LLMRe
 	ctx.Header("Connection", "keep-alive")
 	ctx.Header("Content-Type", "text/event-stream; charset=utf-8")
 	var (
-		firstFlag         = false // 思维链起始标识符，默认思维链未开始
-		endFlag           = false // 思维链结束标识符，默认思维链未结束
 		firstTokenTime    time.Time
 		firstTokenLatency int
 		promptTokens      int
@@ -102,25 +100,8 @@ func ModelChatCompletions(ctx *gin.Context, modelID string, req *mp_common.LLMRe
 		dataStr := ""
 		if ok && data != nil {
 			if len(data.Choices) > 0 && data.Choices[0].Delta != nil {
-				answer = answer + data.Choices[0].Delta.Content
 				delta := data.Choices[0].Delta
-				// 修复空 role 问题：部分模型在 thinking 模式下返回空 role
-				if delta.Role == "" {
-					delta.Role = mp_common.MsgRoleAssistant
-				}
-				if firstFlag && !endFlag && delta.ReasoningContent != nil {
-					delta.Content = delta.Content + *delta.ReasoningContent
-				}
-				if !endFlag && delta.Content != "" && ((delta.ReasoningContent != nil &&
-					*delta.ReasoningContent == "") || delta.ReasoningContent == nil) && firstFlag {
-					delta.Content = "\n</think>\n" + delta.Content
-					endFlag = true
-				}
-				if !firstFlag && delta.ReasoningContent != nil && *delta.ReasoningContent != "" && delta.Content == "" {
-					delta.Content = "<think>\n" +
-						delta.Content + *delta.ReasoningContent
-					firstFlag = true
-				}
+				answer = answer + delta.Content
 			}
 
 			if lineProcessor != nil {

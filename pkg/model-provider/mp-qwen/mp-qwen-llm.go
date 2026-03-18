@@ -3,10 +3,8 @@ package mp_qwen
 import (
 	"context"
 	"fmt"
-	"net/url"
-	"strings"
-
 	mp_common "github.com/UnicomAI/wanwu/pkg/model-provider/mp-common"
+	"net/url"
 )
 
 type LLM struct {
@@ -14,6 +12,7 @@ type LLM struct {
 	EndpointUrl     string `json:"endpointUrl"`                                         // 推理url
 	FunctionCalling string `json:"functionCalling" validate:"oneof=noSupport toolCall"` // 函数调用是否支持
 	VisionSupport   string `json:"visionSupport" validate:"oneof=noSupport support"`    // 视觉支持
+	ThinkingSupport string `json:"thinkingSupport" validate:"oneof=noSupport support"`  // 深度思考是否支持
 	MaxTokens       *int   `json:"maxTokens"`                                           // 模型回答最大tokens
 	ContextSize     *int   `json:"contextSize"`                                         // 上下文长度
 	MaxImageSize    *int64 `json:"maxImageSize"`                                        // 最大图片大小限制
@@ -39,9 +38,8 @@ func (cfg *LLM) NewReq(req *mp_common.LLMReq) (mp_common.ILLMReq, error) {
 	if err != nil {
 		return nil, err
 	}
-	// Qwen3 开源模型仅在非思考模式下支持非流式输出方式, 不支持qwq系列模型
-	if req.Stream != nil && !*req.Stream && strings.HasPrefix(req.Model, "qwen3") {
-		m["enable_thinking"] = false
+	if req.EnableThinking != nil {
+		m["enable_thinking"] = *req.EnableThinking
 	}
 	return mp_common.NewLLMReq(m), nil
 }

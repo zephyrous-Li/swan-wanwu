@@ -99,6 +99,13 @@ const (
 	VSTypeNoSupport VSType = "noSupport"
 )
 
+type ThinkingType string
+
+const (
+	ThinkingTypeSupport   ThinkingType = "support"
+	ThinkingTypeNoSupport ThinkingType = "noSupport"
+)
+
 type Header struct {
 	Key   string `json:"key"`
 	Value string `json:"value"`
@@ -318,42 +325,32 @@ func (req *llmReq) OpenAIReq() (*LLMReq, bool) {
 
 type ILLMResp interface {
 	String() string
-	Data() (map[string]interface{}, bool)
+	Raw() string
 	ConvertResp() (*LLMResp, bool)
 }
 
 // llmResp implementation of ILLMResp
 type llmResp struct {
-	stream bool
-	raw    string
+	stream     bool
+	raw        string   // 原始 数据
+	resp       *LLMResp // 缓存 unmarshal 结果
+	respStr    string   // 缓存 marshal 结果
+	inThinking bool     // 流式思维链状态
 }
 
 func NewLLMResp(stream bool, raw string) ILLMResp {
 	return &llmResp{stream: stream, raw: raw}
 }
 
-func (resp *llmResp) String() string {
+func (resp *llmResp) Raw() string {
 	return resp.raw
 }
 
-func (resp *llmResp) Data() (map[string]interface{}, bool) {
-	if resp.stream {
-		if resp.raw == "data: [DONE]" || !strings.HasPrefix(resp.raw, "data:") {
-			return nil, false
-		}
+func (resp *llmResp) String() string {
+	if resp.respStr != "" {
+		return resp.respStr
 	}
-
-	raw := resp.raw
-	if resp.stream {
-		raw = strings.TrimPrefix(resp.raw, "data:")
-	}
-
-	ret := make(map[string]interface{})
-	if err := json.Unmarshal([]byte(raw), &ret); err != nil {
-		log.Errorf("llm stream resp (%v) convert to data err: %v", raw, err)
-		return nil, false
-	}
-	return ret, true
+	return resp.raw
 }
 
 func (resp *llmResp) ConvertResp() (*LLMResp, bool) {
@@ -361,6 +358,10 @@ func (resp *llmResp) ConvertResp() (*LLMResp, bool) {
 		if resp.raw == "data: [DONE]" || !strings.HasPrefix(resp.raw, "data:") {
 			return nil, false
 		}
+	}
+
+	if resp.resp != nil {
+		return resp.resp, true
 	}
 
 	raw := resp.raw
@@ -378,6 +379,28 @@ func (resp *llmResp) ConvertResp() (*LLMResp, bool) {
 		log.Errorf("llm resp validate err: %v", err)
 		return nil, false
 	}
+
+	if resp.stream {
+		if len(ret.Choices) > 0 && ret.Choices[0].Delta != nil {
+			delta := ret.Choices[0].Delta
+			if delta.Role == "" {
+				delta.Role = MsgRoleAssistant
+			}
+			resp.inThinking, _ = extractThinkingFromDelta(delta, resp.inThinking)
+		}
+	} else {
+		extractThinkingFromResp(ret)
+	}
+
+	if newData, err := json.Marshal(ret); err == nil {
+		prefix := ""
+		if resp.stream {
+			prefix = "data:"
+		}
+		resp.respStr = prefix + string(newData) + "\n"
+	}
+
+	resp.resp = ret
 	return ret, true
 }
 
@@ -427,7 +450,9 @@ func chatCompletionsUnary(ctx context.Context, provider, apiKey, url string, req
 	if resp.StatusCode() >= 300 {
 		return nil, fmt.Errorf("request %v %v chat completions unary http status %v msg: %v", url, provider, resp.StatusCode(), string(b))
 	}
-	return respConverter(false, string(b)), nil
+	respData := respConverter(false, string(b))
+	respData.ConvertResp()
+	return respData, nil
 }
 
 func chatCompletionsStream(ctx context.Context, provider, apiKey, url string, req ILLMReq, respConverter func(bool, string) ILLMResp, headers ...Header) (<-chan ILLMResp, error) {
@@ -492,10 +517,24 @@ func chatCompletionsStream(ctx context.Context, provider, apiKey, url string, re
 
 		close(errChan)
 
+		var inThinking bool
 		scan := bufio.NewScanner(resp.RawResponse.Body)
 		for scan.Scan() {
+			sseData := scan.Text()
+			sseResp := respConverter(true, sseData)
+
+			if r, ok := sseResp.(*llmResp); ok {
+				r.inThinking = inThinking
+			}
+
+			sseResp.ConvertResp()
+
+			if r, ok := sseResp.(*llmResp); ok {
+				inThinking = r.inThinking
+			}
+
 			select {
-			case ret <- respConverter(true, scan.Text()):
+			case ret <- sseResp:
 			case <-ctx.Done():
 				log.Warnf("chat completions stream ctx canceled | provider: %s | url: %s", provider, url)
 				return
@@ -517,4 +556,96 @@ func chatCompletionsStream(ctx context.Context, provider, apiKey, url string, re
 		return nil, ctx.Err()
 	}
 	return ret, nil
+}
+
+const (
+	thinkingStartTag = "<think>"
+	thinkingEndTag   = "</think>"
+)
+
+func extractThinkingFromContent(content string) (reasoning, cleanContent string) {
+	startIdx := strings.Index(content, thinkingStartTag)
+	endIdx := strings.Index(content, thinkingEndTag)
+
+	if startIdx == -1 {
+		return "", content
+	}
+
+	reasoning = content[startIdx+len(thinkingStartTag):]
+	if endIdx != -1 {
+		reasoning = content[startIdx+len(thinkingStartTag) : endIdx]
+		cleanContent = content[endIdx+len(thinkingEndTag):]
+	} else {
+		cleanContent = ""
+	}
+
+	return reasoning, cleanContent
+}
+
+func extractThinkingFromResp(resp *LLMResp) {
+	if resp == nil || len(resp.Choices) == 0 {
+		return
+	}
+	msg := resp.Choices[0].Message
+	if msg == nil {
+		return
+	}
+	if msg.ReasoningContent == nil || *msg.ReasoningContent == "" {
+		if msg.Content != "" {
+			reasoning, cleanContent := extractThinkingFromContent(msg.Content)
+			if reasoning != "" {
+				msg.ReasoningContent = &reasoning
+				msg.Content = cleanContent
+			}
+		}
+	}
+}
+
+func extractThinkingFromDelta(delta *OpenAIMsg, inThinking bool) (bool, *string) {
+	if delta == nil {
+		return inThinking, nil
+	}
+
+	if delta.Content == "" {
+		return inThinking, nil
+	}
+
+	content := delta.Content
+	hasStartTag := strings.Contains(content, thinkingStartTag)
+	hasEndTag := strings.Contains(content, thinkingEndTag)
+
+	if hasStartTag {
+		inThinking = true
+	}
+
+	if inThinking {
+		startIdx := strings.Index(content, thinkingStartTag)
+		endIdx := strings.Index(content, thinkingEndTag)
+
+		if hasStartTag && hasEndTag {
+			reasoning := content[startIdx+len(thinkingStartTag) : endIdx]
+			delta.Content = content[endIdx+len(thinkingEndTag):]
+			delta.ReasoningContent = &reasoning
+			inThinking = false
+		} else if hasStartTag {
+			reasoning := content[startIdx+len(thinkingStartTag):]
+			delta.Content = ""
+			if reasoning != "" {
+				delta.ReasoningContent = &reasoning
+			} else {
+				emptyStr := ""
+				delta.ReasoningContent = &emptyStr
+			}
+		} else if hasEndTag {
+			reasoning := content[:endIdx]
+			delta.Content = content[endIdx+len(thinkingEndTag):]
+			delta.ReasoningContent = &reasoning
+			inThinking = false
+		} else {
+			delta.ReasoningContent = &content
+			delta.Content = ""
+		}
+	}
+
+	return inThinking, nil
 }

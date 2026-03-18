@@ -2,6 +2,7 @@ package service
 
 import (
 	"bytes"
+	"context"
 	"encoding/base64"
 	"encoding/json"
 	"fmt"
@@ -77,6 +78,13 @@ func ValidateLLMModel(ctx *gin.Context, modelInfo *model_service.ModelInfo) erro
 	if ok && mp_common.VSType(vs) == mp_common.VSTypeSupport {
 		visionSupportFlag = true
 	}
+
+	thinkingSupportFlag := false // ThinkingSupport 校验标识
+	ts, ok := result["thinkingSupport"].(string)
+	if ok && mp_common.ThinkingType(ts) == mp_common.ThinkingTypeSupport {
+		thinkingSupportFlag = true
+	}
+
 	// 工具调用校验
 	if toolCallFlag {
 		reqTool := &mp_common.LLMReq{
@@ -159,7 +167,18 @@ func ValidateLLMModel(ctx *gin.Context, modelInfo *model_service.ModelInfo) erro
 		}
 	}
 
-	if !toolCallFlag && !visionSupportFlag {
+	// 深度思考校验
+	if thinkingSupportFlag {
+		if err := validateThinking(iLLM, modelInfo.Model, &stream, true); err != nil {
+			return err
+		}
+
+		if err := validateThinking(iLLM, modelInfo.Model, &stream, false); err != nil {
+			return err
+		}
+	}
+
+	if !toolCallFlag && !visionSupportFlag && !thinkingSupportFlag {
 		// 执行基础校验
 		reqBase := &mp_common.LLMReq{
 			Model: modelInfo.Model,
@@ -598,4 +617,48 @@ func getSyncAsrReqByProvider(ctx *gin.Context, modelInfo *model_service.ModelInf
 		req.Messages[0].Content[0].Audio.FileName = "test.wav"
 	}
 	return req, nil
+}
+
+func validateThinking(iLLM mp.ILLM, model string, stream *bool, enableThinking bool) error {
+	temp := enableThinking
+	reqThinking := &mp_common.LLMReq{
+		Model: model,
+		Messages: []mp_common.OpenAIReqMsg{
+			{
+				Role:    mp_common.MsgRoleUser,
+				Content: "say hi",
+			},
+		},
+		Stream:         stream,
+		EnableThinking: &temp,
+	}
+	llmReqThinking, err := iLLM.NewReq(reqThinking)
+	if err != nil {
+		return err
+	}
+
+	respThinking, _, err := iLLM.ChatCompletions(context.Background(), llmReqThinking)
+	if err != nil {
+		if enableThinking {
+			return fmt.Errorf("thinking validation (enable) failed: %v, maybe model does not support thinking functionality", err)
+		}
+		return fmt.Errorf("thinking validation (disable) failed: %v", err)
+	}
+	openAIRespThinking, ok := respThinking.ConvertResp()
+	if !ok {
+		return fmt.Errorf("thinking validation: invalid response format")
+	}
+
+	if enableThinking {
+		if len(openAIRespThinking.Choices) == 0 || openAIRespThinking.Choices[0].Message == nil ||
+			openAIRespThinking.Choices[0].Message.ReasoningContent == nil || *openAIRespThinking.Choices[0].Message.ReasoningContent == "" {
+			return fmt.Errorf("model does not support thinking functionality when enable_thinking=true")
+		}
+	} else {
+		if len(openAIRespThinking.Choices) > 0 && openAIRespThinking.Choices[0].Message != nil &&
+			openAIRespThinking.Choices[0].Message.ReasoningContent != nil && *openAIRespThinking.Choices[0].Message.ReasoningContent != "" {
+			return fmt.Errorf("model does not support turning off thinking functionality")
+		}
+	}
+	return nil
 }
