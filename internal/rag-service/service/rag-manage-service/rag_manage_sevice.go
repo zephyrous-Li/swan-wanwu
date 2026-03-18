@@ -11,6 +11,7 @@ import (
 	"strconv"
 	"time"
 
+	mp "github.com/UnicomAI/wanwu/pkg/model-provider"
 	sse_util "github.com/UnicomAI/wanwu/pkg/sse-util"
 
 	rag_service "github.com/UnicomAI/wanwu/api/proto/rag-service"
@@ -24,6 +25,7 @@ const (
 	DefaultTemperature      = 0.14
 	DefaultTopP             = 0.85
 	DefaultFrequencyPenalty = 1.1
+	DefaultThinkingEnable   = true
 	DefaultTermWeight       = 1
 	InitialBufferSize       = 64 * 1024        // 初始缓冲区大小：64KB
 	MaxBufferCapacity       = 10 * 1024 * 1024 // 最大缓冲区容量：10MB
@@ -58,6 +60,7 @@ type RagChatParams struct {
 	MetaFilterConditions []*MetadataFilterItem `json:"metadata_filtering_conditions"` // 元数据过滤条件
 	UseGraph             bool                  `json:"use_graph"`                     // 是否启动知识图谱查询
 	AttachmentList       []*AttachmentInfo     `json:"attachment_files"`              // 上传的文件
+	EnableThinking       bool                  `json:"enable_thinking"`               // 是否启用思考模式
 }
 
 type MetadataFilterItem struct {
@@ -91,17 +94,6 @@ type HistoryItem struct {
 type AttachmentInfo struct {
 	FileType string `json:"file_type"`
 	FileUrl  string `json:"file_url"`
-}
-
-type ModelConfig struct {
-	Temperature            float32 `json:"temperature"`
-	TemperatureEnable      bool    `json:"temperatureEnable"`
-	TopP                   float32 `json:"topP"`
-	TopPEnable             bool    `json:"topPEnable"`
-	FrequencyPenalty       float32 `json:"frequencyPenalty"`
-	FrequencyPenaltyEnable bool    `json:"frequencyPenaltyEnable"`
-	PresencePenalty        float32 `json:"presencePenalty"`
-	PresencePenaltyEnable  bool    `json:"presencePenaltyEnable"`
 }
 
 func RagStreamChat(ctx context.Context, userId string, req *RagChatParams) (<-chan string, error) {
@@ -160,82 +152,107 @@ func buildHttpParams(userId string, req *RagChatParams) (*http_client.HttpReques
 
 // BuildChatConsultParams 构造rag 会话参数
 func BuildChatConsultParams(req *rag_service.ChatRagReq, rag *model.RagInfo, knowledgeIDToName map[string]string, knowledgeIds []string) (*RagChatParams, error) {
-	// 知识库参数
-	ragChatParams := &RagChatParams{}
-	knowledgeConfig := rag.KnowledgeBaseConfig
-	ragChatParams.MaxHistory = int32(knowledgeConfig.MaxHistory)
-	ragChatParams.Threshold = float32(knowledgeConfig.Threshold)
-	ragChatParams.TopK = int32(knowledgeConfig.TopK)
-	ragChatParams.RetrieveMethod = buildRetrieveMethod(knowledgeConfig.MatchType)
-	ragChatParams.RerankMod = buildRerankMod(knowledgeConfig.PriorityMatch)
-	ragChatParams.Weight = buildWeight(knowledgeConfig)
-	ragChatParams.KnowledgeIdList = knowledgeIds
-	ragChatParams.RerankModelId = buildRerankId(knowledgeConfig.PriorityMatch, rag.RerankConfig.ModelId)
-	if rag.KnowledgeBaseConfig.TermWeightEnable {
-		ragChatParams.TermWeight = float32(rag.KnowledgeBaseConfig.TermWeight)
+	// rag固定属性
+	ragChatParams := &RagChatParams{
+		Question:     req.Question,
+		Stream:       true,
+		Chichat:      false,
+		RewriteQuery: true,
+		ReturnMeta:   true,
+		AutoCitation: true,
+		History:      make([]*HistoryItem, 0),
 	}
-	// RAG属性参数
-	ragChatParams.Question = req.Question
-	ragChatParams.Stream = true
-	ragChatParams.Chichat = false // 默认false，不开启闲聊
-	ragChatParams.History = make([]*HistoryItem, 0)
-	ragChatParams.RewriteQuery = true
-	ragChatParams.ReturnMeta = true
-	//自动角标
-	ragChatParams.AutoCitation = true
+
+	// 知识库参数
+	kc := rag.KnowledgeBaseConfig
+	ragChatParams.MaxHistory = int32(kc.MaxHistory)
+	ragChatParams.Threshold = float32(kc.Threshold)
+	ragChatParams.TopK = int32(kc.TopK)
+	ragChatParams.RetrieveMethod = buildRetrieveMethod(kc.MatchType)
+	ragChatParams.RerankMod = buildRerankMod(kc.PriorityMatch)
+	ragChatParams.Weight = buildWeight(kc)
+	ragChatParams.KnowledgeIdList = knowledgeIds
+	ragChatParams.RerankModelId = buildRerankId(kc.PriorityMatch, rag.RerankConfig.ModelId)
+	ragChatParams.UseGraph = kc.UseGraph
+	if kc.TermWeightEnable {
+		ragChatParams.TermWeight = float32(kc.TermWeight)
+	}
 
 	// 模型参数
 	ragChatParams.CustomModelInfo = &CustomModelInfo{LlmModelID: rag.ModelConfig.ModelId}
-	modelConfigStr := rag.ModelConfig.Config
-	modelConfig := ModelConfig{}
-	err := json.Unmarshal([]byte(modelConfigStr), &modelConfig)
-	if err != nil {
-		log.Errorf("model config unmarshal fail: %s", modelConfigStr)
-		ragChatParams.Temperature = DefaultTemperature
-		ragChatParams.TopP = DefaultTopP
-		ragChatParams.RepetitionPenalty = DefaultFrequencyPenalty
-		return ragChatParams, nil
+	if err := applyModelParams(ragChatParams, rag.ModelConfig); err != nil {
+		return nil, err
 	}
-	if modelConfig.TemperatureEnable {
-		ragChatParams.Temperature = modelConfig.Temperature
-	} else {
-		ragChatParams.Temperature = DefaultTemperature
-	}
-	if modelConfig.TopPEnable {
-		ragChatParams.TopP = modelConfig.TopP
-	} else {
-		ragChatParams.TopP = DefaultTopP
-	}
-	if modelConfig.FrequencyPenaltyEnable {
-		ragChatParams.RepetitionPenalty = modelConfig.FrequencyPenalty
-	} else {
-		ragChatParams.RepetitionPenalty = DefaultFrequencyPenalty
-	}
+
+	// 元数据过滤
 	filterEnable, metaParams, err := buildRagMetaParams(rag, knowledgeIDToName)
 	if err != nil {
 		return nil, err
 	}
 	ragChatParams.MetaFilter = filterEnable
 	ragChatParams.MetaFilterConditions = metaParams
+
 	ragChatParams.History = buildHistory(req.History)
-	ragChatParams.UseGraph = knowledgeConfig.UseGraph
 	ragChatParams.AttachmentList = buildAttachmentList(req.FileInfoList)
-	log.Infof("ragparams = %+v", http_client.Convert2LogString(ragChatParams))
+
+	log.Infof("rag params = %+v", http_client.Convert2LogString(ragChatParams))
 	return ragChatParams, nil
+}
+
+// applyModelParams 将模型配置写入ragChatParams，解析失败时使用默认值
+func applyModelParams(ragChatParams *RagChatParams, modelCfg model.AppModelConfig) error {
+	_, configMap, err := mp.ToModelParams(modelCfg.Provider, modelCfg.ModelType, modelCfg.Config)
+	if err != nil {
+		log.Errorf("model config unmarshal fail, config: %s, err: %v", modelCfg.Config, err)
+		ragChatParams.Temperature = DefaultTemperature
+		ragChatParams.TopP = DefaultTopP
+		ragChatParams.RepetitionPenalty = DefaultFrequencyPenalty
+		ragChatParams.EnableThinking = DefaultThinkingEnable
+		return nil
+	}
+
+	ragChatParams.Temperature = getFloat32(configMap, "temperature", DefaultTemperature)
+	ragChatParams.TopP = getFloat32(configMap, "top_p", DefaultTopP)
+	ragChatParams.RepetitionPenalty = getFloat32(configMap, "frequency_penalty", DefaultFrequencyPenalty)
+	ragChatParams.EnableThinking = getBool(configMap, "enable_thinking", DefaultThinkingEnable)
+	return nil
+}
+
+func getFloat32(m map[string]interface{}, key string, defaultVal float32) float32 {
+	v, ok := m[key]
+	if !ok || v == nil {
+		return defaultVal
+	}
+	switch val := v.(type) {
+	case float32:
+		return val
+	case float64:
+		return float32(val) // 保险起见兜底
+	}
+	return defaultVal
+}
+
+func getBool(m map[string]interface{}, key string, defaultVal bool) bool {
+	v, ok := m[key]
+	if !ok || v == nil {
+		return defaultVal
+	}
+	if val, ok := v.(bool); ok {
+		return val
+	}
+	return defaultVal
 }
 
 func buildAttachmentList(fileInfos []*rag_service.FileInfo) []*AttachmentInfo {
 	retList := make([]*AttachmentInfo, 0)
-	if len(fileInfos) > 0 {
-		for _, file := range fileInfos {
-			ext := filepath.Ext(file.FileUrl)
-			switch ext {
-			case ".png", ".jpg", ".jpeg":
-				retList = append(retList, &AttachmentInfo{
-					FileType: "image",
-					FileUrl:  file.FileUrl,
-				})
-			}
+	for _, file := range fileInfos {
+		ext := filepath.Ext(file.FileUrl)
+		switch ext {
+		case ".png", ".jpg", ".jpeg":
+			retList = append(retList, &AttachmentInfo{
+				FileType: "image",
+				FileUrl:  file.FileUrl,
+			})
 		}
 	}
 	return retList
@@ -297,7 +314,6 @@ func buildRagMetaParams(rag *model.RagInfo, knowledgeIDToName map[string]string)
 func isValidFilterParams(params *rag_service.RagMetaFilter) bool {
 	return params != nil &&
 		params.FilterEnable &&
-		params.FilterItems != nil &&
 		len(params.FilterItems) > 0
 }
 
