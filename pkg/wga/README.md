@@ -399,10 +399,8 @@ wga.WithToolConfig(       ─────▶  options.Tools[]       ────
   APIAuth: {...}                                               .OperationIDs
 )                                                               .APIAuth
 
-wga.WithWorkspaceConfig(  ─────▶  options.Workspace     ─────▶  InputDir
-  InputDir: "...",                                              OutputDir
-  OutputDir: "..."
-)
+wga.WithInputDir("...")    ─────▶  options.Workspace.InputDir   ─────▶  InputDir
+wga.WithOutputDir("...")   ─────▶  options.Workspace.OutputDir  ─────▶  OutputDir
 
 wga.WithRunSession(       ─────▶  options.RunSession    ─────▶  RunSession
   ThreadID: "thread-123",                                       .ThreadID
@@ -514,6 +512,7 @@ for {
 |------|------|
 | `WithModelConfig` | 模型配置（必须） |
 | `WithToolConfig` | 工具配置 |
-| `WithWorkspaceConfig` | 工作空间 |
+| `WithInputDir` | 输入目录 |
+| `WithOutputDir` | 输出目录 |
 | `WithRunSession` | 会话标识 |
 | `WithMessages` | 消息列表（历史消息 + 当前问题，最后一条必须是 User 消息） |

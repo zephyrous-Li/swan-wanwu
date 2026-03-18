@@ -233,6 +233,9 @@ func WithOverallTask(overallTask string) Option {
 	})
 }
 
+// WithInputDir 设置输入目录。
+// 输入目录的内容会在执行前复制到沙箱工作目录。
+// 支持 "/." 后缀：如 "/path/to/dir/." 表示复制目录内容而非目录本身。
 func WithInputDir(inputDir string) Option {
 	return OptionFunc(func(opts *RunOption) error {
 		opts.InputDir = inputDir
@@ -240,6 +243,9 @@ func WithInputDir(inputDir string) Option {
 	})
 }
 
+// WithOutputDir 设置输出目录。
+// 沙箱工作目录的内容会在执行后复制到该目录。
+// 注意：隐藏文件（以 "." 开头）不会被复制。
 func WithOutputDir(outputDir string) Option {
 	return OptionFunc(func(opts *RunOption) error {
 		opts.OutputDir = outputDir
