@@ -223,7 +223,7 @@ func writeExcelRow(f *excelize.File, sheet string, row int, values []any) error 
 }
 
 func getModelDisplayName(displayNameMap map[string]string, modelId string) string {
-	if displayName, ok := displayNameMap[modelId]; ok && displayName != "" {
+	if displayName, ok := displayNameMap[modelId]; ok {
 		return displayName
 	}
 	return "该模型已被删除"

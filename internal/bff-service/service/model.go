@@ -297,9 +297,6 @@ func toModelInfo(ctx *gin.Context, modelInfo *model_service.ModelInfo, opts ...*
 		AllowEdit:    allowEdit,
 		ImportSource: modelInfo.ImportSource,
 	}
-	if res.DisplayName == "" {
-		res.DisplayName = res.Model
-	}
 	return res, nil
 }
 
