@@ -283,7 +283,7 @@ func toModelInfo(ctx *gin.Context, modelInfo *model_service.ModelInfo, opts ...*
 		Model:        modelInfo.Model,
 		ModelType:    modelInfo.ModelType,
 		DisplayName:  modelInfo.DisplayName,
-		Avatar:       CacheAvatar(ctx, modelInfo.ModelIconPath, true),
+		Avatar:       cacheModelAvatar(ctx, modelInfo.ModelIconPath),
 		PublishDate:  modelInfo.PublishDate,
 		IsActive:     modelInfo.IsActive,
 		UserId:       modelInfo.UserId,
