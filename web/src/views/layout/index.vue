@@ -426,7 +426,7 @@ export default {
       this.isCollapse = localStorage.getItem('menu_collapse') === 'true';
     },
     initScroll() {
-      const pageContainer = document.querySelector('.el-main');
+      const pageContainer = document.querySelector('.el-main .page-container');
       if (pageContainer) {
         pageContainer.scrollTop = 0;
         pageContainer.scrollLeft = 0;
@@ -665,6 +665,7 @@ export default {
           display: inline-block;
         }
         .menu-svg {
+          padding-top: 2px;
           .menu-icon {
             font-size: 16px;
             margin-right: 10px;
@@ -676,7 +677,7 @@ export default {
       }
       .el-menu ::v-deep {
         .el-menu-item {
-          color: $color_title;
+          color: $menu_text_color;
         }
         .el-submenu__title,
         .el-menu-item span {
@@ -826,7 +827,7 @@ export default {
 }
 .menu--popover-item {
   font-size: 13px;
-  color: $color_title;
+  color: $menu_text_color;
   height: 34px;
   line-height: 34px;
   cursor: pointer;
@@ -840,7 +841,7 @@ export default {
   }
   .menu--popover-item-name {
     font-size: 13px;
-    color: $color_title;
+    color: $menu_text_color;
     display: inline-block;
     vertical-align: middle;
   }
