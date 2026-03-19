@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"net/http"
 	"strings"
+	"time"
 
 	err_code "github.com/UnicomAI/wanwu/api/proto/err-code"
 	model_service "github.com/UnicomAI/wanwu/api/proto/model-service"
@@ -50,7 +51,11 @@ func AgentRecommendChatCompletions(ctx *gin.Context, modelID string, req *mp_com
 		gin_util.Response(ctx, nil, err)
 		return
 	}
-	// 校验model字段
+	if !modelInfo.IsActive {
+		gin_util.Response(ctx, nil, grpc_util.ErrorStatus(err_code.Code_BFFModelStatus, modelInfo.ModelId))
+		return
+	}
+
 	if req != nil {
 		if req.Model != modelInfo.Model {
 			gin_util.Response(ctx, nil, grpc_util.ErrorStatus(err_code.Code_BFFGeneral, fmt.Sprintf("model %v chat completions err: model mismatch!", modelInfo.ModelId)))
@@ -60,24 +65,29 @@ func AgentRecommendChatCompletions(ctx *gin.Context, modelID string, req *mp_com
 	// llm config
 	llm, err := mp.ToModelConfig(modelInfo.Provider, modelInfo.ModelType, modelInfo.ProviderConfig)
 	if err != nil {
+		recordModelStatistic(ctx, modelInfo, false, 0, 0, 0, 0, 0, false)
 		gin_util.Response(ctx, nil, grpc_util.ErrorStatus(err_code.Code_BFFGeneral, fmt.Sprintf("model %v chat completions err: %v", modelInfo.ModelId, err)))
 		return
 	}
 
 	iLLM, ok := llm.(mp.ILLM)
 	if !ok {
+		recordModelStatistic(ctx, modelInfo, false, 0, 0, 0, 0, 0, false)
 		gin_util.Response(ctx, nil, grpc_util.ErrorStatus(err_code.Code_BFFGeneral, fmt.Sprintf("model %v chat completions err: invalid provider", modelInfo.ModelId)))
 		return
 	}
+	startTime := time.Now()
 
 	// chat completions
 	llmReq, err := iLLM.NewReq(req)
 	if err != nil {
+		recordModelStatistic(ctx, modelInfo, false, 0, 0, 0, 0, 0, false)
 		gin_util.Response(ctx, nil, grpc_util.ErrorStatus(err_code.Code_BFFGeneral, fmt.Sprintf("model %v chat completions NewReq err: %v", modelInfo.ModelId, err)))
 		return
 	}
 	_, sseCh, err := iLLM.ChatCompletions(ctx.Request.Context(), llmReq)
 	if err != nil {
+		recordModelStatistic(ctx, modelInfo, false, 0, 0, 0, 0, 0, false)
 		gin_util.Response(ctx, nil, grpc_util.ErrorStatus(err_code.Code_BFFGeneral, fmt.Sprintf("model %v chat completions err: %v", modelInfo.ModelId, err)))
 		return
 	}
@@ -87,19 +97,24 @@ func AgentRecommendChatCompletions(ctx *gin.Context, modelID string, req *mp_com
 	ctx.Header("Connection", "keep-alive")
 	ctx.Header("Content-Type", "text/event-stream; charset=utf-8")
 	var (
-		startFlag    = false     // 开始回答标志
-		startSign    = "<START>" // 开始回答标识符
-		errorSign    = "<ERROR>" // 拒绝回答标志
-		leftBracket  = "<"       // 左括号
-		rightBracket = ">"       // 右括号
-		startText    = "START"
-		errorText    = "ERROR"
-		accStr       = ""    // LLM delta.Content 累计，用于处理<think></think>问题
-		accFlag      = true  // LM delta.Content 累计，false表示不再需要累计
-		joinStr      = ""    // 开始回答拼接字符串
-		endFlag      = false // 结束标志
-		skipFlag     = false // 跳过标志
-		errorFlag    = false // 拒绝回答标志
+		startFlag         = false     // 开始回答标志
+		startSign         = "<START>" // 开始回答标识符
+		errorSign         = "<ERROR>" // 拒绝回答标志
+		leftBracket       = "<"       // 左括号
+		rightBracket      = ">"       // 右括号
+		startText         = "START"
+		errorText         = "ERROR"
+		accStr            = ""    // LLM delta.Content 累计，用于处理<think></think>问题
+		accFlag           = true  // LM delta.Content 累计，false表示不再需要累计
+		joinStr           = ""    // 开始回答拼接字符串
+		endFlag           = false // 结束标志
+		skipFlag          = false // 跳过标志
+		errorFlag         = false // 拒绝回答标志
+		firstTokenTime    time.Time
+		firstTokenLatency int
+		promptTokens      int
+		completionTokens  int
+		totalTokens       int
 	)
 
 	for sseResp := range sseCh {
@@ -177,6 +192,13 @@ func AgentRecommendChatCompletions(ctx *gin.Context, modelID string, req *mp_com
 				dataByte, _ := json.Marshal(resp)
 				dataStr = fmt.Sprintf("data: %v\n", string(dataByte))
 			}
+			if firstTokenTime.IsZero() {
+				firstTokenTime = time.Now()
+				firstTokenLatency = int(time.Since(startTime).Milliseconds())
+			}
+			promptTokens = data.Usage.PromptTokens
+			completionTokens = data.Usage.CompletionTokens
+			totalTokens = data.Usage.TotalTokens
 		} else {
 			dataStr = fmt.Sprintf("%v\n", sseResp.String())
 		}
@@ -187,6 +209,8 @@ func AgentRecommendChatCompletions(ctx *gin.Context, modelID string, req *mp_com
 	}
 	ctx.Set(gin_util.STATUS, http.StatusOK)
 	ctx.Set(gin_util.RESULT, answer)
+	recordModelStatistic(ctx, modelInfo, true,
+		promptTokens, completionTokens, totalTokens, 0, firstTokenLatency, true)
 }
 
 func buildRecommendResp(errorFlag bool, data *mp_common.LLMResp) *RecommendLLMResp {

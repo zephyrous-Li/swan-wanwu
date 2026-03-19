@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"time"
 
 	err_code "github.com/UnicomAI/wanwu/api/proto/err-code"
 	model_service "github.com/UnicomAI/wanwu/api/proto/model-service"
@@ -86,27 +87,32 @@ func ModelExperienceLLM(ctx *gin.Context, userId, orgId string, req *request.Mod
 		maxTokens := int(req.MaxTokens)
 		llmReq.MaxTokens = &maxTokens
 	}
+	llmReq.EnableThinking = req.ThinkingEnable
 
-	// llm config
 	llm, err := mp.ToModelConfig(modelInfo.Provider, modelInfo.ModelType, modelInfo.ProviderConfig)
 	if err != nil {
+		recordModelStatistic(ctx, modelInfo, false, 0, 0, 0, 0, 0, false)
 		gin_util.Response(ctx, nil, grpc_util.ErrorStatus(err_code.Code_BFFGeneral, err.Error()))
 		return
 	}
 	iLLM, ok := llm.(mp.ILLM)
 	if !ok {
+		recordModelStatistic(ctx, modelInfo, false, 0, 0, 0, 0, 0, false)
 		gin_util.Response(ctx, nil, grpc_util.ErrorStatus(err_code.Code_BFFGeneral, err.Error()))
 		return
 	}
+	startTime := time.Now()
 
 	// chat completions
 	iLLMReq, err := iLLM.NewReq(llmReq)
 	if err != nil {
+		recordModelStatistic(ctx, modelInfo, false, 0, 0, 0, 0, 0, false)
 		gin_util.Response(ctx, nil, grpc_util.ErrorStatus(err_code.Code_BFFGeneral, err.Error()))
 		return
 	}
 	_, sseCh, err := iLLM.ChatCompletions(ctx.Request.Context(), iLLMReq)
 	if err != nil {
+		recordModelStatistic(ctx, modelInfo, false, 0, 0, 0, 0, 0, false)
 		gin_util.Response(ctx, nil, grpc_util.ErrorStatus(err_code.Code_BFFGeneral, err.Error()))
 		return
 	}
@@ -129,8 +135,13 @@ func ModelExperienceLLM(ctx *gin.Context, userId, orgId string, req *request.Mod
 	var answer string
 	var reasonContent string
 	var (
-		firstFlag = false // 思维链起始标识符，默认思维链未开始
-		endFlag   = false // 思维链结束标识符，默认思维链未结束
+		firstFlag         = false // 思维链起始标识符，默认思维链未开始
+		endFlag           = false // 思维链结束标识符，默认思维链未结束
+		firstTokenTime    time.Time
+		firstTokenLatency int
+		promptTokens      int
+		completionTokens  int
+		totalTokens       int
 	)
 	ctx.Header("Cache-Control", "no-cache")
 	ctx.Header("Connection", "keep-alive")
@@ -140,35 +151,43 @@ func ModelExperienceLLM(ctx *gin.Context, userId, orgId string, req *request.Mod
 	for sseResp := range sseCh {
 		data, ok = sseResp.ConvertResp()
 		dataStr := ""
-		if ok && data != nil && len(data.Choices) > 0 {
-			delta := data.Choices[0].Delta
-			if delta != nil {
+		if ok && data != nil {
+			if len(data.Choices) > 0 && data.Choices[0].Delta != nil {
+				delta := data.Choices[0].Delta
 				answer = answer + delta.Content
 
 				if delta.ReasoningContent != nil {
 					reasonContent = reasonContent + *delta.ReasoningContent
 				}
+
+				if firstFlag && !endFlag && delta.ReasoningContent != nil {
+					delta.Content = delta.Content + *delta.ReasoningContent
+				}
+				if !endFlag && delta.Content != "" && ((delta.ReasoningContent != nil &&
+					*delta.ReasoningContent == "") || delta.ReasoningContent == nil) && firstFlag {
+					delta.Content = "\n<think>\n" + delta.Content
+					endFlag = true
+				}
+				if !firstFlag && delta.ReasoningContent != nil && *delta.ReasoningContent != "" && delta.Content == "" {
+					delta.Content = "<think>\n" + delta.Content + *delta.ReasoningContent
+					firstFlag = true
+				}
 			}
-			if firstFlag && !endFlag && delta.ReasoningContent != nil {
-				delta.Content = delta.Content + *delta.ReasoningContent
-			}
-			if !endFlag && delta.Content != "" && ((delta.ReasoningContent != nil &&
-				*delta.ReasoningContent == "") || delta.ReasoningContent == nil) && firstFlag {
-				delta.Content = "\n</think>\n" + delta.Content
-				endFlag = true
-			}
-			if !firstFlag && delta.ReasoningContent != nil && *delta.ReasoningContent != "" && delta.Content == "" {
-				delta.Content = "<think>\n" +
-					delta.Content + *delta.ReasoningContent
-				firstFlag = true
-			}
+
 			dataByte, _ := json.Marshal(data)
 			dataStr = fmt.Sprintf("data: %v\n", string(dataByte))
+			if firstTokenTime.IsZero() {
+				firstTokenTime = time.Now()
+				firstTokenLatency = int(time.Since(startTime).Milliseconds())
+			}
+			promptTokens = data.Usage.PromptTokens
+			completionTokens = data.Usage.CompletionTokens
+			totalTokens = data.Usage.TotalTokens
 		} else {
 			dataStr = fmt.Sprintf("%v\n", sseResp.String())
 		}
 		if _, err = ctx.Writer.Write([]byte(dataStr)); err != nil {
-			log.Errorf("mdoel experience write sse err: %v", err)
+			log.Errorf("model experience write sse err: %v", err)
 		}
 		ctx.Writer.Flush()
 	}
@@ -184,12 +203,14 @@ func ModelExperienceLLM(ctx *gin.Context, userId, orgId string, req *request.Mod
 		ReasoningContent:  reasonContent,
 		Role:              string(mp_common.MsgRoleAssistant),
 	}); err != nil {
-		log.Errorf("mdoel experience save record err: %v", err)
+		log.Errorf("model experience save record err: %v", err)
 		return
 	}
 
 	ctx.Set(gin_util.STATUS, http.StatusOK)
 	ctx.Set(gin_util.RESULT, answer)
+	recordModelStatistic(ctx, modelInfo, true,
+		promptTokens, completionTokens, totalTokens, 0, firstTokenLatency, true)
 }
 
 func SaveModelExperienceDialog(ctx *gin.Context, userId, orgId string, req *request.ModelExperienceDialogRequest) (*response.ModelExperienceDialog, error) {

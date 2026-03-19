@@ -6,6 +6,7 @@ import (
 	"net/http"
 	"reflect"
 	"strings"
+	"time"
 
 	assistant_service "github.com/UnicomAI/wanwu/api/proto/assistant-service"
 	errs "github.com/UnicomAI/wanwu/api/proto/err-code"
@@ -135,11 +136,16 @@ func getPromptCustom(ctx *gin.Context, modelId string, reqInfo *mp_common.LLMReq
 		gin_util.Response(ctx, nil, err)
 		return
 	}
+	if !modelInfo.IsActive {
+		gin_util.Response(ctx, nil, grpc_util.ErrorStatus(errs.Code_BFFModelStatus, modelInfo.ModelId))
+		return
+	}
 	reqInfo.Model = modelInfo.Model
 
-	// 配置模型参数
 	llm, err := mp.ToModelConfig(modelInfo.Provider, modelInfo.ModelType, modelInfo.ProviderConfig)
 	if err != nil {
+		recordModelStatistic(ctx, modelInfo, false, 0, 0, 0, 0, 0, false)
+		gin_util.Response(ctx, nil, grpc_util.ErrorStatus(errs.Code_BFFGeneral, fmt.Sprintf("model %v chat completions err: %v", modelInfo.ModelId, err)))
 		return
 	}
 
@@ -158,24 +164,37 @@ func getPromptCustom(ctx *gin.Context, modelId string, reqInfo *mp_common.LLMReq
 
 	iLLM, ok := llm.(mp.ILLM)
 	if !ok {
+		recordModelStatistic(ctx, modelInfo, false, 0, 0, 0, 0, 0, false)
 		gin_util.Response(ctx, nil, grpc_util.ErrorStatus(errs.Code_BFFGeneral, fmt.Sprintf("model %v chat completions err: invalid provider", modelInfo.ModelId)))
 		return
 	}
+	startTime := time.Now()
 
 	// chat completions
 	llmReq, err := iLLM.NewReq(reqInfo)
 	if err != nil {
+		recordModelStatistic(ctx, modelInfo, false, 0, 0, 0, 0, 0, false)
 		gin_util.Response(ctx, nil, grpc_util.ErrorStatus(errs.Code_BFFGeneral, fmt.Sprintf("model %v chat completions NewReq err: %v", modelInfo.ModelId, err)))
 		return
 	}
 	_, sseCh, err := iLLM.ChatCompletions(ctx.Request.Context(), llmReq)
 	if err != nil {
+		recordModelStatistic(ctx, modelInfo, false, 0, 0, 0, 0, 0, false)
 		gin_util.Response(ctx, nil, grpc_util.ErrorStatus(errs.Code_BFFGeneral, fmt.Sprintf("model %v chat completions err: %v", modelInfo.ModelId, err)))
 		return
 	}
 
 	// stream
 	var answer string
+
+	var (
+		firstTokenTime    time.Time
+		firstTokenLatency int
+		promptTokens      int
+		completionTokens  int
+		totalTokens       int
+	)
+
 	ctx.Header("Cache-Control", "no-cache")
 	ctx.Header("Connection", "keep-alive")
 	ctx.Header("Content-Type", "text/event-stream; charset=utf-8")
@@ -264,6 +283,13 @@ func getPromptCustom(ctx *gin.Context, modelId string, reqInfo *mp_common.LLMReq
 				dataByte, _ := json.Marshal(streamData)
 				dataStr = fmt.Sprintf("data: %v\n", string(dataByte))
 			}
+			if firstTokenTime.IsZero() {
+				firstTokenTime = time.Now()
+				firstTokenLatency = int(time.Since(startTime).Milliseconds())
+			}
+			promptTokens = data.Usage.PromptTokens
+			completionTokens = data.Usage.CompletionTokens
+			totalTokens = data.Usage.TotalTokens
 		} else {
 			dataStr = fmt.Sprintf("%v\n", sseResp.String())
 		}
@@ -278,12 +304,15 @@ func getPromptCustom(ctx *gin.Context, modelId string, reqInfo *mp_common.LLMReq
 	}
 
 	if len(answer) == 0 {
+		recordModelStatistic(ctx, modelInfo, false, 0, 0, 0, 0, 0, true)
 		gin_util.Response(ctx, nil, grpc_util.ErrorStatus(errs.Code_BFFGeneral, "answer is empty"))
 		return
 	}
 
 	ctx.Set(gin_util.STATUS, http.StatusOK)
 	ctx.Set(gin_util.RESULT, answer)
+	recordModelStatistic(ctx, modelInfo, true,
+		promptTokens, completionTokens, totalTokens, 0, firstTokenLatency, true)
 }
 
 func buildPromptTempDetail(wtfCfg config.PromptTempConfig) *response.PromptTemplateDetail {
