@@ -32,9 +32,9 @@ func CreateChatModel(ctx context.Context, agentChatInfo *service_model.AgentChat
 	enableThinking := req.ModelParams.EnableThinking
 	var extraFields map[string]any
 	if enableThinking != nil {
-		var thinking = "false"
+		var thinking = false
 		if *enableThinking == 1 {
-			thinking = "true"
+			thinking = true
 		}
 		extraFields = map[string]any{"enable_thinking": thinking}
 	}
