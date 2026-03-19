@@ -217,6 +217,7 @@ type RagKnowledgeChatReq struct {
 	UseGraph             bool                           `json:"use_graph"`                     // 是否启动知识图谱查询
 	EnableVision         bool                           `json:"enable_vision"`                 // 召回结果是否包含多模态文件
 	AttachmentFiles      []*RagKnowledgeAttachment      `json:"attachment_files"`              // 上传的多模态文件
+	EnableThinking       bool                           `json:"enable_thinking"`               // 是否打开思考过程
 	CommonCheck
 }
 
