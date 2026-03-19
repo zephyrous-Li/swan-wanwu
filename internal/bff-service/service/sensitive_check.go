@@ -110,7 +110,7 @@ func ProcessSensitiveWords(ctx *gin.Context, rawCh <-chan string, matchDicts []a
 	go func() {
 		defer util.PrintPanicStack()
 		defer close(outputCh)
-		var id string
+		var id, content string
 		// contentQueue: 滑动窗口队列，累积最近M条内容用于检测跨消息拆分的敏感词
 		contentQueue := queue_util.NewOverridableQueue(defaultCheckWindowSize)
 
@@ -119,19 +119,18 @@ func ProcessSensitiveWords(ctx *gin.Context, rawCh <-chan string, matchDicts []a
 		// 缺点：检测次数多（每条消息检测一次）
 		for raw := range rawCh {
 			currId, currContent := chatSrv.parseContent(raw)
-			log.Debugf("[%v] raw (%v) parse id (%v) content (%v)", chatSrv.serviceType(), raw, currId, currContent)
 			id = currId
 			contentQueue.EnQueue(currContent)
 
-			content := contentQueue.AllValue()
+			content = contentQueue.AllValue()
 			matchResults, err := ahocorasick.ContentMatch(content, matchDicts, true)
-			log.Debugf("[%v] content (%v) check %+v sensitive results: %+v", chatSrv.serviceType(), content, matchDicts, matchResults)
 			if err != nil {
 				log.Errorf("[%v] content (%v) check sensitive err: %v", chatSrv.serviceType(), content, err)
 				outputCh <- raw
 				continue
 			}
 			if len(matchResults) > 0 {
+				log.Warnf("[%v] content (%v) check sensitive match results: %+v", chatSrv.serviceType(), content, matchResults)
 				if matchResults[0].Reply != "" {
 					for _, sensitiveMsg := range chatSrv.buildSensitiveResp(id, matchResults[0].Reply) {
 						outputCh <- sensitiveMsg
@@ -155,14 +154,12 @@ func ProcessSensitiveWords(ctx *gin.Context, rawCh <-chan string, matchDicts []a
 		// rawQueue := queue_util.NewBoundedQueue(defaultRawCacheSize)
 		// for raw := range rawCh {
 		// 	currId, currContent := chatSrv.parseContent(raw)
-		// 	log.Debugf("[%v] raw (%v) parse id (%v) content (%v)", chatSrv.serviceType(), raw, currId, currContent)
 		// 	id = currId
 		// 	contentQueue.EnQueue(currContent)
 		// 	if rawQueue.IsFull() {
 		// 		// 校验敏感词
-		// 		content := contentQueue.AllValue()
+		// 		content = contentQueue.AllValue()
 		// 		matchResults, err = ahocorasick.ContentMatch(content, matchDicts, true)
-		// 		log.Debugf("[%v] content (%v) check %+v sensitive results: %+v", chatSrv.serviceType(), content, matchDicts, matchResults)
 		// 		if err != nil {
 		// 			log.Errorf("[%v] content (%v) check sensitive err: %v", chatSrv.serviceType(), content, err)
 		// 		} else if len(matchResults) > 0 {
@@ -180,9 +177,8 @@ func ProcessSensitiveWords(ctx *gin.Context, rawCh <-chan string, matchDicts []a
 
 		// // 处理剩余内容
 		// if len(matchResults) == 0 {
-		// 	content := contentQueue.AllValue()
+		// 	content = contentQueue.AllValue()
 		// 	matchResults, err = ahocorasick.ContentMatch(content, matchDicts, true)
-		// 	log.Debugf("[%v] rest content (%v) check %+v sensitive results: %+v", chatSrv.serviceType(), content, matchDicts, matchResults)
 		// 	if err != nil {
 		// 		log.Errorf("[%v] content (%v) check sensitive err: %v", chatSrv.serviceType(), content, err)
 		// 	}
@@ -190,6 +186,7 @@ func ProcessSensitiveWords(ctx *gin.Context, rawCh <-chan string, matchDicts []a
 
 		// // 检测到敏感词
 		// if len(matchResults) > 0 {
+		// 	log.Warnf("[%v] content (%v) check sensitive match results: %+v", chatSrv.serviceType(), content, matchResults)
 		// 	if matchResults[0].Reply != "" {
 		// 		for _, sensitiveMsg := range chatSrv.buildSensitiveResp(id, matchResults[0].Reply) {
 		// 			outputCh <- sensitiveMsg

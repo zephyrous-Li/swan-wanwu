@@ -1,6 +1,7 @@
 package service
 
 import (
+	"encoding/json"
 	"fmt"
 
 	mp_common "github.com/UnicomAI/wanwu/pkg/model-provider/mp-common"
@@ -275,6 +276,17 @@ func toModelInfo(ctx *gin.Context, modelInfo *model_service.ModelInfo, opts ...*
 		}
 	}
 	allowEdit := modelInfo.UserId == option.UserId
+
+	// 不支持编辑，则不展示apiKey
+	if !allowEdit && modelConfig != nil {
+		cfg := make(map[string]any)
+		if b, err := json.Marshal(modelConfig); err == nil {
+			if err = json.Unmarshal(b, &cfg); err == nil {
+				cfg["apiKey"] = "it-is-not-your-api-key"
+				modelConfig = cfg
+			}
+		}
+	}
 
 	res := &response.ModelInfo{
 		ModelId:      modelInfo.ModelId,
