@@ -623,9 +623,11 @@ func cozeWorkflowInfo2Model(workflowInfo *response.CozeWorkflowListDataWorkflow)
 }
 
 func toModelInfo4Workflow(modelInfo *response.ModelInfo) (*response.CozeWorkflowModelInfo, error) {
+	// 默认过滤thinking_type参数
+	needFilterThinkingType := true
+
 	ret := &response.CozeWorkflowModelInfo{
-		ModelInfo:   *modelInfo,
-		ModelParams: config.Cfg().Workflow.ModelParams,
+		ModelInfo: *modelInfo,
 	}
 	if modelInfo.Config != nil {
 		cfg := make(map[string]interface{})
@@ -646,9 +648,24 @@ func toModelInfo4Workflow(modelInfo *response.ModelInfo) (*response.CozeWorkflow
 				if vs, ok := v.(string); ok && mp_common.VSType(vs) == mp_common.VSTypeSupport {
 					ret.ModelAbility.ImageUnderstanding = true
 				}
-
+			case "thinkingSupport":
+				if ts, ok := v.(string); ok && mp_common.ThinkingType(ts) == mp_common.ThinkingTypeSupport {
+					needFilterThinkingType = false
+				}
 			}
 		}
 	}
+
+	// 根据需要过滤modelParams
+	if needFilterThinkingType {
+		for _, param := range config.Cfg().Workflow.ModelParams {
+			if param.Name != "thinking_type" {
+				ret.ModelParams = append(ret.ModelParams, param)
+			}
+		}
+	} else {
+		ret.ModelParams = config.Cfg().Workflow.ModelParams
+	}
+
 	return ret, nil
 }

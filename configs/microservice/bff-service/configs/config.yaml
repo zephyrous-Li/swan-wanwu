@@ -360,6 +360,25 @@ workflow:
         label: "输入及输出设置"
       default_val:
         default_val: "0"
+    - name: thinking_type
+      desc: "开启深度思考后，在输出最终回答之前，模型会先输出一段思维链内容，以提升最终答案的准确性。"
+      label: "深度思考开关"
+      type: 4
+      precision: 0
+      min: ""
+      max: ""
+      param_class:
+        class_id: 6
+        label: "深度思考"
+      default_val:
+        default_val: "enabled"
+      api_mode: 0
+      custom_flag: true
+      options:
+        - label: "开启"
+          value: "enabled"
+        - label: "关闭"
+          value: "disabled"
 
 wga-sandbox:
   sandbox:
