@@ -341,7 +341,7 @@ export default {
       }
       ::v-deep .el-submenu__title,
       ::v-deep .el-menu-item span {
-        font-size: 15px !important;
+        font-size: 14px !important;
       }
       ::v-deep .el-menu-item.is-active,
       ::v-deep .el-menu-item:focus {
@@ -355,7 +355,7 @@ export default {
       }
       ::v-deep .el-submenu__title {
         span {
-          font-size: 15px !important;
+          font-size: 14px !important;
         }
       }
       ::v-deep .el-submenu.is-active .el-submenu__title {
@@ -363,11 +363,12 @@ export default {
       }
       ::v-deep .el-menu .el-submenu__title,
       ::v-deep .el-menu .el-menu-item {
-        height: 40px;
-        line-height: 40px;
+        height: 36px;
+        line-height: 36px;
         border-radius: 6px;
-        margin: 10px;
+        margin: 3px 6px;
         min-width: auto;
+        font-size: 14px;
       }
       ::v-deep .el-menu {
         border: none;
