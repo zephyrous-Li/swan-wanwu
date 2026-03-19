@@ -155,6 +155,7 @@ export default {
       this.dialogVisible = true;
       if (this.modelform !== null) {
         const data = JSON.parse(JSON.stringify(this.modelform));
+        console.log(data, '--------------------------data');
         this.ruleForm = data;
       }
     },

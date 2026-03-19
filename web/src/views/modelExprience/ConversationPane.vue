@@ -194,11 +194,6 @@ export default {
               }),
             );
             this.fetchModelDetail(id).then(result => {
-              console.log(
-                result,
-                this.modelChatList,
-                '----------------------------',
-              );
               this.modelChatList.some((item, index) => {
                 if (item.modelId === id) {
                   this.isModelComparison && (result.sessionId = this.$guid());

@@ -4,6 +4,8 @@ export const generateChatConfig = params => {
       ? params.modelDetail.config || {}
       : {}
     : {};
+  const thinkingEnableObj =
+    config.thinkingSupport === 'support' ? { thinkingEnable: true } : {};
   return {
     pending: true, // 模型信息初始化状态
     model: '', // 模型名称
@@ -27,6 +29,7 @@ export const generateChatConfig = params => {
       maxTokensEnable: false,
       frequencyPenaltyEnable: false,
       thinkingSupport: config.thinkingSupport,
+      ...thinkingEnableObj,
     },
     ...params,
   };
