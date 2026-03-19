@@ -13,6 +13,7 @@ type LLM struct {
 	EndpointUrl     string `json:"endpointUrl"`                                         // 推理url
 	FunctionCalling string `json:"functionCalling" validate:"oneof=noSupport toolCall"` // 函数调用是否支持
 	VisionSupport   string `json:"visionSupport" validate:"oneof=noSupport support"`    // 视觉支持
+	ThinkingSupport string `json:"thinkingSupport" validate:"oneof=noSupport support"`  // 深度思考是否支持
 	MaxTokens       *int   `json:"maxTokens"`                                           // 模型回答最大tokens
 	ContextSize     *int   `json:"contextSize"`                                         // 上下文长度
 	MaxImageSize    *int64 `json:"maxImageSize"`                                        // 最大图片大小限制
@@ -40,6 +41,12 @@ func (cfg *LLM) NewReq(req *mp_common.LLMReq) (mp_common.ILLMReq, error) {
 	}
 	if req.MaxTokens != nil {
 		m["max_new_tokens"] = *req.MaxTokens
+	}
+	if req.EnableThinking != nil {
+		m["chat_template_kwargs"] = map[string]interface{}{
+			"enable_thinking": *req.EnableThinking,
+			"thinking":        *req.EnableThinking,
+		}
 	}
 	return mp_common.NewLLMReq(m), nil
 }
