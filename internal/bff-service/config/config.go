@@ -208,16 +208,24 @@ type WorkflowServiceConfig struct {
 }
 
 type WorkflowModelParam struct {
-	Name      string `json:"name" mapstructure:"name"`
-	Desc      string `json:"desc" mapstructure:"desc"`
-	Label     string `json:"label" mapstructure:"label"`
-	Type      int    `json:"type" mapstructure:"type"`
-	Precision int    `json:"precision" mapstructure:"precision"`
-	Min       string `json:"min" mapstructure:"min"`
-	Max       string `json:"max" mapstructure:"max"`
+	Name       string `json:"name" mapstructure:"name"`
+	Desc       string `json:"desc" mapstructure:"desc"`
+	Label      string `json:"label" mapstructure:"label"`
+	Type       int    `json:"type" mapstructure:"type"`
+	Precision  int    `json:"precision" mapstructure:"precision"`
+	Min        string `json:"min" mapstructure:"min"`
+	Max        string `json:"max" mapstructure:"max"`
+	APIMode    int    `json:"api_mode" mapstructure:"api_mode"`
+	CustomFlag bool   `json:"custom_flag" mapstructure:"custom_flag"`
 
 	ParamClass WorkflowModelParamClass      `json:"param_class" mapstructure:"param_class"`
 	DefaultVal WorkflowModelParamDefaultVal `json:"default_val" mapstructure:"default_val"`
+	Options    []WorkflowModelParamOption   `json:"options" mapstructure:"options"`
+}
+
+type WorkflowModelParamOption struct {
+	Label string `json:"label" mapstructure:"label"`
+	Value string `json:"value" mapstructure:"value"`
 }
 
 type WorkflowModelParamClass struct {
