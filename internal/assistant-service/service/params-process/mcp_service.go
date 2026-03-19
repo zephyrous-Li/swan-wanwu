@@ -5,7 +5,6 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-
 	assistant_service "github.com/UnicomAI/wanwu/api/proto/assistant-service"
 	mcp_service "github.com/UnicomAI/wanwu/api/proto/mcp-service"
 	"github.com/UnicomAI/wanwu/internal/assistant-service/client/model"
@@ -69,6 +68,7 @@ func (k *McpProcess) Build(assistant *AgentInfo, prepareParams *AgentPreparePara
 				Transport:    info.Transport,
 				Url:          info.URL,
 				ToolNameList: info.ToolNameList,
+				Avatar:       info.Avatar,
 			})
 		}
 		agentChatParams.ToolParams.McpToolList = append(agentChatParams.ToolParams.McpToolList, mcpToolList...)
@@ -135,6 +135,7 @@ func buildCustomMcpList(prepareParams *AgentPrepareParams, mcpTools map[string]c
 				URL:          mcpCustom.SseUrl,
 				Transport:    "sse",
 				ToolNameList: toolList,
+				Avatar:       "/v1/static/icon/mcp-custom-default-icon.png",
 			}
 		}
 	}
@@ -148,6 +149,7 @@ func buildMcpServerList(prepareParams *AgentPrepareParams, mcpTools map[string]c
 				URL:          mcpServer.SseUrl,
 				Transport:    "sse",
 				ToolNameList: toolList,
+				Avatar:       "/v1/static/icon/mcp-server-default-icon.png",
 			}
 		}
 	}

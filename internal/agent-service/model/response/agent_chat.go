@@ -28,9 +28,14 @@ const (
 type ToolStep int
 
 type AgentTool struct {
-	ToolId   string
-	ToolStep ToolStep //工具阶段
-	Order    int      //工具顺序
+	ToolId    string
+	ToolIndex *int
+	ToolName  string
+	ToolType  int
+	Avatar    string
+	ToolStep  ToolStep //工具阶段
+	Order     int      //工具顺序
+	StartTime int64
 }
 
 type AgentInfo struct {
@@ -59,6 +64,10 @@ type AgentChatRespContext struct {
 	ReplaceContent     strings.Builder // 替换内容，如果出现相同内则则进行替换
 	ReplaceContentStr  string          // 替换内容，如果出现相同内则则进行替换
 	ReplaceContentDone bool            //替换内容准备完成
+
+	ContentOutput bool       //上个事件是否是输出内容
+	Thinking      bool       // 思考中
+	ThinkingTool  *AgentTool // 思考工具
 }
 
 func (c *AgentChatRespContext) AgentParamsStart(toolId string) {
@@ -82,11 +91,16 @@ func (c *AgentChatRespContext) ResetTool() {
 	c.ReplaceContentDone = false
 }
 
-func NewAgentChatRespContext(multiAgent bool, mainAgentName string) *AgentChatRespContext {
+func (c *AgentChatRespContext) IncreaseOrder() {
+	c.Order = c.Order + 1
+}
+
+func NewAgentChatRespContext(multiAgent bool, mainAgentName string, order int) *AgentChatRespContext {
 	return &AgentChatRespContext{
 		MainAgentName: mainAgentName,
 		ToolMap:       make(map[string]*AgentTool),
 		MultiAgent:    multiAgent,
+		Order:         order,
 	}
 }
 
@@ -195,6 +209,10 @@ func buildUsage(chatMessage *schema.Message) *AgentChatUsage {
 }
 
 func buildSubAgentSearchList(subAgentEventData *SubEventData, req *request.AgentChatContext) []interface{} {
+	searchList := buildSearchList(req) //处理单智能体知识库数据
+	if len(searchList) > 0 {
+		return searchList
+	}
 	if subAgentEventData == nil || req == nil || len(req.SubAgentMap) == 0 {
 		return nil
 	}
@@ -202,7 +220,6 @@ func buildSubAgentSearchList(subAgentEventData *SubEventData, req *request.Agent
 	if config == nil || config.AgentChatContext == nil {
 		return nil
 	}
-
 	return buildSearchList(config.AgentChatContext)
 }
 

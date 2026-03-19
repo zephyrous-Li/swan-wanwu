@@ -4,9 +4,12 @@ type ConversationType string
 type SubEventStatus int
 
 const (
-	AgentTool    ConversationType = "agentTool"    //主智能体工具
-	SubAgent     ConversationType = "subAgent"     //子智能体
-	SubAgentTool ConversationType = "subAgentTool" //子智能体工具
+	AgentTool         ConversationType = "agentTool"         //主智能体工具
+	AgentKnowledge    ConversationType = "agentKnowledge"    //主智能体知识库
+	AgentThink        ConversationType = "agentThink"        //主智能体思考
+	SubAgent          ConversationType = "subAgent"          //子智能体
+	SubAgentTool      ConversationType = "subAgentTool"      //子智能体工具
+	SubAgentKnowledge ConversationType = "subAgentKnowledge" //子智能体只是库
 
 	EventStartStatus   SubEventStatus = 1 //开始事件
 	EventProcessStatus SubEventStatus = 2 //输出中
@@ -23,6 +26,7 @@ type FileInfo struct {
 type SubEventData struct {
 	Status   SubEventStatus `json:"status"`
 	Id       string         `json:"id"`
+	ParentId string         `json:"parentId"`
 	Name     string         `json:"name"`
 	Profile  string         `json:"profile"`
 	TimeCost string         `json:"timeCost"`

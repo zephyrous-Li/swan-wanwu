@@ -31,7 +31,7 @@ func SingleAgentChat(ctx *gin.Context, req *request.AgentChatReq) error {
 	if err != nil {
 		return err
 	}
-	return SingleAgentChatDirect(ctx, BuildAgentParams(req, singleAgentDetail))
+	return SingleAgentChatDirect(ctx, BuildAgentParams(req, singleAgentDetail, true))
 }
 
 // SingleAgentChatDirect 单智能体问答
@@ -73,6 +73,7 @@ func CreateSingleAgent(ctx *gin.Context, req *request.AgentChatParams) (*SingleA
 			LocalAgentService: localAgentService,
 			AgentChatInfo:     chatInfo,
 			GinContext:        ctx,
+			CallDetail:        true,
 		},
 		ChatContext: chatContext,
 	}, nil
@@ -87,7 +88,8 @@ func (s *SingleAgent) Chat(ctx *gin.Context) error {
 	iter := runner.Query(ctx, s.Req.Input)
 
 	//2.处理结果
-	err := agent_message_processor.AgentMessage(ctx, iter, &request.AgentChatContext{AgentChatReq: s.Req, KnowledgeHitData: s.ChatContext.KnowledgeHitData})
+	_, err := agent_message_processor.AgentMessage(ctx, iter, &request.AgentChatContext{AgentChatReq: s.Req,
+		KnowledgeHitData: s.ChatContext.KnowledgeHitData, ToolMap: buildToolMap(s.Req), Order: s.ChatContext.Order})
 	return err
 }
 
@@ -101,7 +103,8 @@ func (s *SingleAgent) Description(ctx context.Context) string {
 func (s *SingleAgent) Run(ctx context.Context, input *adk.AgentInput, options ...adk.AgentRunOption) *adk.AsyncIterator[*adk.AgentEvent] {
 	log.Infof("[%s] single agent run", s.Req.AgentBaseParams.Name)
 	//参数预处理
-	process := agent_preprocessor.AgentPreProcess(s.AgentPreprocess, input, s.Req)
+	process, chatContext := agent_preprocessor.AgentPreProcess(s.AgentPreprocess, input, s.Req)
+	s.ChatContext.Order = chatContext.Order
 	return s.ChatModelAgent.Run(ctx, process, options...)
 }
 
@@ -169,4 +172,31 @@ func createAgent(ctx *gin.Context, req *request.AgentChatParams, chatModel model
 		ToolsConfig: toolsConfig,
 		Exit:        exit,
 	})
+}
+
+func buildToolMap(params *request.AgentChatParams) map[string]*request.ToolConfig {
+	toolMap := make(map[string]*request.ToolConfig)
+	if params.ToolParams != nil {
+		if len(params.ToolParams.PluginToolList) > 0 {
+			for _, toolInfo := range params.ToolParams.PluginToolList {
+				toolMap[toolInfo.ToolName] = &request.ToolConfig{
+					Avatar:   toolInfo.ToolAvatar,
+					ToolName: toolInfo.ToolName,
+				}
+			}
+		}
+		if len(params.ToolParams.McpToolList) > 0 {
+			for _, toolInfo := range params.ToolParams.McpToolList {
+				if len(toolInfo.ToolNameList) > 0 {
+					for _, toolName := range toolInfo.ToolNameList {
+						toolMap[toolName] = &request.ToolConfig{
+							Avatar:   toolInfo.Avatar,
+							ToolName: toolName,
+						}
+					}
+				}
+			}
+		}
+	}
+	return toolMap
 }

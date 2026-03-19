@@ -5,6 +5,10 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"github.com/UnicomAI/wanwu/internal/agent-service/pkg/util"
+	"github.com/cloudwego/eino/adk"
+	"github.com/cloudwego/eino/schema"
+	"github.com/google/uuid"
 	"path/filepath"
 	"strings"
 	"time"
@@ -35,10 +39,12 @@ func (k *KnowledgeRetriever) Retrieve(ctx context.Context, reqContext *request.A
 		LlmModelID: req.ModelParams.ModelId,
 	}
 	req.KnowledgeParams.AttachmentFiles = make([]*request.RagKnowledgeAttachment, 0)
-	//sendMessage(reqContext.Generator, "知识库检索中...")
-	//defer func() {
-	//	sendMessage(reqContext.Generator, "知识库检索完成...")
-	//}()
+	toolId := uuid.New().String()
+	newStyle := reqContext.AgentChatReq.NewStyle
+	sendKnowledgeMessage(reqContext.Generator, false, nil, toolId, newStyle)
+	defer func() {
+		sendKnowledgeMessage(reqContext.Generator, true, reqContext.KnowledgeHitData, toolId, newStyle)
+	}()
 	fileList := reqContext.AgentChatReq.UploadFile
 	if len(fileList) > 0 {
 		file := fileList[0]
@@ -61,12 +67,12 @@ func (k *KnowledgeRetriever) Retrieve(ctx context.Context, reqContext *request.A
 			continue
 		}
 		number := idx + 1
-		fmt.Fprintf(&packedRes, "---\nrecall slice %d: 【%d^】%s\n", number, number, doc.Snippet)
+		docLine := fmt.Sprintf("---\nrecall slice %d: 【%d】%s\n", number, number, doc.Snippet)
+		packedRes.WriteString(docLine)
 	}
-	knowledgeData := packedRes.String()
-	if len(knowledgeData) > 0 {
+	if packedRes.Len() > 0 {
 		sliceCount := len(hit.Data.SearchList)
-		knowledgeData = fmt.Sprintf(prompt.REACT_SYSTEM_PROMPT_KNOWLEDGE, sliceCount, knowledgeData)
+		knowledgeData := fmt.Sprintf(prompt.REACT_SYSTEM_PROMPT_KNOWLEDGE, sliceCount, packedRes.String())
 		return knowledgeData, nil
 	}
 	//如果没有知识库时，尽量减少输入token大小
@@ -102,18 +108,63 @@ func ragKnowledgeHit(ctx context.Context, knowledgeHitParams *request.KnowledgeP
 	return &resp, nil
 }
 
-//func sendMessage(generator *adk.AsyncGenerator[*adk.AgentEvent], message string) {
-//	if generator != nil {
-//		generator.Send(&adk.AgentEvent{
-//			Output: &adk.AgentOutput{
-//				MessageOutput: &adk.MessageVariant{
-//					IsStreaming: false,
-//					Message: &schema.Message{
-//						Role:    schema.Assistant,
-//						Content: message,
-//					},
-//				},
-//			},
-//		})
-//	}
-//}
+// sendKnowledgeMessage 发送知识库消息
+func sendKnowledgeMessage(generator *adk.AsyncGenerator[*adk.AgentEvent], finish bool, hitData *model.KnowledgeHitData, toolId string, newStyle bool) {
+	if generator != nil {
+		message := buildKnowledgeMessage(finish, hitData, toolId)
+		generator.Send(&adk.AgentEvent{
+			Output: &adk.AgentOutput{
+				MessageOutput: &adk.MessageVariant{
+					IsStreaming: false,
+					Message:     message,
+					Role:        message.Role,
+				},
+			},
+		})
+	}
+}
+
+// buildKnowledgeMessage 构建知识库消息
+func buildKnowledgeMessage(finish bool, hitData *model.KnowledgeHitData, toolId string) *schema.Message {
+	if finish {
+		return buildFinishMessage(hitData, toolId)
+	}
+	return buildStartMessage(toolId)
+}
+
+// buildStartMessage 构建开始消息
+func buildStartMessage(toolId string) *schema.Message {
+	return &schema.Message{
+		Role:    schema.Assistant,
+		Content: "",
+		ToolCalls: []schema.ToolCall{
+			{
+				ID:   toolId,
+				Type: "function",
+				Function: schema.FunctionCall{
+					Name:      util.AgentSearchKnowledgeName,
+					Arguments: "",
+				},
+			},
+		},
+		ResponseMeta: &schema.ResponseMeta{
+			FinishReason: "tool_calls",
+			Usage:        &schema.TokenUsage{},
+		},
+	}
+}
+
+// buildFinishMessage 构建结束消息
+func buildFinishMessage(hitData *model.KnowledgeHitData, toolId string) *schema.Message {
+	marshal, err := json.Marshal(hitData)
+	var message = ""
+	if err == nil {
+		message = string(marshal)
+	}
+	return &schema.Message{
+		Role:       schema.Tool,
+		Content:    message,
+		ToolCallID: toolId,
+		ToolName:   util.AgentSearchKnowledgeName,
+	}
+}

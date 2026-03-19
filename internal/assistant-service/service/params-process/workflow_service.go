@@ -57,7 +57,7 @@ func (k *WorkflowProcess) Build(assistant *AgentInfo, prepareParams *AgentPrepar
 			if err = openapi3_util.ValidateSchema(context.Background(), schemaByte); err != nil {
 				return err
 			}
-			agentChatParams.ToolParams.PluginToolList, err = buildPluginList(agentChatParams.ToolParams.PluginToolList, schema, nil)
+			agentChatParams.ToolParams.PluginToolList, err = buildPluginList(agentChatParams.ToolParams.PluginToolList, schema, nil, "", "")
 			if err != nil {
 				return err
 			}

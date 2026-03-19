@@ -767,8 +767,15 @@ message MultiAgentCreateReq{
   Identity identity = 3;
 }
 message ToolParams {
-  repeated string pluginToolList = 1;//工具参数,数据结构比较复杂，使用方自己反序列化
+  repeated PluginToolInfo pluginToolList = 1;//工具参数,数据结构比较复杂，使用方自己反序列化
   repeated MCPToolInfo mcpToolList = 2;//mcp参数
+}
+
+message PluginToolInfo {
+  string avatar = 1;//头像
+  string pluginTool = 2;//工具信息
+  string name = 3;//工具名称
+  int32 toolType = 4;//工具类型0:插件工具，1:工作流
 }
 
 message MCPToolInfo {
@@ -778,6 +785,7 @@ message MCPToolInfo {
   // MCP工具方法列表，会根据此方法名的列表进行mcp方法的过滤
   // 如果此列为空，则表示不进行过滤
   repeated string toolNameList = 3;
+  string avatar = 4;//头像
 }
 
 message SkillParams {

@@ -199,9 +199,17 @@ func buildSubConversationDetailList(conversationResp *conversation.ConversationR
 }
 
 func buildConversationType(eventType int) model.ConversationType {
-	if eventType == 1 {
+	log.Infof("buildConversationType eventType: %d", eventType)
+	switch eventType {
+	case conversation.SubAgentEventType:
+		return model.SubAgent
+	case conversation.KnowledgeEventType:
+		return model.AgentKnowledge
+	case conversation.ToolEventType:
+		return model.AgentTool
+	case conversation.ThinkingEventType:
+		return model.AgentThink
+	default:
 		return model.SubAgent
 	}
-	//目前只有subAgent 支持后续扩展
-	return model.SubAgent
 }

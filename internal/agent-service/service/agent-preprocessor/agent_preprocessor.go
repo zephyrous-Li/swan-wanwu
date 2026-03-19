@@ -2,6 +2,7 @@ package agent_preprocessor
 
 import (
 	"github.com/UnicomAI/wanwu/internal/agent-service/model/request"
+	"github.com/UnicomAI/wanwu/internal/agent-service/model/response"
 	agent_message_processor "github.com/UnicomAI/wanwu/internal/agent-service/service/agent-message-processor"
 	local_agent "github.com/UnicomAI/wanwu/internal/agent-service/service/local-agent"
 	service_model "github.com/UnicomAI/wanwu/internal/agent-service/service/service-model"
@@ -18,7 +19,7 @@ type AgentPreprocess struct {
 	GinContext        *gin.Context
 }
 
-func AgentPreProcess(agentPreprocess *AgentPreprocess, agentInput *adk.AgentInput, req *request.AgentChatParams) *adk.AgentInput {
+func AgentPreProcess(agentPreprocess *AgentPreprocess, agentInput *adk.AgentInput, req *request.AgentChatParams) (*adk.AgentInput, *response.AgentChatRespContext) {
 	ctx := agentPreprocess.GinContext
 	iter, generator := adk.NewAsyncIteratorPair[*adk.AgentEvent]()
 	safe_go_util.SafeGo(func() {
@@ -36,6 +37,7 @@ func AgentPreProcess(agentPreprocess *AgentPreprocess, agentInput *adk.AgentInpu
 			generator.Send(&adk.AgentEvent{Err: err})
 		}
 	})
-	_ = agent_message_processor.AgentMessage(ctx, iter, &request.AgentChatContext{AgentChatReq: req})
-	return agentInput
+
+	chatRespContext, _ := agent_message_processor.AgentMessage(ctx, iter, &request.AgentChatContext{AgentChatReq: req})
+	return agentInput, chatRespContext
 }

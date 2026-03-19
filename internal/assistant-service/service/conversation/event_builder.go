@@ -11,9 +11,14 @@ import (
 type SubEventStatus int
 
 const (
-	MainAgentEventType = 0 //单智能体事件/多智能体主智能体
-	SubAgentEventType  = 1 //子智能体事件
-	terminationMessage = "本次回答已被终止"
+	MainAgentEventType    = 0 //单智能体事件/多智能体主智能体
+	SubAgentEventType     = 1 //子智能体事件
+	KnowledgeEventType    = 2 //知识库事件
+	ToolEventType         = 3 //工具事件
+	SkillEventType        = 4 //技能事件
+	SubAgentToolEventType = 5 //子智能体工具事件
+	ThinkingEventType     = 6 //智能体思考事件
+	terminationMessage    = "本次回答已被终止"
 )
 
 var builderMap = make(map[int]EventBuilder)

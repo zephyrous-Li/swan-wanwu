@@ -120,8 +120,8 @@ func fillToolMap(assistantToolMap map[string][]string, tool *model.AssistantTool
 	}
 }
 
-func buildCustomToolPluginList(assistant *model.Assistant, prepareParams *AgentPrepareParams) ([]string, error) {
-	var pluginList []string
+func buildCustomToolPluginList(assistant *model.Assistant, prepareParams *AgentPrepareParams) ([]*assistant_service.PluginToolInfo, error) {
+	var pluginList []*assistant_service.PluginToolInfo
 	if len(prepareParams.CustomToolList) > 0 {
 		for _, customTool := range prepareParams.CustomToolList {
 			apiAuth, rawSchema := buildCustomToolInfo(assistant, customTool)
@@ -136,7 +136,7 @@ func buildCustomToolPluginList(assistant *model.Assistant, prepareParams *AgentP
 				if err != nil {
 					return pluginList, err
 				}
-				pluginList, err = buildPluginList(pluginList, apiSchema, apiAuth)
+				pluginList, err = buildPluginList(pluginList, apiSchema, apiAuth, "/v1/static/icon/custom-tool-default-icon.png", actionName)
 				if err != nil {
 					return pluginList, err
 				}
@@ -147,7 +147,7 @@ func buildCustomToolPluginList(assistant *model.Assistant, prepareParams *AgentP
 	return pluginList, nil
 }
 
-func buildPluginList(pluginList []string, apiSchema map[string]interface{}, apiAuth *openapi3_util.Auth) ([]string, error) {
+func buildPluginList(pluginList []*assistant_service.PluginToolInfo, apiSchema map[string]interface{}, apiAuth *openapi3_util.Auth, avatar, actionName string) ([]*assistant_service.PluginToolInfo, error) {
 	request := config.PluginListAlgRequest{
 		APISchema: apiSchema,
 		APIAuth:   apiAuth,
@@ -156,7 +156,11 @@ func buildPluginList(pluginList []string, apiSchema map[string]interface{}, apiA
 	if err != nil {
 		return pluginList, err
 	}
-	pluginList = append(pluginList, string(marshal))
+	pluginList = append(pluginList, &assistant_service.PluginToolInfo{
+		PluginTool: string(marshal),
+		Avatar:     avatar,
+		Name:       actionName,
+	})
 	return pluginList, nil
 }
 
@@ -173,8 +177,8 @@ func buildCustomToolInfo(assistant *model.Assistant, customTool *mcp_service.Get
 	return nil, customTool.Schema
 }
 
-func buildToolSquarePluginList(assistant *model.Assistant, prepareParams *AgentPrepareParams) ([]string, error) {
-	var pluginList []string
+func buildToolSquarePluginList(assistant *model.Assistant, prepareParams *AgentPrepareParams) ([]*assistant_service.PluginToolInfo, error) {
+	var pluginList []*assistant_service.PluginToolInfo
 	if len(prepareParams.SquareToolList) > 0 {
 		for _, squareTool := range prepareParams.SquareToolList {
 			apiAuth, rawSchema := buildToolSquareInfo(assistant, squareTool)
@@ -189,7 +193,7 @@ func buildToolSquarePluginList(assistant *model.Assistant, prepareParams *AgentP
 				if err != nil {
 					return pluginList, err
 				}
-				pluginList, err = buildPluginList(pluginList, apiSchema, apiAuth)
+				pluginList, err = buildPluginList(pluginList, apiSchema, apiAuth, "/v1/static/icon/custom-tool-default-icon.png", actionName)
 				if err != nil {
 					return pluginList, err
 				}
