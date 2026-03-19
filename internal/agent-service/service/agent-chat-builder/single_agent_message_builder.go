@@ -1,8 +1,12 @@
 package agent_chat_builder
 
 import (
+	"encoding/json"
 	"fmt"
+	"github.com/UnicomAI/wanwu/internal/agent-service/model"
+	"github.com/google/uuid"
 	"sort"
+	"time"
 	"unicode/utf8"
 
 	"github.com/UnicomAI/wanwu/internal/agent-service/model/request"
@@ -24,6 +28,15 @@ type MessageTool struct {
 	RespContext *response.AgentChatRespContext
 }
 
+type ToolMessageContent struct {
+	Content      []string
+	SubEventData *response.SubEventData
+}
+
+func (t ToolMessageContent) Empty() bool {
+	return len(t.Content) == 0 && t.SubEventData == nil
+}
+
 type SingleAgentMessageBuilder struct {
 }
 
@@ -39,9 +52,8 @@ func (*SingleAgentMessageBuilder) FilterMessage(respContext *response.AgentChatR
 	return filterMessage(respContext, chatMessage)
 }
 
-func (*SingleAgentMessageBuilder) BuildContent(req *request.AgentChatContext, respContext *response.AgentChatRespContext, chatMessage *schema.Message) (*AgentMessageContent, error) {
-	content := buildSingleAgentContent(req, respContext, chatMessage)
-	return buildMessageContent(content, nil), nil
+func (*SingleAgentMessageBuilder) BuildContent(req *request.AgentChatContext, respContext *response.AgentChatRespContext, chatMessage *schema.Message) ([]*AgentMessageContent, error) {
+	return buildSingleAgentContent(req, respContext, chatMessage), nil
 }
 
 func CreateMessageTool(chatMessage *schema.Message, respContext *response.AgentChatRespContext) *MessageTool {
@@ -79,7 +91,12 @@ func (m *MessageTool) ToolId() string {
 	if len(toolIdList) > 1 { //此处表示有多个工具并发调用了
 		var agentToolList []*response.AgentTool
 		for _, toolId := range toolIdList {
-			agentToolList = append(agentToolList, m.RespContext.ToolMap[toolId])
+			tool := m.RespContext.ToolMap[toolId]
+			toolIndex := buildToolIndex(m.ChatMessage)
+			if toolIndex != nil && tool.ToolIndex != nil && *toolIndex == *tool.ToolIndex {
+				return tool.ToolId
+			}
+			agentToolList = append(agentToolList, tool)
 		}
 		sort.Slice(agentToolList, func(i, j int) bool {
 			return agentToolList[i].Order < agentToolList[j].Order
@@ -93,13 +110,20 @@ func (m *MessageTool) NewTool(tool schema.ToolCall) bool {
 	return len(tool.ID) > 0 && m.RespContext.ToolMap[tool.ID] == nil
 }
 
-func buildSingleAgentContent(req *request.AgentChatContext, respContext *response.AgentChatRespContext, chatMessage *schema.Message) []string {
+func buildSingleAgentContent(req *request.AgentChatContext, respContext *response.AgentChatRespContext, chatMessage *schema.Message) []*AgentMessageContent {
 	stepsMap, toolIdList := buildToolStep(chatMessage, respContext)
 	if len(stepsMap) == 0 { //没有工具处理
-		return buildNoToolContent(chatMessage, respContext)
-	} else {
-		return buildToolContent(chatMessage, respContext, stepsMap, toolIdList)
+		if !respContext.ContentOutput {
+			respContext.ContentOutput = true
+			respContext.IncreaseOrder()
+			respContext.ReplaceContent.Reset()
+		}
+		return buildNoToolContent(chatMessage, respContext, req.AgentChatReq.NewStyle)
 	}
+	if req.AgentChatReq.NewStyle { //新样式，工作流智能体前端处理完成后才能都切到新的样式
+		return buildToolContentNewStyle(req, chatMessage, respContext, stepsMap, toolIdList)
+	}
+	return buildToolContent(chatMessage, respContext, stepsMap, toolIdList)
 }
 
 /*
@@ -158,34 +182,130 @@ func buildToolStep(chatMessage *schema.Message, respContext *response.AgentChatR
 // case1：tool 有数据同时content内容；如果此时在工具的输出中还没有输出完，则不输出content的相关内容
 // case2：在tool输出前会输出规划内容，但是会重复输出相同的规划内容，所以当内容数字大于10时，同时出现重复数据，则不输出
 // case3：正式输出
-func buildNoToolContent(chatMessage *schema.Message, respContext *response.AgentChatRespContext) []string {
+func buildNoToolContent(chatMessage *schema.Message, respContext *response.AgentChatRespContext, newStyle bool) []*AgentMessageContent {
 	notFinishList := filerToolByStep(respContext, response.ToolResultFinishStep, false)
 	if len(notFinishList) > 0 { //在工具期间，不输出任何content内容
-		return []string{}
+		return []*AgentMessageContent{}
 	}
 	//替换内容准备(工具未开始，但是输出了内容, 有的模型会重复输出一样的话)
 	if len(respContext.ToolMap) == 0 {
-		if utf8.RuneCountInString(chatMessage.Content) > 10 {
+		var content = chatMessage.Content
+		if len(content) == 0 {
+			content = chatMessage.ReasoningContent
+		}
+		if utf8.RuneCountInString(content) > 10 {
 			var replaceContent = respContext.ReplaceContentStr
 			if len(replaceContent) == 0 {
 				replaceContent = respContext.ReplaceContent.String()
 			}
-			if replaceContent == chatMessage.Content {
+			if replaceContent == content {
 				respContext.ReplaceContentDone = true
 				respContext.ReplaceContentStr = replaceContent
-				return []string{}
+				return []*AgentMessageContent{}
 			}
 		}
 		if !respContext.ReplaceContentDone {
-			respContext.ReplaceContent.WriteString(chatMessage.Content)
+			respContext.ReplaceContent.WriteString(content)
 		}
 	}
-	return []string{chatMessage.Content}
+	return buildContent(chatMessage, respContext, newStyle)
+}
+
+func buildContent(chatMessage *schema.Message, respContext *response.AgentChatRespContext, newStyle bool) []*AgentMessageContent {
+	var retContentList []*AgentMessageContent
+	//构造思考内容
+	if newStyle {
+		retContentList = buildNewReasoningContent(chatMessage, respContext)
+	} else {
+		retContentList = buildReasoningContent(chatMessage, respContext)
+	}
+
+	if len(retContentList) > 0 {
+		return retContentList
+	}
+	if len(chatMessage.Content) > 0 || stopMessage(chatMessage) {
+		retContentList = append(retContentList, &AgentMessageContent{
+			ContentList: []string{chatMessage.Content},
+		})
+	}
+	return retContentList
+}
+
+func stopMessage(chatMessage *schema.Message) bool {
+	return chatMessage.ResponseMeta != nil && chatMessage.ResponseMeta.FinishReason == "stop"
+}
+
+func buildReasoningContent(chatMessage *schema.Message, respContext *response.AgentChatRespContext) []*AgentMessageContent {
+	var retContentList []*AgentMessageContent
+	if len(chatMessage.ReasoningContent) > 0 {
+		if !respContext.Thinking {
+			//思考开始
+			respContext.Thinking = true
+			respContext.ReplaceContent.Reset()
+			retContentList = append(retContentList, &AgentMessageContent{
+				ContentList: []string{"<think>" + chatMessage.ReasoningContent},
+			})
+		} else {
+			//思考中
+			retContentList = append(retContentList, &AgentMessageContent{
+				ContentList: []string{chatMessage.ReasoningContent},
+			})
+		}
+	} else if len(chatMessage.Content) > 0 && respContext.Thinking {
+		//思考结束
+		respContext.Thinking = false
+		retContentList = append(retContentList, &AgentMessageContent{
+			ContentList: []string{"</think>" + chatMessage.Content},
+		})
+
+	}
+	return retContentList
+}
+
+func buildNewReasoningContent(chatMessage *schema.Message, respContext *response.AgentChatRespContext) []*AgentMessageContent {
+	var retContentList []*AgentMessageContent
+	if len(chatMessage.ReasoningContent) > 0 {
+		if !respContext.Thinking {
+			//思考开始
+			respContext.Thinking = true
+			respContext.IncreaseOrder()
+			respContext.ReplaceContent.Reset()
+			respContext.ThinkingTool = &response.AgentTool{
+				Order:     respContext.Order,
+				ToolId:    uuid.New().String(),
+				ToolName:  "智能体思考",
+				ToolType:  response.ThinkingEventType,
+				Avatar:    buildDefaultAvatarByType(response.ThinkingEventType),
+				StartTime: time.Now().UnixMilli(),
+			}
+			retContentList = append(retContentList, &AgentMessageContent{
+				SubEventData: response.BuildStartTool(respContext.ThinkingTool, respContext.Order),
+				ContentList:  []string{chatMessage.ReasoningContent},
+			})
+		} else {
+			//思考中
+			retContentList = append(retContentList, &AgentMessageContent{
+				SubEventData: response.BuildProcessTool(respContext.ThinkingTool, respContext.Order),
+				ContentList:  []string{chatMessage.ReasoningContent},
+			})
+		}
+	} else if len(chatMessage.Content) > 0 && respContext.Thinking {
+		//思考结束
+		respContext.Thinking = false
+		retContentList = append(retContentList, &AgentMessageContent{
+			SubEventData: response.BuildEndTool(respContext.ThinkingTool, respContext.Order),
+		})
+		respContext.IncreaseOrder()
+		retContentList = append(retContentList, &AgentMessageContent{
+			ContentList: []string{chatMessage.Content},
+		})
+	}
+	return retContentList
 }
 
 // buildToolContent 构造有工具的内容输出
 // 需要额外判断，如果此次输出的步骤不包含当前任务的步骤，同时之前工具有参数未完成的，则补充个参数结束的内容（处理并发调用工具的情况）
-func buildToolContent(chatMessage *schema.Message, respContext *response.AgentChatRespContext, stepsMap map[string][]response.ToolStep, toolIdList []string) []string {
+func buildToolContent(chatMessage *schema.Message, respContext *response.AgentChatRespContext, stepsMap map[string][]response.ToolStep, toolIdList []string) []*AgentMessageContent {
 	steps := stepsMap[respContext.CurrentToolId]
 	paramsNotFinishList := filerToolByStep(respContext, response.ToolParamStep, true)
 	var contentList []string
@@ -220,7 +340,63 @@ func buildToolContent(chatMessage *schema.Message, respContext *response.AgentCh
 		}
 		respContext.CurrentToolId = toolId
 	}
-	return contentList
+	return []*AgentMessageContent{{ContentList: contentList}}
+}
+
+// buildToolContentNewStyle 构造有工具的内容输出-新样式
+// 需要额外判断，如果此次输出的步骤不包含当前任务的步骤，同时之前工具有参数未完成的，则补充个参数结束的内容（处理并发调用工具的情况）
+func buildToolContentNewStyle(req *request.AgentChatContext, chatMessage *schema.Message, respContext *response.AgentChatRespContext, stepsMap map[string][]response.ToolStep, toolIdList []string) []*AgentMessageContent {
+	steps := stepsMap[respContext.CurrentToolId]
+	paramsNotFinishList := filerToolByStep(respContext, response.ToolParamStep, true)
+	var toolContentList []*AgentMessageContent
+	if respContext.Thinking {
+		respContext.Thinking = false
+		toolContentList = append(toolContentList, &AgentMessageContent{
+			SubEventData: response.BuildEndTool(respContext.ThinkingTool, respContext.Order),
+		})
+	}
+
+	if len(steps) == 0 && len(paramsNotFinishList) > 0 { //是新工具且之前工具处于参数处理未完成状态
+		//增加参数处理完成结果，并更改状态
+		for _, toolId := range paramsNotFinishList {
+			tool := respContext.ToolMap[toolId]
+			if tool == nil {
+				continue
+			}
+			//更改状态
+			tool.ToolStep = response.ToolParamFinishStep
+			toolContentList = append(toolContentList, &AgentMessageContent{
+				SubEventData: response.BuildEndTool(tool, respContext.Order),
+				ContentList:  []string{toolParamsEndFormat},
+			})
+		}
+	}
+	//根据step循环构造输出的内容
+	for _, toolId := range toolIdList {
+		toolSteps := stepsMap[toolId]
+		agentTool := respContext.ToolMap[toolId]
+		if agentTool == nil {
+			agentTool = &response.AgentTool{ToolId: toolId, Order: len(respContext.ToolMap), StartTime: time.Now().UnixMilli(), ToolIndex: buildToolIndex(chatMessage)}
+			respContext.ToolMap[toolId] = agentTool
+		}
+		for _, step := range toolSteps {
+			agentTool.ToolStep = step
+			toolContent := buildNewContentByStep(respContext, req, agentTool, chatMessage, step, toolId)
+			if toolContent.Empty() {
+				continue
+			}
+			toolContentList = append(toolContentList, toolContent)
+		}
+		respContext.CurrentToolId = toolId
+	}
+	return toolContentList
+}
+
+func buildToolIndex(chatMessage *schema.Message) *int {
+	if chatMessage != nil && len(chatMessage.ToolCalls) > 0 {
+		return chatMessage.ToolCalls[0].Index
+	}
+	return nil
 }
 
 // buildContentByStep 根据当前步骤构造需要输出的内容,构造<tool></tool>数据以及markdown格式
@@ -251,6 +427,78 @@ func buildContentByStep(chatMessage *schema.Message, step response.ToolStep, too
 		contentList = append(contentList, toolEndTitle)
 	}
 	return contentList
+}
+
+// buildNewContentByStep 根据当前步骤构造需要输出的内容
+func buildNewContentByStep(respContext *response.AgentChatRespContext, req *request.AgentChatContext, agentTool *response.AgentTool, chatMessage *schema.Message, step response.ToolStep, toolId string) *AgentMessageContent {
+	var subEventData *response.SubEventData
+	var contentList []string
+	if agentTool.ToolType == response.KnowledgeEventType {
+		return buildKnowledgeContentByStep(req, agentTool, chatMessage, step, respContext)
+	}
+	switch step {
+	case response.ToolNameStep:
+		tool := buildMessageTool(chatMessage, toolId)
+		if tool == nil {
+			break
+		}
+		respContext.ContentOutput = false
+		respContext.IncreaseOrder()
+		agentTool.ToolName = tool.Function.Name
+		agentTool.ToolType = response.BuildEventTypeByTool(agentTool)
+		agentTool.Avatar = buildToolAvatar(tool.Function.Name, req.ToolMap, agentTool.ToolType)
+		subEventData = response.BuildStartTool(agentTool, respContext.Order)
+	case response.ToolParamStartStep:
+		contentList = append(contentList, toolParamsStartFormat)
+		subEventData = response.BuildProcessTool(agentTool, respContext.Order)
+	case response.ToolParamStep:
+		tool := buildMessageTool(chatMessage, toolId)
+		if tool == nil {
+			break
+		}
+		contentList = append(contentList, tool.Function.Arguments)
+		subEventData = response.BuildProcessTool(agentTool, respContext.Order)
+	case response.ToolParamFinishStep:
+		contentList = append(contentList, toolParamsEndFormat)
+		subEventData = response.BuildProcessTool(agentTool, respContext.Order)
+	case response.ToolResultFinishStep:
+		toolResult := fmt.Sprintf(toolEndFormat, "", chatMessage.Content)
+		contentList = append(contentList, toolResult)
+		subEventData = response.BuildEndTool(agentTool, respContext.Order)
+	}
+	return &AgentMessageContent{
+		ContentList:  contentList,
+		SubEventData: subEventData,
+	}
+}
+
+func buildKnowledgeContentByStep(req *request.AgentChatContext, agentTool *response.AgentTool, chatMessage *schema.Message, step response.ToolStep, respContext *response.AgentChatRespContext) *AgentMessageContent {
+	var subEventData *response.SubEventData
+	var contentList []string
+	switch step {
+	case response.ToolNameStep, response.ToolParamStartStep, response.ToolParamStep, response.ToolParamFinishStep:
+		break
+	case response.ToolResultFinishStep:
+		req.KnowledgeHitData = buildKnowledgeContent(chatMessage.Content)
+		subEventData = response.BuildEndTool(agentTool, respContext.Order)
+	}
+	return &AgentMessageContent{
+		ContentList:  contentList,
+		SubEventData: subEventData,
+	}
+}
+
+// buildKnowledgeContent 构造知识内容数据
+func buildKnowledgeContent(data string) *model.KnowledgeHitData {
+	if len(data) == 0 {
+		return nil
+	}
+	var knowledgeHitData = &model.KnowledgeHitData{}
+	err := json.Unmarshal([]byte(data), knowledgeHitData)
+	if err != nil {
+		return nil
+	}
+	return knowledgeHitData
 }
 
 // buildMessageTool 构造消息工具内容数据
@@ -289,5 +537,30 @@ func filterToolByCondition(tool *response.AgentTool, step response.ToolStep, equ
 		return tool.ToolStep == step
 	} else {
 		return tool.ToolStep != step
+	}
+}
+
+// buildToolAvatar 构建工具头像
+func buildToolAvatar(toolName string, toolMap map[string]*request.ToolConfig, toolEventType int) string {
+	if len(toolMap) == 0 {
+		return buildDefaultAvatarByType(toolEventType)
+	}
+	toolConfig := toolMap[toolName]
+	if toolConfig == nil || toolConfig.Avatar == "" {
+		return buildDefaultAvatarByType(toolEventType)
+	}
+	return toolConfig.Avatar
+}
+
+func buildDefaultAvatarByType(toolEventType int) string {
+	switch toolEventType {
+	case response.KnowledgeEventType:
+		return defaultKnowledgeAvatar
+	case response.ToolEventType:
+		return defaultWorkFlowAvatar
+	case response.ThinkingEventType:
+		return defaultThinkingAvatar
+	default:
+		return defaultWorkFlowAvatar
 	}
 }

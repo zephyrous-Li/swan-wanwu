@@ -80,6 +80,7 @@ type MCPToolInfo struct {
 	URL          string   `json:"url"`
 	Transport    string   `json:"transport"`
 	ToolNameList []string `json:"toolNameList"`
+	Avatar       string   `json:"avatar"`
 }
 
 type ToolsMap map[string]MCPToolInfo

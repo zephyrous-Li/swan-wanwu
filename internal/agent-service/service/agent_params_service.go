@@ -41,13 +41,14 @@ func buildSubAgentParamsList(subAgents []*assistant_service.AgentDetail) []*requ
 	})
 }
 
-func BuildAgentParams(req *request.AgentChatReq, assistantDetail *assistant_service.AssistantDetailResp) *request.AgentChatParams {
+func BuildAgentParams(req *request.AgentChatReq, assistantDetail *assistant_service.AssistantDetailResp, newStyle bool) *request.AgentChatParams {
 	params := buildAgentChatBaseParams(assistantDetail.GetAgentDetail())
 	return &request.AgentChatParams{
 		AgentChatBaseParams: *params,
 		Input:               req.Input,
 		Stream:              req.Stream,
 		UploadFile:          req.UploadFile,
+		NewStyle:            newStyle,
 	}
 }
 
@@ -112,6 +113,11 @@ func buildModelParams(req *assistant_service.ModelParams) *request.ModelParams {
 		output.MaxTokens = &maxTokens
 	}
 
+	if req.EnableThinking != nil {
+		enableThinking := int(*req.EnableThinking)
+		output.EnableThinking = &enableThinking
+	}
+
 	return output
 }
 
@@ -130,11 +136,12 @@ func buildMCPToolList(mcpToolList []*assistant_service.MCPToolInfo) []*request.M
 			URL:          item.Url,
 			Transport:    item.Transport,
 			ToolNameList: item.ToolNameList,
+			Avatar:       item.Avatar,
 		}
 	})
 }
 
-func buildPluginToolList(pluginTool []string) []*request.PluginToolInfo {
+func buildPluginToolList(pluginTool []*assistant_service.PluginToolInfo) []*request.PluginToolInfo {
 	if len(pluginTool) == 0 {
 		return nil
 	}
@@ -144,7 +151,7 @@ func buildPluginToolList(pluginTool []string) []*request.PluginToolInfo {
 			APISchema map[string]interface{} `json:"api_schema"`
 			APIAuth   *openapi3_util.Auth    `json:"api_auth,omitempty"`
 		}
-		if err := json.Unmarshal([]byte(tool), &rawTool); err != nil {
+		if err := json.Unmarshal([]byte(tool.PluginTool), &rawTool); err != nil {
 			log.Errorf("buildPluginToolList unmarshal raw tool (%s) err: %s", tool, err)
 			continue
 		}
@@ -159,8 +166,10 @@ func buildPluginToolList(pluginTool []string) []*request.PluginToolInfo {
 			continue
 		}
 		pluginToolList = append(pluginToolList, &request.PluginToolInfo{
-			APISchema: apiSchema,
-			APIAuth:   rawTool.APIAuth,
+			APISchema:  apiSchema,
+			APIAuth:    rawTool.APIAuth,
+			ToolName:   tool.PluginTool,
+			ToolAvatar: tool.Avatar,
 		})
 	}
 	return pluginToolList

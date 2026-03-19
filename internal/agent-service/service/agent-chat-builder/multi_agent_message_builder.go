@@ -12,8 +12,11 @@ import (
 type AgentStep int
 
 const (
-	AgentStartLabel    = "transfer_to_agent"
-	defaultAgentAvatar = "/v1/static/icon/agent-default-icon.png"
+	AgentStartLabel        = "transfer_to_agent"
+	defaultAgentAvatar     = "/v1/static/icon/agent-default-icon.png"
+	defaultKnowledgeAvatar = "/v1/static/icon/knowledge-default-icon.png"
+	defaultThinkingAvatar  = "/v1/static/icon/agent-thinking-default-icon.png"
+	defaultWorkFlowAvatar  = "/v1/static/icon/workflow-default-icon.png"
 
 	AgentNoneProcessStep AgentStep = 0 //无需处理，过滤
 	AgentStartStep       AgentStep = 1 //智能体开始
@@ -49,7 +52,11 @@ func (*MultiAgentMessageBuilder) FilterMessage(respContext *response.AgentChatRe
 	}
 	return false
 }
-func (*MultiAgentMessageBuilder) BuildContent(req *request.AgentChatContext, respContext *response.AgentChatRespContext, chatMessage *schema.Message) (*AgentMessageContent, error) {
+func (*MultiAgentMessageBuilder) BuildContent(req *request.AgentChatContext, respContext *response.AgentChatRespContext, chatMessage *schema.Message) ([]*AgentMessageContent, error) {
+	return buildDataContent(req, respContext, chatMessage)
+}
+
+func buildDataContent(req *request.AgentChatContext, respContext *response.AgentChatRespContext, chatMessage *schema.Message) ([]*AgentMessageContent, error) {
 	step := buildAgentStep(req, chatMessage, respContext)
 
 	switch step {
@@ -65,18 +72,40 @@ func (*MultiAgentMessageBuilder) BuildContent(req *request.AgentChatContext, res
 }
 
 // buildChatMessage 构造智能体对话消息
-func buildChatMessage(req *request.AgentChatContext, respContext *response.AgentChatRespContext, chatMessage *schema.Message, event *response.SubEventData) (*AgentMessageContent, error) {
+func buildChatMessage(req *request.AgentChatContext, respContext *response.AgentChatRespContext, chatMessage *schema.Message, event *response.SubEventData) ([]*AgentMessageContent, error) {
 	//处里智能体tool部分
-	content, err := NewSingleBuilder().BuildContent(req, respContext, chatMessage)
+	contentList, err := NewSingleBuilder().BuildContent(req, respContext, chatMessage)
 	if err != nil {
 		return nil, err
 	}
-	content.SubEventData = event
-	//子智能体的结束消息，不需要输出stop
-	if event != nil && event.Status == response.EventEndStatus {
-		content.NotStop = true
+	for _, messageContent := range contentList {
+		if event == nil {
+			continue
+		}
+		if messageContent.SubEventData == nil {
+			messageContent.SubEventData = event
+		} else {
+			messageContent.SubEventData.ParentId = event.Id
+		}
+		messageContent.SubEventData.EventType = buildMultiAgentEventType(messageContent.SubEventData.EventType)
+		//messageContent.SubEventData = event
+		//子智能体的结束消息，不需要输出stop
+		if event.Status == response.EventEndStatus {
+			messageContent.NotStop = true
+		}
 	}
-	return content, nil
+
+	return contentList, nil
+}
+
+// buildMultiAgentEventType 构建多智能体事件类型
+func buildMultiAgentEventType(eventType int) int {
+	switch eventType {
+	case response.ToolEventType:
+		return response.SubAgentEventType
+	default:
+		return response.SubAgentEventType
+	}
 }
 
 // buildAgentStep 构建智能体步骤

@@ -2,6 +2,8 @@ package response
 
 import (
 	"github.com/UnicomAI/wanwu/internal/agent-service/model/request"
+	agent_util "github.com/UnicomAI/wanwu/internal/agent-service/pkg/util"
+	"github.com/UnicomAI/wanwu/pkg/util"
 	"github.com/cloudwego/eino/schema"
 )
 
@@ -9,8 +11,13 @@ type AgentEventType int
 type SubEventStatus int
 
 const (
-	MainAgentEventType = 0 //单智能体事件/多智能体主智能体
-	SubAgentEventType  = 1 //子智能体事件
+	MainAgentEventType    = 0 //单智能体事件/多智能体主智能体
+	SubAgentEventType     = 1 //子智能体事件
+	KnowledgeEventType    = 2 //知识库事件
+	ToolEventType         = 3 //工具事件
+	SkillEventType        = 4 //技能事件
+	SubAgentToolEventType = 5 //子智能体工具事件
+	ThinkingEventType     = 6 //智能体思考事件
 
 	EventStartStatus   SubEventStatus = 1 //开始事件
 	EventProcessStatus SubEventStatus = 2 //输出中
@@ -19,58 +26,96 @@ const (
 )
 
 type SubEventData struct {
-	Status   SubEventStatus `json:"status"`
-	Id       string         `json:"id"`
-	Name     string         `json:"name"`
-	Profile  string         `json:"profile"`
-	TimeCost string         `json:"timeCost"`
-	ParentId string         `json:"parentId"`
-	Order    int            `json:"order"`
+	Status    SubEventStatus `json:"status"`
+	Id        string         `json:"id"`
+	EventType int            `json:"eventType"`
+	Name      string         `json:"name"`
+	Profile   string         `json:"profile"`
+	TimeCost  string         `json:"timeCost"`
+	ParentId  string         `json:"parentId"`
+	Order     int            `json:"order"`
+}
+
+func BuildEventTypeByTool(agentTool *AgentTool) int {
+	var eventType int
+	if agentTool.ToolName == agent_util.AgentSearchKnowledgeName {
+		eventType = KnowledgeEventType
+	} else {
+		eventType = ToolEventType
+	}
+	return eventType
 }
 
 func BuildStartSubAgent(respContext *AgentChatRespContext) *SubEventData {
-	return StartSubAgent(respContext.CurrentAgent, respContext.Order)
+	return StartSubAgent(respContext.CurrentAgent, respContext.Order, 0)
 }
 
 func BuildProcessSubAgent(respContext *AgentChatRespContext) *SubEventData {
-	return ProcessSubAgent(respContext.CurrentAgent, respContext.Order)
+	return ProcessSubAgent(respContext.CurrentAgent, respContext.Order, 0)
 }
 
 func BuildEndSubAgent(respContext *AgentChatRespContext, timeCost string) *SubEventData {
-	return EndSubAgent(respContext.CurrentAgent, timeCost, respContext.Order)
+	return EndSubAgent(respContext.CurrentAgent, timeCost, respContext.Order, 0)
 }
 
-func StartSubAgent(agentInfo *AgentInfo, order int) *SubEventData {
+func BuildStartTool(agentTool *AgentTool, order int) *SubEventData {
+	return StartSubAgent(&AgentInfo{
+		Avatar: agentTool.Avatar,
+		Id:     agentTool.ToolId,
+		Name:   agentTool.ToolName,
+	}, order, agentTool.ToolType)
+}
+
+func BuildProcessTool(agentTool *AgentTool, order int) *SubEventData {
+	return ProcessSubAgent(&AgentInfo{
+		Avatar: agentTool.Avatar,
+		Id:     agentTool.ToolId,
+		Name:   agentTool.ToolName,
+	}, order, agentTool.ToolType)
+}
+
+func BuildEndTool(agentTool *AgentTool, order int) *SubEventData {
+	return EndSubAgent(&AgentInfo{
+		Avatar: agentTool.Avatar,
+		Id:     agentTool.ToolId,
+		Name:   agentTool.ToolName,
+	}, util.NowSpanToHMS(agentTool.StartTime), order, agentTool.ToolType)
+}
+
+func StartSubAgent(agentInfo *AgentInfo, order int, eventType int) *SubEventData {
 	return &SubEventData{
-		Status:  EventStartStatus,
-		Id:      agentInfo.Id,
-		Name:    agentInfo.Name,
-		Profile: agentInfo.Avatar,
-		Order:   order,
+		Status:    EventStartStatus,
+		Id:        agentInfo.Id,
+		Name:      agentInfo.Name,
+		Profile:   agentInfo.Avatar,
+		Order:     order,
+		EventType: eventType,
 	}
 }
 
-func ProcessSubAgent(agentInfo *AgentInfo, order int) *SubEventData {
+func ProcessSubAgent(agentInfo *AgentInfo, order int, eventType int) *SubEventData {
 	if agentInfo == nil || len(agentInfo.Id) == 0 || len(agentInfo.Name) == 0 {
 		return nil
 	}
 	return &SubEventData{
-		Status:  EventProcessStatus,
-		Id:      agentInfo.Id,
-		Name:    agentInfo.Name,
-		Profile: agentInfo.Avatar,
-		Order:   order,
+		Status:    EventProcessStatus,
+		Id:        agentInfo.Id,
+		Name:      agentInfo.Name,
+		Profile:   agentInfo.Avatar,
+		Order:     order,
+		EventType: eventType,
 	}
 }
 
-func EndSubAgent(agentInfo *AgentInfo, timeCost string, order int) *SubEventData {
+func EndSubAgent(agentInfo *AgentInfo, timeCost string, order int, eventType int) *SubEventData {
 	return &SubEventData{
-		Status:   EventEndStatus,
-		Id:       agentInfo.Id,
-		Name:     agentInfo.Name,
-		Profile:  agentInfo.Avatar,
-		TimeCost: timeCost,
-		Order:    order,
+		Status:    EventEndStatus,
+		Id:        agentInfo.Id,
+		Name:      agentInfo.Name,
+		Profile:   agentInfo.Avatar,
+		TimeCost:  timeCost,
+		Order:     order,
+		EventType: eventType,
 	}
 }
 
@@ -101,6 +146,9 @@ func buildSubAgentEventInfo(respContext *request.AgentChatContext, chatMessage *
 func buildEventType(subEvent *SubEventData) AgentEventType {
 	if subEvent == nil {
 		return MainAgentEventType
+	}
+	if subEvent.EventType > 0 {
+		return AgentEventType(subEvent.EventType)
 	}
 	return SubAgentEventType
 }

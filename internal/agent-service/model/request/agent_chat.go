@@ -13,7 +13,14 @@ type AgentChatContext struct {
 	AgentChatInfo    *service_model.AgentChatInfo
 	KnowledgeHitData *model.KnowledgeHitData //  rag命中数据
 	Generator        *adk.AsyncGenerator[*adk.AgentEvent]
+	ToolMap          map[string]*ToolConfig
 	SubAgentMap      map[string]*AgentConfig
+	Order            int
+}
+
+type ToolConfig struct {
+	Avatar   string
+	ToolName string
 }
 
 type SubAgentInfo struct {
@@ -38,6 +45,7 @@ type AgentChatParams struct {
 	UploadFile       []string        `json:"uploadFile"`
 	Stream           bool            `json:"stream"`
 	MultiAgent       bool            //是否多智能体
+	NewStyle         bool            //是否使用新样式
 	SubAgentInfoList []*SubAgentInfo //子智能体
 	AgentChatBaseParams
 }
@@ -61,6 +69,7 @@ type ModelParams struct {
 	FrequencyPenalty *float32                     `json:"frequencyPenalty,omitempty"` //频率惩罚
 	PresencePenalty  *float32                     `json:"presence_penalty,omitempty"` //存在惩罚
 	MaxTokens        *int                         `json:"max_tokens,omitempty"`       //模型输出最大token数，这个字段暂时不设置，因为模型可能触发接口调用不确定是否会超，先不传
+	EnableThinking   *int                         `json:"enable_thinking"`            //是否启用思考
 }
 
 type KnowledgeParams struct {
@@ -117,14 +126,17 @@ type AssistantConversionHistory struct {
 }
 
 type PluginToolInfo struct {
-	APISchema *openapi3.T         `json:"api_schema"`
-	APIAuth   *openapi3_util.Auth `json:"api_auth,omitempty"`
+	APISchema  *openapi3.T         `json:"api_schema"`
+	APIAuth    *openapi3_util.Auth `json:"api_auth,omitempty"`
+	ToolName   string              `json:"tool_name"`
+	ToolAvatar string              `json:"tool_avatar"`
 }
 
 type MCPToolInfo struct {
 	URL          string   `json:"url"`
 	Transport    string   `json:"transport"`
 	ToolNameList []string `json:"toolNameList"` // MCP工具方法列表,会根据此方法名的列表进行mcp方法的过滤，如果此列为空，则标识不进行过滤
+	Avatar       string   `json:"avatar"`
 }
 
 type MetadataFilterParam struct {

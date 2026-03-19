@@ -18,13 +18,17 @@ const (
 type AgentMessageBuilder interface {
 	MessageType() MessageType //消息类型
 	FilterMessage(respContext *response.AgentChatRespContext, chatMessage *schema.Message) bool
-	BuildContent(req *request.AgentChatContext, respContext *response.AgentChatRespContext, chatMessage *schema.Message) (*AgentMessageContent, error)
+	BuildContent(req *request.AgentChatContext, respContext *response.AgentChatRespContext, chatMessage *schema.Message) ([]*AgentMessageContent, error)
 }
 
 type AgentMessageContent struct {
 	ContentList  []string
 	SubEventData *response.SubEventData
 	NotStop      bool
+}
+
+func (t AgentMessageContent) Empty() bool {
+	return len(t.ContentList) == 0 && t.SubEventData == nil
 }
 
 func BuildChatMessage(req *request.AgentChatContext, respContext *response.AgentChatRespContext, chatMessage *schema.Message) ([]string, error) {
@@ -35,12 +39,23 @@ func BuildChatMessage(req *request.AgentChatContext, respContext *response.Agent
 		return make([]string, 0), nil
 	}
 	//构造内容
-	content, err := builder.BuildContent(req, respContext, chatMessage)
+	contentList, err := builder.BuildContent(req, respContext, chatMessage)
 	if err != nil {
 		return nil, err
 	}
+	var retList []string
+	for _, content := range contentList {
+		if content.Empty() {
+			continue
+		}
+		resp, err1 := response.BuildAgentChatResp(req, chatMessage, content.ContentList, content.SubEventData, content.NotStop, respContext.Order)
+		if err1 != nil {
+			return nil, err1
+		}
+		retList = append(retList, resp...)
+	}
 	//返回对端resp
-	return response.BuildAgentChatResp(req, chatMessage, content.ContentList, content.SubEventData, content.NotStop, respContext.Order)
+	return retList, nil
 }
 
 func createBuilder(req *request.AgentChatContext) AgentMessageBuilder {
@@ -71,13 +86,13 @@ func filterMessage(respContext *response.AgentChatRespContext, chatMessage *sche
 	return false
 }
 
-func buildSkipMessage() *AgentMessageContent {
-	return &AgentMessageContent{}
+func buildSkipMessage() []*AgentMessageContent {
+	return []*AgentMessageContent{}
 }
 
-func buildMessageContent(contentList []string, subEventData *response.SubEventData) *AgentMessageContent {
-	return &AgentMessageContent{
+func buildMessageContent(contentList []string, subEventData *response.SubEventData) []*AgentMessageContent {
+	return []*AgentMessageContent{{
 		ContentList:  contentList,
 		SubEventData: subEventData,
-	}
+	}}
 }

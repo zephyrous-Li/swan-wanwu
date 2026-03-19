@@ -16,9 +16,11 @@ type ChunkSearchList struct {
 	Title            string          `json:"title"`
 	Snippet          string          `json:"snippet"`
 	KbName           string          `json:"kb_name"`
+	UserKbName       string          `json:"user_kb_name"`
 	MetaData         interface{}     `json:"meta_data"`
 	ChildContentList []*ChildContent `json:"child_content_list"`
 	ChildScore       []float64       `json:"child_score"`
+	Score            float64         `json:"score"`
 }
 
 type ChildContent struct {

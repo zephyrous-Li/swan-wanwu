@@ -56,6 +56,7 @@ type ChunkSearchList struct {
 	Title            string           `json:"title"`
 	Snippet          string           `json:"snippet"`
 	KbName           string           `json:"kb_name"`
+	UserKbName       string           `json:"user_kb_name"`
 	MetaData         interface{}      `json:"meta_data"`
 	ChildContentList []*ChildContent  `json:"child_content_list"`
 	ChildScore       []float64        `json:"child_score"`
@@ -106,7 +107,7 @@ func RagKnowledgeHit(ctx *gin.Context, req *request.RagSearchKnowledgeBaseReq) (
 		return nil, grpc_util.ErrorStatus(err_code.Code_KnowledgeBaseHitFailed, err.Error())
 	}
 	//合并结果返回
-	return mergeHitResult(req, searchResult), nil
+	return fillUserKbName(mergeHitResult(req, searchResult), list.KnowledgeList), nil
 }
 
 // BatchRagKnowledgeSearch 批量rag知识库查询，后面多智能体版本合并后可以使用并发框架改造
@@ -361,6 +362,26 @@ func buildDifyWeights(weight *knowledgebase_service.Weights) *DifyWeights {
 	}
 }
 
+func fillUserKbName(knowledgeHitData *KnowledgeHitData, knowledgeList []*response.KnowledgeInfo) *KnowledgeHitData {
+	if knowledgeHitData == nil || len(knowledgeHitData.SearchList) == 0 {
+		return knowledgeHitData
+	}
+	knowledgeNameMap := buildKnowledgeNameMap(knowledgeList)
+	if len(knowledgeNameMap) == 0 {
+		return knowledgeHitData
+	}
+	//填充用户知识库名称
+	for _, chunk := range knowledgeHitData.SearchList {
+		userKbName := knowledgeNameMap[chunk.KbName]
+		if len(userKbName) > 0 {
+			chunk.UserKbName = userKbName
+		} else {
+			chunk.UserKbName = chunk.KbName
+		}
+	}
+	return knowledgeHitData
+}
+
 // mergeHitResult 合并命中测试结果
 func mergeHitResult(req *request.RagSearchKnowledgeBaseReq, searchContext *RagKnowledgeSearchContext) *KnowledgeHitData {
 	if searchContext.LocalKnowledgeData == nil {
@@ -380,11 +401,18 @@ func mergeHitResult(req *request.RagSearchKnowledgeBaseReq, searchContext *RagKn
 	return mergeHitData(req.Question, localData, difyData)
 }
 
+func buildKnowledgeNameMap(knowledgeList []*response.KnowledgeInfo) map[string]string {
+	knowledgeNameMap := make(map[string]string)
+	for _, knowledge := range knowledgeList {
+		knowledgeNameMap[knowledge.RagName] = knowledge.Name
+	}
+	return knowledgeNameMap
+}
+
 func mergeHitData(question string, localHitData *KnowledgeHitData, difyHitData *KnowledgeHitData) *KnowledgeHitData {
 	var hitData = &KnowledgeHitData{}
 	hitData.SearchList = append(hitData.SearchList, localHitData.SearchList...)
 	hitData.Score = append(hitData.Score, localHitData.Score...)
-
 	hitData.SearchList = append(hitData.SearchList, difyHitData.SearchList...)
 	hitData.Score = append(hitData.Score, difyHitData.Score...)
 
