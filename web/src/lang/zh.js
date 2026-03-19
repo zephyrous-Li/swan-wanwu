@@ -1958,6 +1958,8 @@ export default {
     repeatedPunishment: '重复惩罚',
     repeatedPunishmentDesc:
       '用于控制模型生成时的重复度，提高此项可以降低模型生成的重复度',
+    thinking: '思考过程',
+    thinkingDesc: '可调整是否开启深度思考，关闭后将直接回答，不进行深度思考。',
     visualSetting: '视觉设置',
     picNumLimit: '图片上传限制',
     picNumLimitDesc: '模型回答的tokens的最大长度',

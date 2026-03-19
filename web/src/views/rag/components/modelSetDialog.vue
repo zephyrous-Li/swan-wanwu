@@ -35,6 +35,7 @@
               </el-col>
               <el-col :span="20">
                 <el-slider
+                  v-if="!item.hideSlider"
                   v-model="ruleForm[item.props]"
                   show-input
                   :min="item.min"
@@ -76,7 +77,11 @@ export default {
         topPEnable: false,
         frequencyPenaltyEnable: false,
       },
-      modelSet: [
+    };
+  },
+  computed: {
+    modelSet() {
+      const baseModelSet = [
         {
           label: this.$t('app.temperature'),
           desc: this.$t('app.temperatureDesc'),
@@ -104,8 +109,19 @@ export default {
           max: 10,
           step: 0.1,
         },
-      ],
-    };
+      ];
+      if ('thinkingEnable' in this.ruleForm) {
+        baseModelSet.push({
+          label: this.$t('app.thinking'),
+          desc: this.$t('app.thinkingDesc'),
+          props: 'thinking',
+          btnProps: 'thinkingEnable',
+          hideSlider: true,
+        });
+      }
+
+      return baseModelSet;
+    },
   },
   methods: {
     showDialog() {
