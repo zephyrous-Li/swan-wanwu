@@ -58,28 +58,28 @@ func BuildEndSubAgent(respContext *AgentChatRespContext, timeCost string) *SubEv
 	return EndSubAgent(respContext.CurrentAgent, timeCost, respContext.Order, 0)
 }
 
-func BuildStartTool(agentTool *AgentTool, order int) *SubEventData {
+func BuildStartTool(agentTool *AgentTool) *SubEventData {
 	return StartSubAgent(&AgentInfo{
 		Avatar: agentTool.Avatar,
 		Id:     agentTool.ToolId,
 		Name:   agentTool.ToolName,
-	}, order, agentTool.ToolType)
+	}, agentTool.Order, agentTool.ToolType)
 }
 
-func BuildProcessTool(agentTool *AgentTool, order int) *SubEventData {
+func BuildProcessTool(agentTool *AgentTool) *SubEventData {
 	return ProcessSubAgent(&AgentInfo{
 		Avatar: agentTool.Avatar,
 		Id:     agentTool.ToolId,
 		Name:   agentTool.ToolName,
-	}, order, agentTool.ToolType)
+	}, agentTool.Order, agentTool.ToolType)
 }
 
-func BuildEndTool(agentTool *AgentTool, order int) *SubEventData {
+func BuildEndTool(agentTool *AgentTool) *SubEventData {
 	return EndSubAgent(&AgentInfo{
 		Avatar: agentTool.Avatar,
 		Id:     agentTool.ToolId,
 		Name:   agentTool.ToolName,
-	}, util.NowSpanToHMS(agentTool.StartTime), order, agentTool.ToolType)
+	}, util.NowSpanToHMS(agentTool.StartTime), agentTool.Order, agentTool.ToolType)
 }
 
 func StartSubAgent(agentInfo *AgentInfo, order int, eventType int) *SubEventData {

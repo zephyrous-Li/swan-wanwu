@@ -279,13 +279,13 @@ func buildNewReasoningContent(chatMessage *schema.Message, respContext *response
 				StartTime: time.Now().UnixMilli(),
 			}
 			retContentList = append(retContentList, &AgentMessageContent{
-				SubEventData: response.BuildStartTool(respContext.ThinkingTool, respContext.Order),
+				SubEventData: response.BuildStartTool(respContext.ThinkingTool),
 				ContentList:  []string{chatMessage.ReasoningContent},
 			})
 		} else {
 			//思考中
 			retContentList = append(retContentList, &AgentMessageContent{
-				SubEventData: response.BuildProcessTool(respContext.ThinkingTool, respContext.Order),
+				SubEventData: response.BuildProcessTool(respContext.ThinkingTool),
 				ContentList:  []string{chatMessage.ReasoningContent},
 			})
 		}
@@ -293,7 +293,7 @@ func buildNewReasoningContent(chatMessage *schema.Message, respContext *response
 		//思考结束
 		respContext.Thinking = false
 		retContentList = append(retContentList, &AgentMessageContent{
-			SubEventData: response.BuildEndTool(respContext.ThinkingTool, respContext.Order),
+			SubEventData: response.BuildEndTool(respContext.ThinkingTool),
 		})
 		respContext.IncreaseOrder()
 		retContentList = append(retContentList, &AgentMessageContent{
@@ -352,7 +352,7 @@ func buildToolContentNewStyle(req *request.AgentChatContext, chatMessage *schema
 	if respContext.Thinking {
 		respContext.Thinking = false
 		toolContentList = append(toolContentList, &AgentMessageContent{
-			SubEventData: response.BuildEndTool(respContext.ThinkingTool, respContext.Order),
+			SubEventData: response.BuildEndTool(respContext.ThinkingTool),
 		})
 	}
 
@@ -366,7 +366,7 @@ func buildToolContentNewStyle(req *request.AgentChatContext, chatMessage *schema
 			//更改状态
 			tool.ToolStep = response.ToolParamFinishStep
 			toolContentList = append(toolContentList, &AgentMessageContent{
-				SubEventData: response.BuildEndTool(tool, respContext.Order),
+				SubEventData: response.BuildEndTool(tool),
 				ContentList:  []string{toolParamsEndFormat},
 			})
 		}
@@ -376,7 +376,7 @@ func buildToolContentNewStyle(req *request.AgentChatContext, chatMessage *schema
 		toolSteps := stepsMap[toolId]
 		agentTool := respContext.ToolMap[toolId]
 		if agentTool == nil {
-			agentTool = &response.AgentTool{ToolId: toolId, Order: len(respContext.ToolMap), StartTime: time.Now().UnixMilli(), ToolIndex: buildToolIndex(chatMessage)}
+			agentTool = &response.AgentTool{ToolId: toolId, Order: respContext.Order, StartTime: time.Now().UnixMilli(), ToolIndex: buildToolIndex(chatMessage)}
 			respContext.ToolMap[toolId] = agentTool
 		}
 		for _, step := range toolSteps {
@@ -434,7 +434,7 @@ func buildNewContentByStep(respContext *response.AgentChatRespContext, req *requ
 	var subEventData *response.SubEventData
 	var contentList []string
 	if agentTool.ToolType == response.KnowledgeEventType {
-		return buildKnowledgeContentByStep(req, agentTool, chatMessage, step, respContext)
+		return buildKnowledgeContentByStep(req, agentTool, chatMessage, step)
 	}
 	switch step {
 	case response.ToolNameStep:
@@ -447,24 +447,24 @@ func buildNewContentByStep(respContext *response.AgentChatRespContext, req *requ
 		agentTool.ToolName = tool.Function.Name
 		agentTool.ToolType = response.BuildEventTypeByTool(agentTool)
 		agentTool.Avatar = buildToolAvatar(tool.Function.Name, req.ToolMap, agentTool.ToolType)
-		subEventData = response.BuildStartTool(agentTool, respContext.Order)
+		subEventData = response.BuildStartTool(agentTool)
 	case response.ToolParamStartStep:
 		contentList = append(contentList, toolParamsStartFormat)
-		subEventData = response.BuildProcessTool(agentTool, respContext.Order)
+		subEventData = response.BuildProcessTool(agentTool)
 	case response.ToolParamStep:
 		tool := buildMessageTool(chatMessage, toolId)
 		if tool == nil {
 			break
 		}
 		contentList = append(contentList, tool.Function.Arguments)
-		subEventData = response.BuildProcessTool(agentTool, respContext.Order)
+		subEventData = response.BuildProcessTool(agentTool)
 	case response.ToolParamFinishStep:
 		contentList = append(contentList, toolParamsEndFormat)
-		subEventData = response.BuildProcessTool(agentTool, respContext.Order)
+		subEventData = response.BuildProcessTool(agentTool)
 	case response.ToolResultFinishStep:
 		toolResult := fmt.Sprintf(toolEndFormat, "", chatMessage.Content)
 		contentList = append(contentList, toolResult)
-		subEventData = response.BuildEndTool(agentTool, respContext.Order)
+		subEventData = response.BuildEndTool(agentTool)
 	}
 	return &AgentMessageContent{
 		ContentList:  contentList,
@@ -472,7 +472,7 @@ func buildNewContentByStep(respContext *response.AgentChatRespContext, req *requ
 	}
 }
 
-func buildKnowledgeContentByStep(req *request.AgentChatContext, agentTool *response.AgentTool, chatMessage *schema.Message, step response.ToolStep, respContext *response.AgentChatRespContext) *AgentMessageContent {
+func buildKnowledgeContentByStep(req *request.AgentChatContext, agentTool *response.AgentTool, chatMessage *schema.Message, step response.ToolStep) *AgentMessageContent {
 	var subEventData *response.SubEventData
 	var contentList []string
 	switch step {
@@ -480,7 +480,7 @@ func buildKnowledgeContentByStep(req *request.AgentChatContext, agentTool *respo
 		break
 	case response.ToolResultFinishStep:
 		req.KnowledgeHitData = buildKnowledgeContent(chatMessage.Content)
-		subEventData = response.BuildEndTool(agentTool, respContext.Order)
+		subEventData = response.BuildEndTool(agentTool)
 	}
 	return &AgentMessageContent{
 		ContentList:  contentList,
