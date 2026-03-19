@@ -136,7 +136,7 @@ func buildCustomToolPluginList(assistant *model.Assistant, prepareParams *AgentP
 				if err != nil {
 					return pluginList, err
 				}
-				pluginList, err = buildPluginList(pluginList, apiSchema, apiAuth, "/v1/static/icon/custom-tool-default-icon.png", actionName)
+				pluginList, err = buildPluginList(pluginList, apiSchema, apiAuth, "", actionName)
 				if err != nil {
 					return pluginList, err
 				}
@@ -193,7 +193,7 @@ func buildToolSquarePluginList(assistant *model.Assistant, prepareParams *AgentP
 				if err != nil {
 					return pluginList, err
 				}
-				pluginList, err = buildPluginList(pluginList, apiSchema, apiAuth, "/v1/static/icon/custom-tool-default-icon.png", actionName)
+				pluginList, err = buildPluginList(pluginList, apiSchema, apiAuth, "", actionName)
 				if err != nil {
 					return pluginList, err
 				}

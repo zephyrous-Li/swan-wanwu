@@ -14,9 +14,9 @@ type AgentStep int
 const (
 	AgentStartLabel        = "transfer_to_agent"
 	defaultAgentAvatar     = "/v1/static/icon/agent-default-icon.png"
-	defaultKnowledgeAvatar = "/v1/static/icon/knowledge-default-icon.png"
+	defaultKnowledgeAvatar = "/v1/static/icon/agent-knowledge-default-icon.png"
 	defaultThinkingAvatar  = "/v1/static/icon/agent-thinking-default-icon.png"
-	defaultWorkFlowAvatar  = "/v1/static/icon/workflow-default-icon.png"
+	defaultWorkFlowAvatar  = "/v1/static/icon/agent-tool-default-icon.png"
 
 	AgentNoneProcessStep AgentStep = 0 //无需处理，过滤
 	AgentStartStep       AgentStep = 1 //智能体开始

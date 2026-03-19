@@ -99,7 +99,7 @@ func (m *MessageTool) ToolId() string {
 			agentToolList = append(agentToolList, tool)
 		}
 		sort.Slice(agentToolList, func(i, j int) bool {
-			return agentToolList[i].Order < agentToolList[j].Order
+			return agentToolList[i].Order > agentToolList[j].Order
 		})
 		return agentToolList[0].ToolId
 	}

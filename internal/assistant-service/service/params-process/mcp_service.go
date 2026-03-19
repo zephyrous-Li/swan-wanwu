@@ -135,7 +135,6 @@ func buildCustomMcpList(prepareParams *AgentPrepareParams, mcpTools map[string]c
 				URL:          mcpCustom.SseUrl,
 				Transport:    "sse",
 				ToolNameList: toolList,
-				Avatar:       "/v1/static/icon/mcp-custom-default-icon.png",
 			}
 		}
 	}
@@ -149,7 +148,6 @@ func buildMcpServerList(prepareParams *AgentPrepareParams, mcpTools map[string]c
 				URL:          mcpServer.SseUrl,
 				Transport:    "sse",
 				ToolNameList: toolList,
-				Avatar:       "/v1/static/icon/mcp-server-default-icon.png",
 			}
 		}
 	}
