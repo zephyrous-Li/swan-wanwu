@@ -3,15 +3,15 @@ package agent_chat_builder
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/UnicomAI/wanwu/internal/agent-service/model"
-	"github.com/google/uuid"
 	"sort"
 	"time"
 	"unicode/utf8"
 
+	"github.com/UnicomAI/wanwu/internal/agent-service/model"
 	"github.com/UnicomAI/wanwu/internal/agent-service/model/request"
 	"github.com/UnicomAI/wanwu/internal/agent-service/model/response"
 	"github.com/cloudwego/eino/schema"
+	"github.com/google/uuid"
 )
 
 const (

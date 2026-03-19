@@ -135,7 +135,7 @@ type LLMReq struct {
 	TopK                *int                   `json:"top_k,omitempty"`
 	MinP                *float64               `json:"min_p,omitempty"`
 	ParallelToolCalls   *bool                  `json:"parallel_tool_calls,omitempty"` // 是否开启并行工具调用
-	StreamOptions       *StreamOptions         `json:"stream_options,omitempty"`      //当启用流式输出时，可通过将本参数设置为{"include_usage": true}，在输出的最后一行显示所使用的Token数。
+	StreamOptions       *StreamOptions         `json:"stream_options,omitempty"`      // 当启用流式输出时，可通过将本参数设置为{"include_usage": true}，在输出的最后一行显示所使用的Token数。
 
 	PresencePenalty   *float64 `json:"presence_penalty,omitempty"`   // 控制模型生成文本时的内容重复度
 	FrequencyPenalty  *float64 `json:"frequency_penalty,omitempty"`  // 频率惩罚系数

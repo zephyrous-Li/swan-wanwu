@@ -48,6 +48,13 @@ func (cfg *LLM) NewReq(req *mp_common.LLMReq) (mp_common.ILLMReq, error) {
 			"thinking":        *req.EnableThinking,
 		}
 	}
+	if req.Stream != nil && *req.Stream {
+		if req.StreamOptions != nil && req.StreamOptions.IncludeUsage != nil {
+			m["stream_options"] = map[string]bool{"include_usage": *req.StreamOptions.IncludeUsage}
+		} else {
+			m["stream_options"] = map[string]bool{"include_usage": true}
+		}
+	}
 	return mp_common.NewLLMReq(m), nil
 }
 

@@ -5,10 +5,6 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"github.com/UnicomAI/wanwu/internal/agent-service/pkg/util"
-	"github.com/cloudwego/eino/adk"
-	"github.com/cloudwego/eino/schema"
-	"github.com/google/uuid"
 	"path/filepath"
 	"strings"
 	"time"
@@ -17,9 +13,13 @@ import (
 	"github.com/UnicomAI/wanwu/internal/agent-service/model/request"
 	"github.com/UnicomAI/wanwu/internal/agent-service/pkg/config"
 	"github.com/UnicomAI/wanwu/internal/agent-service/pkg/http"
+	"github.com/UnicomAI/wanwu/internal/agent-service/pkg/util"
 	"github.com/UnicomAI/wanwu/internal/agent-service/service/agent-message-flow/prompt"
 	http_client "github.com/UnicomAI/wanwu/pkg/http-client"
 	"github.com/UnicomAI/wanwu/pkg/log"
+	"github.com/cloudwego/eino/adk"
+	"github.com/cloudwego/eino/schema"
+	"github.com/google/uuid"
 )
 
 const (
