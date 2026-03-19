@@ -309,6 +309,7 @@
           </el-select>
         </el-form-item>
         <el-form-item
+          v-if="createForm.modelType === llm"
           :label="$t('modelAccess.table.think')"
           prop="thinkingSupport"
         >
@@ -699,10 +700,13 @@ export default {
             provider: this.provider.key || '',
             config: {
               endpointUrl,
-              thinkingSupport,
               ...(this.provider.key !== OLLAMA &&
                 !this.showAppAndAccessKey() && { apiKey }),
-              ...(modelType === LLM && { functionCalling, maxTokens }),
+              ...(modelType === LLM && {
+                functionCalling,
+                maxTokens,
+                thinkingSupport,
+              }),
               ...(this.showVision() && { visionSupport }),
               ...(this.showContextSize() && { contextSize }),
               ...(this.showMaxAudioLimit() && { maxAsrFileSize }),
