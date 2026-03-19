@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"reflect"
 	"strings"
 
 	assistant_service "github.com/UnicomAI/wanwu/api/proto/assistant-service"
@@ -141,6 +142,20 @@ func getPromptCustom(ctx *gin.Context, modelId string, reqInfo *mp_common.LLMReq
 	if err != nil {
 		return
 	}
+
+	// 判断模型是否支持深度思考，若支持则默认添加 enable_thinking: false
+	if llm != nil {
+		llmValue := reflect.ValueOf(llm).Elem()
+		thinkingField := llmValue.FieldByName("ThinkingSupport")
+		if thinkingField.IsValid() && thinkingField.Kind() == reflect.String {
+			thinkingSupport := thinkingField.String()
+			if thinkingSupport == "support" {
+				enableThinking := false
+				reqInfo.EnableThinking = &enableThinking
+			}
+		}
+	}
+
 	iLLM, ok := llm.(mp.ILLM)
 	if !ok {
 		gin_util.Response(ctx, nil, grpc_util.ErrorStatus(errs.Code_BFFGeneral, fmt.Sprintf("model %v chat completions err: invalid provider", modelInfo.ModelId)))
