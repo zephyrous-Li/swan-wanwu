@@ -63,7 +63,17 @@ func AgentRecommendChatCompletions(ctx *gin.Context, modelID string, req *mp_com
 		gin_util.Response(ctx, nil, grpc_util.ErrorStatus(err_code.Code_BFFGeneral, fmt.Sprintf("model %v chat completions err: %v", modelInfo.ModelId, err)))
 		return
 	}
-
+	// 判断是否设enable_thinking为false
+	jsonBytes, err := json.Marshal(llm)
+	if err == nil {
+		var result map[string]interface{}
+		if err := json.Unmarshal(jsonBytes, &result); err == nil {
+			if ts, _ := result["thinkingSupport"].(string); ts == "support" {
+				enableThinking := false
+				req.EnableThinking = &enableThinking
+			}
+		}
+	}
 	iLLM, ok := llm.(mp.ILLM)
 	if !ok {
 		gin_util.Response(ctx, nil, grpc_util.ErrorStatus(err_code.Code_BFFGeneral, fmt.Sprintf("model %v chat completions err: invalid provider", modelInfo.ModelId)))
