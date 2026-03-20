@@ -308,6 +308,25 @@
             ></el-option>
           </el-select>
         </el-form-item>
+        <el-form-item
+          v-if="createForm.modelType === llm"
+          :label="$t('modelAccess.table.think')"
+          prop="thinkingSupport"
+        >
+          <el-select
+            v-model="createForm.thinkingSupport"
+            :placeholder="$t('common.select.placeholder')"
+            :disabled="!allowEdit"
+            style="width: 100%"
+          >
+            <el-option
+              v-for="item in supportList"
+              :key="item.key"
+              :label="item.name"
+              :value="item.key"
+            ></el-option>
+          </el-select>
+        </el-form-item>
         <!--<el-form-item :label="$t('modelAccess.table.publishTime')" prop="publishDate">
           <el-date-picker
             v-model="createForm.publishDate"
@@ -336,7 +355,7 @@
 <script>
 import { addModel, editModel } from '@/api/modelAccess';
 import { uploadAvatar } from '@/api/user';
-import { avatarSrc } from '@/utils/util';
+import { avatarSrc, getModelDefaultIcon } from '@/utils/util';
 import {
   PROVIDER_TYPE,
   PROVIDER_OBJ,
@@ -382,7 +401,7 @@ export default {
     return {
       isSystem: this.$store.state.user.permission.isSystem || false,
       allowEdit: true,
-      defaultLogo: require('@/assets/imgs/model_default_icon.png'),
+      defaultLogo: getModelDefaultIcon(),
       dialogVisible: false,
       modelType: [],
       scopeTypeList: SCOPE_TYPE_LIST,
@@ -429,6 +448,7 @@ export default {
         // publishDate: '',
         functionCalling: DEFAULT_CALLING,
         visionSupport: DEFAULT_SUPPORT,
+        thinkingSupport: DEFAULT_SUPPORT,
       },
       rules: {
         model: [
@@ -639,6 +659,7 @@ export default {
         modelType: LLM,
         functionCalling: DEFAULT_CALLING,
         visionSupport: DEFAULT_SUPPORT,
+        thinkingSupport: DEFAULT_SUPPORT,
         scopeType: PRIVATE,
         contextSize: 8000,
         maxTokens: 4096,
@@ -665,6 +686,7 @@ export default {
             functionCalling,
             modelType,
             visionSupport,
+            thinkingSupport,
             contextSize,
             maxTokens,
             /*maxTextLength,
@@ -680,7 +702,11 @@ export default {
               endpointUrl,
               ...(this.provider.key !== OLLAMA &&
                 !this.showAppAndAccessKey() && { apiKey }),
-              ...(modelType === LLM && { functionCalling, maxTokens }),
+              ...(modelType === LLM && {
+                functionCalling,
+                maxTokens,
+                thinkingSupport,
+              }),
               ...(this.showVision() && { visionSupport }),
               ...(this.showContextSize() && { contextSize }),
               ...(this.showMaxAudioLimit() && { maxAsrFileSize }),
@@ -697,6 +723,7 @@ export default {
             'endpointUrl',
             'functionCalling',
             'visionSupport',
+            'thinkingSupport',
             'contextSize',
             'maxTokens',
             /*'maxTextLength',

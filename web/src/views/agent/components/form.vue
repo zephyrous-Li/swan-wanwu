@@ -676,6 +676,8 @@ import {
   delCustomBuiltIn,
   switchCustomBuiltIn,
   getAgentPublishedInfo,
+  enableSkill,
+  deleteSkill,
 } from '@/api/agent';
 import ToolDialog from './toolDialog';
 import ToolDetail from './toolDetail';
@@ -694,6 +696,7 @@ import commonMixin from '@/mixins/common';
 
 import { avatarSrc } from '@/utils/util';
 import modelSelect from '@/components/modelSelect.vue';
+import { AGENT_TOOL_TYPE } from '@/views/agent/constants';
 export default {
   mixins: [commonMixin],
   components: {
@@ -939,26 +942,15 @@ export default {
           maxHistory: 3,
         },
       },
-      hasPluginPermission: false,
       modelLoading: false,
-      wfDialogVisible: false,
       multiAgentInfos: [],
       workFlowInfos: [],
       actionInfos: [],
       mcpInfos: [],
+      skillInfos: [],
       allTools: [], //所有的工具
-      workflowList: [],
-      modelParams: {},
       modelOptions: [],
-      selectKnowledge: [],
-      knowledgeData: [],
       optimizeTarget: 'instructions',
-      loadingPercent: 10,
-      nameStatus: '',
-      saved: false, //按钮
-      loading: false, //按钮
-      t: null,
-      logoFileList: [],
       imageUrl: '',
       defaultLogo: require('@/assets/imgs/bg-logo.png'),
       debounceTimer: null, //防抖计时器
@@ -976,6 +968,10 @@ export default {
         action: {
           displayName: this.$t('menu.app.custom'),
           propName: 'actionName',
+        },
+        skill: {
+          displayName: this.$t('tempSquare.skills.name'),
+          propName: 'skillName',
         },
         // 可以继续添加其他类型
         default: {
@@ -1003,7 +999,6 @@ export default {
     const permission = accessCert
       ? JSON.parse(accessCert).user.permission.orgPermission
       : '';
-    this.hasPluginPermission = permission.indexOf('plugin') !== -1;
   },
   beforeDestroy() {
     store.dispatch('app/initState');
@@ -1098,6 +1093,15 @@ export default {
       this.editForm.visionConfig.picNum = data.picNum;
     },
     handleModelChange(val) {
+      if (!val) return;
+      const selectedModel = this.modelOptions.find(
+        item => item.modelId === val,
+      );
+      if (selectedModel?.config?.thinkingSupport === 'support') {
+        this.$set(this.editForm.modelConfig, 'thinkingEnable', true);
+      } else {
+        this.$delete(this.editForm.modelConfig, 'thinkingEnable');
+      }
       this.setModelInfo(val);
     },
     setModelInfo(val) {
@@ -1153,10 +1157,12 @@ export default {
       });
     },
     toolSwitch(n, type, enable) {
-      if (type === 'workflow') {
+      if (type === AGENT_TOOL_TYPE.WORKFLOW) {
         this.workflowSwitch(n.workFlowId, enable);
-      } else if (type === 'mcp') {
+      } else if (type === AGENT_TOOL_TYPE.MCP) {
         this.mcpSwitch(n, enable);
+      } else if (type === AGENT_TOOL_TYPE.SKILL) {
+        this.skillSwitch(n, enable);
       } else {
         this.customSwitch(n, enable);
       }
@@ -1191,6 +1197,7 @@ export default {
         })
         .catch(() => {});
     },
+
     workflowSwitch(id, enable) {
       enableWorkFlow({
         assistantId: this.editForm.assistantId,
@@ -1204,18 +1211,28 @@ export default {
         })
         .catch(() => {});
     },
+    skillSwitch(n, enable) {
+      enableSkill({
+        assistantId: this.editForm.assistantId,
+        enable,
+        skillId: n.skillId,
+        skillType: n.skillType,
+      })
+        .then(res => {
+          if (res.code === 0) {
+            this.getAppDetail();
+          }
+        })
+        .catch(() => {});
+    },
     addTool() {
       const data = {
         mcpInfos: this.mcpInfos,
         workFlowInfos: this.workFlowInfos,
         customInfos: this.actionInfos,
+        skillInfos: this.skillInfos,
       };
       this.$refs.toolDialog.showDialog(data);
-    },
-    rerankVisible(val) {
-      if (val) {
-        this.getRerankData();
-      }
     },
     getRerankData() {
       getRerankList().then(res => {
@@ -1291,14 +1308,13 @@ export default {
         this.doCreateWorkFlow(n.appId, res.data.base64OpenAPISchema, index);
       }
     },
-    preAddWorkflow() {
-      this.wfDialogVisible = true;
-    },
     toolRemove(n, type) {
-      if (type === 'workflow') {
+      if (type === AGENT_TOOL_TYPE.WORKFLOW) {
         this.doDeleteWorkflow(n.workFlowId);
-      } else if (type === 'mcp') {
+      } else if (type === AGENT_TOOL_TYPE.MCP) {
         this.mcpRemove(n);
+      } else if (type === AGENT_TOOL_TYPE.SKILL) {
+        this.skillRemove(n);
       } else {
         this.customRemove(n);
       }
@@ -1324,6 +1340,20 @@ export default {
         actionName: n.actionName,
         mcpId: n.mcpId,
         mcpType: n.mcpType,
+      })
+        .then(res => {
+          if (res.code === 0) {
+            this.$message.success(this.$t('agent.form.deleteSuccess'));
+            this.getAppDetail();
+          }
+        })
+        .catch(err => {});
+    },
+    skillRemove(n) {
+      deleteSkill({
+        assistantId: this.editForm.assistantId,
+        skillId: n.skillId,
+        skillType: n.skillType,
       })
         .then(res => {
           if (res.code === 0) {
@@ -1513,19 +1543,24 @@ export default {
         //回显自定义插件
         this.workFlowInfos = data.workFlowInfos || [];
         this.mcpInfos = data.mcpInfos || [];
+        this.skillInfos = data.skillInfos || [];
         this.actionInfos = data.toolInfos || [];
         this.allTools = [
           ...this.workFlowInfos.map(item => ({
             ...item,
-            type: 'workflow',
+            type: AGENT_TOOL_TYPE.WORKFLOW,
           })),
           ...this.mcpInfos.map(item => ({
             ...item,
-            type: 'mcp',
+            type: AGENT_TOOL_TYPE.MCP,
           })),
           ...this.actionInfos.map(item => ({
             ...item,
             type: 'action',
+          })),
+          ...this.skillInfos.map(item => ({
+            ...item,
+            type: AGENT_TOOL_TYPE.SKILL,
           })),
         ];
 

@@ -14,10 +14,17 @@ export default {
 </script>
 
 <style lang="scss">
+@font-face {
+  font-family: PingFang SC;
+  src: url(@/assets/fonts/PingFang.ttc) format('truetype');
+  font-weight: normal;
+  font-style: normal;
+}
 * {
   margin: 0;
   padding: 0;
-  font-size: 13px;
+  font-family: PingFang SC;
+  font-size: 12px;
   box-sizing: border-box;
   -webkit-font-smoothing: antialiased; /*chrome、safari*/
   -moz-osx-font-smoothing: grayscale; /*firefox*/
@@ -27,8 +34,7 @@ html {
   width: 100%;
   height: 100%;
   overflow: hidden;
-  /*font-family:'Microsoft YaHei', Arial, sans-serif;*/
-  font-family: 'Source Han Sans SC', 'Segoe UI';
+  font-family: PingFang SC;
 }
 
 /*优化弹窗出现表格左移问题*/

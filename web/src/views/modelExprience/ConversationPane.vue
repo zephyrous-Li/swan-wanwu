@@ -318,8 +318,17 @@ export default {
     openModelSetDialog(modelId, modelSetting) {
       this.editModel.modelId = modelId;
       Object.keys(modelSetting).forEach(key => {
-        this.editModel.modelSetting[key] = modelSetting[key];
+        if (key === 'thinkingSupport') {
+          if (modelSetting[key] === 'support') {
+            this.editModel.modelSetting.thinkingEnable = true;
+          } else {
+            delete this.editModel.modelSetting.thinkingEnable;
+          }
+        } else {
+          this.editModel.modelSetting[key] = modelSetting[key];
+        }
       });
+      delete this.editModel.modelSetting.thinkingSupport;
       this.$refs.modelSetDialog.showDialog();
     },
     // 更新模型配置

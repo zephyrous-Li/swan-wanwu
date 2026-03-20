@@ -164,8 +164,14 @@
   }
 }
 
-.el-select-dropdown.is-multiple .el-select-dropdown__item.selected {
-  margin-bottom: 3px;
+.el-select-dropdown.is-multiple {
+  .el-select-dropdown__item {
+    padding-right: 20px;
+  }
+  .el-select-dropdown__item.selected {
+    margin-top: 3px;
+    margin-bottom: 3px;
+  }
 }
 
 .el-select .el-input.is-focus .el-input__inner {
@@ -357,6 +363,11 @@
   .el-select-dropdown__item {
     border-radius: 4px;
     margin: 0 6px;
+  }
+
+  .el-select-dropdown__item.selected {
+    margin-bottom: 3px;
+    margin-top: 3px;
   }
 }
 

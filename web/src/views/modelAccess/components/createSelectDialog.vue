@@ -109,7 +109,7 @@ export default {
     margin-right: 16px;
   }
   .provider-card-name {
-    font-size: 17px;
+    font-size: 16px;
     font-weight: bold;
     color: $color_title;
     margin-bottom: 5px;
@@ -118,7 +118,7 @@ export default {
     display: inline-block;
     margin-right: 8px;
     margin-top: 5px;
-    font-size: 13px;
+    font-size: 12px;
     border-radius: 4px;
     padding: 2px 8px;
     background: #eceefe;

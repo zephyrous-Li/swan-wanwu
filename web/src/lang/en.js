@@ -174,6 +174,7 @@ export default {
       fold: '收起',
       expand: '展开',
       detail: '详情 >>',
+      viewAll: '查看全部',
     },
     switch: {
       start: '开启',
@@ -302,13 +303,14 @@ export default {
     workflow: '工作流',
     chat: '对话流',
     rag: '知识问答',
-    agent: '子智能体',
+    agent: '智能体',
     agentTemp: '智能体模板',
     agentAuto: '自定义智能体',
     publishSet: '发布配置',
     public: '公开',
     private: '私密',
     multiAgent: '多智能体',
+    singleAgent: '单智能体',
   },
   uploadDialog: {
     title: '文件上传',
@@ -558,6 +560,7 @@ export default {
       maxVideoLimit: '最大视频片限制',
       maxPicLimit: '最大图片限制',
       maxAudioLimit: '最大音频限制',
+      think: '深度思考开关',
     },
     supportFileType: {
       pic: '图片',
@@ -669,6 +672,7 @@ export default {
     promptCompareLimit: '最多可添加4个提示词',
     comparePrompt: '对比提示词',
     skills: {
+      name: 'skill',
       app: {
         builtIn: '内置',
         custom: '自定义',
@@ -1508,6 +1512,7 @@ export default {
       addSuccess: '工具添加成功',
       builtinTools: '内置工具',
       customTools: '自定义工具',
+      addSkill: '创建Skill',
     },
     agentDetail: {
       workFlowInstruction: '工作流配置说明',

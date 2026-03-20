@@ -193,7 +193,7 @@ export default {
             overflow: hidden;
             white-space: nowrap;
             text-overflow: ellipsis;
-            color: #5d5d5d;
+            color: $create_card_text_color;
           }
 
           .mcp_from {
@@ -229,62 +229,6 @@ export default {
         font-size: 13px;
         height: 55px;
         word-wrap: break-word;
-      }
-    }
-
-    .card-item-create {
-      background: #fff;
-      border: 1px solid $create_card_border_color;
-      box-shadow: 0px 8px 10px 0px rgba(80, 98, 161, 0.07);
-
-      .app-card-create {
-        width: 100%;
-        height: 100%;
-        min-height: 125px;
-        text-align: center;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-
-        .create-img-wrap {
-          display: inline-block;
-          vertical-align: middle;
-          margin-right: 10px;
-          position: relative;
-
-          .create-img {
-            width: 83px;
-            height: 84px;
-          }
-
-          .create-filter {
-            width: 40px;
-            height: 8px;
-            background: rgba(2, 81, 252, 0.3);
-            filter: blur(5px);
-            position: absolute;
-            bottom: -6px;
-          }
-
-          .create-type {
-            width: 30px;
-            position: absolute;
-            background: rgba(171, 198, 255, 0.5);
-            backdrop-filter: blur(6.55px);
-            border-radius: 5px;
-            padding: 6px;
-            top: -10px;
-            left: -12px;
-          }
-        }
-
-        span {
-          display: inline-block;
-          vertical-align: middle;
-          font-size: 16px;
-          color: $color_title;
-          font-weight: bold;
-        }
       }
     }
   }

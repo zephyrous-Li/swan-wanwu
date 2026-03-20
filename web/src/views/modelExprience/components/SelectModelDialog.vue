@@ -82,7 +82,7 @@
 </template>
 <script>
 import { PROVIDER_TYPE } from '@/views/modelAccess/constants';
-import { avatarSrc } from '@/utils/util';
+import { avatarSrc, getModelDefaultIcon } from '@/utils/util';
 
 export default {
   name: 'SelectModelDialog',
@@ -184,7 +184,7 @@ export default {
     },
     getModelAvatar(avatar) {
       if (!avatar || !avatar.path) {
-        return require('@/assets/imgs/model_default_icon.png');
+        return getModelDefaultIcon();
       }
       return avatarSrc(avatar.path);
     },

@@ -16,6 +16,7 @@ import { md } from './markdown-it';
 import $ from './jquery.min.js';
 import { OPENURL_API, USER_API } from '@/utils/requestConstants';
 import { getCustomSkillSSeUrl } from '@/api/templateSquare';
+import { AGENT_MESSAGE_CONFIG } from '@/components/stream/constants';
 
 const AGENT_API_URL = `${USER_API}/assistant/stream`;
 const RAG_API_URL = `${USER_API}/rag/chat`;
@@ -54,6 +55,7 @@ export default {
       _subConversionsMap: null, // 子会话存储 Map
       _subConversionProcessors: null, // 子会话处理器 Map
       responseFiles: [], // 用于存储 SSE 返回的附件文件列表
+      _isInReasoning: false, // 是否处于思考过程中
     };
   },
   created() {
@@ -216,6 +218,15 @@ export default {
         this.sessionComRef = data.sessionComRef;
       }
     },
+    // 转换会话类型
+    convertConversionType(type) {
+      const _map = Object.values(AGENT_MESSAGE_CONFIG).reduce((acc, item) => {
+        acc[item.EVENT_TYPE] = item.CONVERSATION_TYPE;
+        return acc;
+      }, {});
+      return _map[type];
+    },
+
     fetchEventSource(url, params, options = {}) {
       const {
         onopen,
@@ -278,6 +289,7 @@ export default {
       this.sseResponse = {};
       this.setStoreSessionStatus(0);
       this.clearInput();
+      this._isInReasoning = false;
 
       let params = {
         query: prompt,
@@ -364,7 +376,35 @@ export default {
 
               if (data.code === 0 || data.code === 1) {
                 //finish 0：进行中  1：关闭   2:敏感词关闭
-                let _sentence = data.data.output;
+                let _sentence = '';
+                const reasoning =
+                  data.data && data.data.reasoning_content
+                    ? data.data.reasoning_content
+                    : '';
+                const output =
+                  data.data && data.data.output ? data.data.output : '';
+
+                if (reasoning) {
+                  if (!this._isInReasoning) {
+                    _sentence = `<think>${reasoning}`;
+                    this._isInReasoning = true;
+                  } else {
+                    _sentence = reasoning;
+                  }
+                } else if (output) {
+                  if (this._isInReasoning) {
+                    _sentence = `</think>${output}`;
+                    this._isInReasoning = false;
+                  } else {
+                    _sentence = output;
+                  }
+                }
+
+                // 如果是最后一条消息且仍处于思考中，强制闭合
+                if (data.finish === 1 && this._isInReasoning) {
+                  _sentence += '</think>';
+                  this._isInReasoning = false;
+                }
 
                 this._print.print(
                   {
@@ -410,6 +450,7 @@ export default {
                 sessionCom.replaceLastData(lastIndex, {
                   ...commonData,
                   response: data.message,
+                  error: true,
                 });
               }
             }
@@ -546,9 +587,19 @@ export default {
             };
 
             if (data.code === 0) {
-              // 处理子会话消息 (eventType === 0)
-              if (data.eventType === 1 && data.eventData) {
-                const { id, name, status, timeCost, profile } = data.eventData;
+              // 处理子会话消息 (eventType !== 0)
+              if (
+                data.eventType !== AGENT_MESSAGE_CONFIG.MAIN_AGENT.EVENT_TYPE &&
+                data.eventData
+              ) {
+                const {
+                  id,
+                  name,
+                  status,
+                  timeCost,
+                  profile,
+                  order: innerOrder,
+                } = data.eventData;
                 let subConversion = this._subConversionsMap.get(id);
                 let subProcessor = this._subConversionProcessors.get(id);
 
@@ -559,12 +610,19 @@ export default {
                     status, // 1开始、2输出中、3结束、4处理失败
                     timeCost,
                     profile, //头像
+                    innerOrder: innerOrder, // 内部排序序号
                     response: '',
                     stableChunks: [],
                     activeResponse: '',
-                    isOpen: false, // 默认收起
+                    isOpen:
+                      data.eventType ===
+                      AGENT_MESSAGE_CONFIG.MAIN_THINK.EVENT_TYPE, // agentThink 默认展开，其他默认收起
                     searchList: data.search_list || [], // 初始化 searchList
                     citationsTagList: [], // 已引用的出处索引
+                    conversationType: this.convertConversionType(
+                      data.eventType,
+                    ),
+                    userToggled: false, // 标记用户是否手动操作过
                   };
                   this._subConversionsMap.set(id, subConversion);
 
@@ -579,9 +637,23 @@ export default {
                   });
                   this._subConversionProcessors.set(id, subProcessor);
                 } else {
-                  // 更新状态和耗时
-                  subConversion.status = status;
+                  // 更新状态 (状态单向锁：如果已经是 3 或 4，则不更新为 1 或 2)
+                  if (
+                    !(subConversion.status === 3 || subConversion.status === 4)
+                  ) {
+                    subConversion.status = status;
+                  }
+                  if (
+                    (status === 3 || status === 4) &&
+                    data.eventType ===
+                      AGENT_MESSAGE_CONFIG.MAIN_THINK.EVENT_TYPE &&
+                    !subConversion.userToggled // 仅在用户未手动操作过时自动折叠
+                  ) {
+                    subConversion.isOpen = false;
+                  }
                   if (timeCost) subConversion.timeCost = timeCost;
+                  if (innerOrder !== undefined)
+                    subConversion.innerOrder = innerOrder; // 更新内部排序
                   // 如果后续包中有 search_list，则更新
                   if (data.search_list && data.search_list.length) {
                     subConversion.searchList = data.search_list;
@@ -608,10 +680,7 @@ export default {
                     .messageSequence || [];
                 if (data.order !== undefined && data.order !== null) {
                   let currentSubItem = sequence.find(
-                    item =>
-                      item.type === 'sub' &&
-                      item.id === id &&
-                      item.order === data.order,
+                    item => item.type === 'sub' && item.id === id,
                   );
                   if (!currentSubItem) {
                     currentSubItem = {
@@ -758,13 +827,25 @@ export default {
                 ...commonData,
                 response: data.message,
                 subConversions: subConversionsList,
+                error: true,
               };
               sessionCom.replaceLastData(lastIndex, fillData);
               this._currentMainFinish = undefined;
+              this._print && this._print.stop();
             }
           }
         },
       });
+    },
+    // 更新子会话的用户操作状态
+    setSubConversionUserToggle(id, isOpen) {
+      if (this._subConversionsMap) {
+        let subConversion = this._subConversionsMap.get(id);
+        if (subConversion) {
+          subConversion.isOpen = isOpen;
+          subConversion.userToggled = true;
+        }
+      }
     },
     doExprienceSend(params) {
       this.stopBtShow = true;
@@ -871,6 +952,7 @@ export default {
                 let fillData = {
                   ...commonData,
                   response: data.message,
+                  error: true,
                 };
                 this.$refs['session-com'].replaceLastData(lastIndex, fillData);
               } else {
@@ -1498,6 +1580,7 @@ export default {
                 response: data.message,
                 subConversions: subConversionsList,
                 responseFiles: JSON.parse(JSON.stringify(this.responseFiles)),
+                error: true,
               };
               sessionCom.replaceLastData(lastIndex, fillData);
               this._currentMainFinish = undefined;

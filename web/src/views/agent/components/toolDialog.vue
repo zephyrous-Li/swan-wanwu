@@ -5,6 +5,7 @@
       :visible.sync="dialogVisible"
       width="50%"
       :before-close="handleClose"
+      custom-class="tool-dialog"
     >
       <div class="tool-typ">
         <div class="toolbtn">
@@ -40,7 +41,12 @@
               :key="item[type + 'Id'] || item.id"
               class="toolContent_item"
             >
-              <template v-if="type === 'workflow'">
+              <template
+                v-if="
+                  type === AGENT_TOOL_TYPE.WORKFLOW ||
+                  type === AGENT_TOOL_TYPE.SKILL
+                "
+              >
                 <div class="tool_box">
                   <div class="tool_img">
                     <img
@@ -49,7 +55,13 @@
                     />
                   </div>
                   <div>
-                    <div>{{ item.name }}</div>
+                    <div>
+                      {{
+                        type === AGENT_TOOL_TYPE.SKILL
+                          ? item.skillName
+                          : item.name
+                      }}
+                    </div>
                     <span class="tag" v-if="tagMap[item.appType]">
                       {{ tagMap[item.appType] }}
                     </span>
@@ -81,13 +93,17 @@
                         v-if="item.avatar && item.avatar.path"
                       />
                     </div>
-                    <div :class="type === 'tool' && 'tool-name-container'">
+                    <div
+                      :class="
+                        type === AGENT_TOOL_TYPE.TOOL && 'tool-name-container'
+                      "
+                    >
                       <h3 class="tool-name">{{ item.toolName }}</h3>
                       <span
                         v-if="item.loading"
                         class="el-icon-loading loading-text"
                       ></span>
-                      <span v-if="type === 'tool'" class="tag">
+                      <span v-if="type === AGENT_TOOL_TYPE.TOOL" class="tag">
                         {{
                           item.toolType === 'builtin'
                             ? $t('agent.toolDialog.builtinTools')
@@ -146,6 +162,7 @@ import {
   addWorkFlowInfo,
   addMcp,
   addCustomBuiltIn,
+  addSkill,
   toolList,
   toolActionList,
   mcptoolList,
@@ -153,52 +170,63 @@ import {
   getWorkflowList,
 } from '@/api/agent';
 import { avatarSrc } from '@/utils/util';
+import { getSkillSelectList } from '@/api/templateSquare';
+import { AGENT_TOOL_TYPE } from '@/views/agent/constants';
 export default {
   props: ['assistantId'],
   data() {
     return {
+      AGENT_TOOL_TYPE,
       toolName: '',
       dialogVisible: false,
       toolIndex: 0,
-      activeValue: 'tool',
+      activeValue: AGENT_TOOL_TYPE.TOOL,
       workFlowInfos: [],
       mcpInfos: [],
+      skillInfos: [],
       customInfos: [],
       mcpList: [],
       workFlowList: [],
       customList: [],
+      skillList: [],
       builtInInfos: [],
       customCount: 0,
       mcpCount: 0,
       workflowCount: 0,
+      skillCount: 0,
       toolList: [
         {
-          value: 'tool',
+          value: AGENT_TOOL_TYPE.TOOL,
           name: this.$t('agent.toolDialog.tool'),
         },
         {
-          value: 'mcp',
+          value: AGENT_TOOL_TYPE.MCP,
           name: 'MCP',
         },
         {
-          value: 'workflow',
+          value: AGENT_TOOL_TYPE.WORKFLOW,
           name: this.$t('appSpace.workflow'),
         },
+        // {
+        //   value: AGENT_TOOL_TYPE.SKILL,
+        //   name: 'Skills',
+        // },
       ],
     };
   },
   computed: {
     contentMap() {
       return {
-        tool: this.customInfos,
+        [AGENT_TOOL_TYPE.TOOL]: this.customInfos,
         builtIn: this.builtInInfos,
-        mcp: this.mcpInfos,
-        workflow: this.workFlowInfos,
+        [AGENT_TOOL_TYPE.MCP]: this.mcpInfos,
+        [AGENT_TOOL_TYPE.WORKFLOW]: this.workFlowInfos,
+        [AGENT_TOOL_TYPE.SKILL]: this.skillInfos,
       };
     },
     tagMap() {
       return {
-        workflow: this.$t('appSpace.workflow'),
+        [AGENT_TOOL_TYPE.WORKFLOW]: this.$t('appSpace.workflow'),
         chatflow: this.$t('appSpace.chat'),
       };
     },
@@ -207,21 +235,24 @@ export default {
     this.getMcpSelect('');
     this.getWorkflowList('');
     this.getCustomList('');
+    this.getSkillList('');
   },
   methods: {
     avatarSrc,
     showToolNum(type) {
-      if (type === 'tool') {
+      if (type === AGENT_TOOL_TYPE.TOOL) {
         return this.customCount;
-      } else if (type === 'mcp') {
+      } else if (type === AGENT_TOOL_TYPE.MCP) {
         return this.mcpCount;
-      } else {
+      } else if (type === AGENT_TOOL_TYPE.WORKFLOW) {
         return this.workflowCount;
+      } else {
+        return this.skillCount;
       }
     },
     handleToolChange(id) {
       let toolId = id[0];
-      if (this.activeValue === 'tool') {
+      if (this.activeValue === AGENT_TOOL_TYPE.TOOL) {
         const targetItem = this.customInfos.find(
           item => item.toolId === toolId,
         );
@@ -232,7 +263,7 @@ export default {
           );
           this.getToolAction(toolId, toolType, index);
         }
-      } else if (this.activeValue === 'mcp') {
+      } else if (this.activeValue === AGENT_TOOL_TYPE.MCP) {
         const targetItem = this.mcpInfos.find(item => item.toolId === toolId);
         if (targetItem) {
           const { toolId, toolType } = targetItem;
@@ -272,28 +303,34 @@ export default {
         });
     },
     goCreate() {
-      if (this.activeValue === 'tool') {
+      if (this.activeValue === AGENT_TOOL_TYPE.TOOL) {
         this.$router.push({ path: '/tool?tool=custom' });
-      } else if (this.activeValue === 'mcp') {
+      } else if (this.activeValue === AGENT_TOOL_TYPE.MCP) {
         this.$router.push({ path: '/mcpService?mcp=integrate' });
-      } else {
+      } else if (this.activeValue === AGENT_TOOL_TYPE.WORKFLOW) {
         this.$router.push({ path: '/appSpace/workflow' });
+      } else {
+        this.$router.push({ path: '/skill?type=custom' });
       }
     },
     createText() {
-      if (this.activeValue === 'tool') {
+      if (this.activeValue === AGENT_TOOL_TYPE.TOOL) {
         return this.$t('agent.toolDialog.createAutoTool');
-      } else if (this.activeValue === 'mcp') {
+      } else if (this.activeValue === AGENT_TOOL_TYPE.MCP) {
         return this.$t('agent.toolDialog.importMcp');
-      } else {
+      } else if (this.activeValue === AGENT_TOOL_TYPE.WORKFLOW) {
         return this.$t('agent.toolDialog.createWorkflow');
+      } else {
+        return this.$t('agent.toolDialog.addSkill');
       }
     },
     openTool(e, item, type, action) {
       if (!e) return;
-      if (type === 'workflow') {
+      if (type === AGENT_TOOL_TYPE.WORKFLOW) {
         this.addWorkFlow(item);
-      } else if (type === 'mcp') {
+      } else if (type === AGENT_TOOL_TYPE.SKILL) {
+        this.addSkillItem(item);
+      } else if (type === AGENT_TOOL_TYPE.MCP) {
         this.addMcpItem(item, action);
       } else {
         if (item.needApiKeyInput && !item.apiKey.length) {
@@ -351,13 +388,31 @@ export default {
         this.$emit('updateDetail');
       }
     },
+    // 添加skill
+    addSkillItem(n) {
+      addSkill({
+        assistantId: this.assistantId,
+        skillId: n.skillId,
+        skillType: n.skillType,
+      }).then(res => {
+        if (res.code === 0) {
+          this.$set(n, 'checked', true);
+          this.skillCount++;
+          this.$forceUpdate();
+          this.$message.success(this.$t('agent.toolDialog.addSuccess'));
+          this.$emit('updateDetail');
+        }
+      });
+    },
     searchTool() {
-      if (this.activeValue === 'tool') {
+      if (this.activeValue === AGENT_TOOL_TYPE.TOOL) {
         this.getCustomList(this.toolName);
-      } else if (this.activeValue === 'mcp') {
+      } else if (this.activeValue === AGENT_TOOL_TYPE.MCP) {
         this.getMcpSelect(this.toolName);
-      } else {
+      } else if (this.activeValue === AGENT_TOOL_TYPE.WORKFLOW) {
         this.getWorkflowList(this.toolName);
+      } else {
+        this.getSkillList(this.toolName);
       }
     },
     getMcpSelect(name) {
@@ -402,15 +457,27 @@ export default {
         }
       });
     },
+    getSkillList(name) {
+      getSkillSelectList({ name }).then(res => {
+        if (res.code === 0) {
+          this.skillInfos = (res.data.list || []).map(m => ({
+            ...m,
+            checked: this.skillList.some(item => item.skillId === m.skillId),
+          }));
+        }
+      });
+    },
     showDialog(row) {
       this.dialogVisible = true;
       this.setWorkflow(row.workFlowInfos);
       this.mcpList = row.mcpInfos || [];
       this.workFlowList = row.workFlowInfos || [];
       this.customList = row.customInfos || [];
+      this.skillList = row.skillInfos || [];
       this.customCount = this.customList.length;
       this.mcpCount = this.mcpList.length;
       this.workflowCount = this.workFlowList.length;
+      this.skillCount = this.skillList.length;
     },
     setWorkflow(data) {
       this.workFlowInfos = this.workFlowInfos.map(m => ({
@@ -420,23 +487,30 @@ export default {
     },
     handleClose() {
       this.toolIndex = -1;
-      this.activeValue = 'tool';
+      this.activeValue = AGENT_TOOL_TYPE.TOOL;
       this.dialogVisible = false;
     },
     clickTool(item, i) {
       this.toolIndex = i;
       this.activeValue = item.value;
-      if (this.activeValue === 'tool') {
+      if (this.activeValue === AGENT_TOOL_TYPE.TOOL) {
         this.getCustomList('');
-      } else if (this.activeValue === 'mcp') {
+      } else if (this.activeValue === AGENT_TOOL_TYPE.MCP) {
         this.getMcpSelect('');
-      } else {
+      } else if (this.activeValue === AGENT_TOOL_TYPE.WORKFLOW) {
         this.getWorkflowList('');
+      } else {
+        this.getSkillList('');
       }
     },
   },
 };
 </script>
+<style lang="scss">
+.tool-dialog {
+  min-width: 700px;
+}
+</style>
 <style lang="scss" scoped>
 ::v-deep {
   .el-dialog__body {

@@ -182,6 +182,7 @@ export default {
       detail: '详情 >>',
       all: '全选',
       filter: '筛选',
+      viewAll: '查看全部',
     },
     switch: {
       start: '开启',
@@ -318,13 +319,14 @@ export default {
     workflow: '工作流',
     chat: '对话流',
     rag: '知识问答',
-    agent: '单智能体',
+    agent: '智能体',
     agentTemp: '智能体模板',
     agentAuto: '自定义智能体',
     publishSet: '发布配置',
     public: '公开',
     private: '私密',
     multiAgent: '多智能体',
+    singleAgent: '单智能体',
   },
   uploadDialog: {
     title: '文件上传',
@@ -576,6 +578,7 @@ export default {
       maxVideoLimit: '最大视频片限制',
       maxPicLimit: '最大图片限制',
       maxAudioLimit: '最大音频限制',
+      think: '深度思考开关',
     },
     supportFileType: {
       pic: '图片',
@@ -687,6 +690,7 @@ export default {
     promptCompareLimit: '最多可添加4个提示词',
     comparePrompt: '对比提示词',
     skills: {
+      name: 'skill',
       app: {
         builtIn: '内置',
         custom: '自定义',
@@ -1641,6 +1645,7 @@ export default {
       addSuccess: '工具添加成功',
       builtinTools: '内置工具',
       customTools: '自定义工具',
+      addSkill: '创建Skill',
     },
     agentDetail: {
       workFlowInstruction: '工作流配置说明',
@@ -1955,6 +1960,8 @@ export default {
     repeatedPunishment: '重复惩罚',
     repeatedPunishmentDesc:
       '用于控制模型生成时的重复度，提高此项可以降低模型生成的重复度',
+    thinking: '思考过程',
+    thinkingDesc: '可调整是否开启深度思考，关闭后将直接回答，不进行深度思考。',
     visualSetting: '视觉设置',
     picNumLimit: '图片上传限制',
     picNumLimitDesc: '模型回答的tokens的最大长度',

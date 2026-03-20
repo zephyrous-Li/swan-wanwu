@@ -426,7 +426,7 @@ export default {
       this.isCollapse = localStorage.getItem('menu_collapse') === 'true';
     },
     initScroll() {
-      const pageContainer = document.querySelector('.el-main');
+      const pageContainer = document.querySelector('.el-main .page-container');
       if (pageContainer) {
         pageContainer.scrollTop = 0;
         pageContainer.scrollLeft = 0;
@@ -665,6 +665,7 @@ export default {
           display: inline-block;
         }
         .menu-svg {
+          padding-top: 2px;
           .menu-icon {
             font-size: 16px;
             margin-right: 10px;
@@ -676,11 +677,11 @@ export default {
       }
       .el-menu ::v-deep {
         .el-menu-item {
-          color: $color_title;
+          color: $menu_text_color;
         }
         .el-submenu__title,
         .el-menu-item span {
-          font-size: 15px !important;
+          font-size: 14px !important;
         }
         .el-menu-item.is-active,
         .el-menu-item:focus {
@@ -697,7 +698,7 @@ export default {
         }
         .el-submenu__title {
           span {
-            font-size: 15px !important;
+            font-size: 14px !important;
           }
         }
         .el-submenu.is-active .el-submenu__title {
@@ -705,13 +706,14 @@ export default {
         }
         .el-submenu__title,
         .el-menu-item {
-          height: 40px;
+          height: 36px;
+          line-height: 36px;
           display: flex;
           align-items: center;
           border-radius: 6px;
-          margin: 6px;
+          margin: 3px 6px;
           min-width: auto;
-          font-size: 15px;
+          font-size: 14px;
         }
       }
       .el-menu--collapse.el-menu ::v-deep {
@@ -751,6 +753,8 @@ export default {
         }
         .el-submenu__title,
         .el-menu-item {
+          height: 40px;
+          line-height: 40px;
           margin: 12px 10px;
         }
         .el-menu-item {
@@ -826,7 +830,7 @@ export default {
 }
 .menu--popover-item {
   font-size: 13px;
-  color: $color_title;
+  color: $menu_text_color;
   height: 34px;
   line-height: 34px;
   cursor: pointer;
@@ -840,7 +844,7 @@ export default {
   }
   .menu--popover-item-name {
     font-size: 13px;
-    color: $color_title;
+    color: $menu_text_color;
     display: inline-block;
     vertical-align: middle;
   }

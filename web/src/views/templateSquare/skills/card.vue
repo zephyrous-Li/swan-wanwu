@@ -136,7 +136,7 @@ export default {
         overflow: hidden;
         white-space: nowrap;
         text-overflow: ellipsis;
-        color: #5d5d5d;
+        color: $create_card_text_color;
       }
       .mcp_from {
         label {

@@ -126,7 +126,7 @@
           </div>
         </div>
 
-        <!-- 回答故障  code:7-->
+        <!-- 回答故障  error为true的情况-->
         <div class="session-error" v-if="n.error">
           <i class="el-icon-warning"></i>
           &nbsp;{{ n.response }}
@@ -430,7 +430,10 @@
                   >
                     {{ m.link }}
                   </a>
-                  <span v-if="m.title">
+                  <span
+                    v-if="m.title"
+                    @click.stop="handleSourceTitleClick(n, m, j, i)"
+                  >
                     <sub
                       class="subTag"
                       :data-parents-index="i"
@@ -442,7 +445,7 @@
                   </span>
                   <!-- <span @click="goPreview($event,m)" class="search-doc">查看全文</span> -->
                 </div>
-                <el-collapse-transition>
+                <el-collapse-transition v-if="chatType !== 'agent'">
                   <div v-show="m.collapse ? true : false" class="snippet">
                     <p v-html="m.snippet"></p>
                   </div>
@@ -599,7 +602,8 @@ import 'highlight.js/styles/atom-one-dark.css';
 import commonMixin from '@/mixins/common';
 import { mapGetters, mapState } from 'vuex';
 import { avatarSrc } from '@/utils/util';
-import SubConversion from './subConversion.vue';
+import SubConversion from './subConversion/index.vue';
+import { AGENT_MESSAGE_CONFIG } from '@/components/stream/constants';
 
 marked.setOptions({
   renderer: new marked.Renderer(),
@@ -706,6 +710,7 @@ export default {
       handler() {
         this.$nextTick(() => {
           this.updateAllFileScrollStates();
+          console.log(this.session_data.history);
         });
       },
       deep: true,
@@ -910,7 +915,12 @@ export default {
     },
     // 子会话展开收起
     toggleSubConversion(conversion) {
-      this.$set(conversion, 'isOpen', !conversion.isOpen);
+      const newState = !conversion.isOpen;
+      this.$set(conversion, 'isOpen', newState);
+      this.$emit('sub-conversion-toggle', {
+        id: conversion.id,
+        isOpen: newState,
+      });
     },
     showSearchList(j, citations) {
       return (citations || []).includes(j + 1);
@@ -1074,6 +1084,8 @@ export default {
      * @param {number} index - 当前条目在 searchList 中的索引
      */
     collapseClick(sourceContainer, searchItem, index) {
+      if (this.chatType === 'agent') return;
+
       this.$set(sourceContainer.searchList, index, {
         ...searchItem,
         collapse: !searchItem.collapse,
@@ -1347,6 +1359,36 @@ export default {
         this.historyBoxHeight = '';
       }
       this.scrollBottom();
+    },
+    // 引用结果标题点击
+    handleSourceTitleClick(n, m, j, i) {
+      if (n.subConversions && n.subConversions.length > 0) {
+        // 打开子会话
+        n.subConversions.forEach(sub => {
+          if (
+            sub.conversationType ===
+            AGENT_MESSAGE_CONFIG.MAIN_KNOWLEDGE.CONVERSATION_TYPE
+          ) {
+            this.$set(sub, 'isOpen', true);
+          }
+        });
+
+        // 滚动到指定位置
+        this.$nextTick(() => {
+          const container = document.getElementById('message-container' + i);
+          if (container) {
+            const target = container.querySelector(
+              `.knowledge-item[data-index="${j}"]`,
+            );
+            if (target) {
+              target.scrollIntoView({
+                behavior: 'smooth',
+                block: 'center',
+              });
+            }
+          }
+        });
+      }
     },
   },
 };

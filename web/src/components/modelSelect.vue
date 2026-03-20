@@ -45,8 +45,7 @@
 </template>
 
 <script>
-import { avatarSrc } from '@/utils/util';
-import defaultModelAvatar from '@/assets/imgs/model_default_icon.png';
+import { avatarSrc, getModelDefaultIcon } from '@/utils/util';
 export default {
   name: 'ModelSelect',
   props: {
@@ -131,7 +130,7 @@ export default {
       const o = this.options.find(o => o.modelId === this.currentValue);
       return this.currentValue.length && o?.avatar.path
         ? avatarSrc(o.avatar.path)
-        : defaultModelAvatar;
+        : getModelDefaultIcon();
     },
   },
   methods: {
@@ -152,7 +151,7 @@ export default {
     },
     // 转换模型图标
     convertModelIcon(iconPath) {
-      return iconPath ? avatarSrc(iconPath) : defaultModelAvatar;
+      return iconPath ? avatarSrc(iconPath) : getModelDefaultIcon();
     },
   },
 };

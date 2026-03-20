@@ -62,7 +62,7 @@
 <script>
 import StreamMessageField from '@/components/stream/streamMessageField.vue';
 import sseMethod from '@/mixins/sseMethod.js';
-import { avatarSrc } from '@/utils/util';
+import { avatarSrc, getModelDefaultIcon } from '@/utils/util';
 
 export default {
   name: 'ModelChatPane',
@@ -145,11 +145,11 @@ export default {
       ) {
         return avatarSrc(this.modelDetail.avatar.path);
       }
-      return require('@/assets/imgs/model_default_icon.png');
+      return getModelDefaultIcon();
     },
     apiParams() {
       return {
-        ...this.modelSetting,
+        ...this.formatChatModelSetting(this.modelSetting),
         modelId: this.modelId,
         sessionId: this.sessionId,
         modelExperienceId: this.modelExperienceId || '0',
@@ -161,13 +161,19 @@ export default {
     this.stopEventSource();
   },
   methods: {
+    formatChatModelSetting(modelSetting) {
+      const newModelSetting = JSON.parse(JSON.stringify(modelSetting));
+      if (newModelSetting.thinkingSupport !== undefined)
+        delete newModelSetting.thinkingSupport;
+      return newModelSetting;
+    },
     // 该函数会覆盖sseMethod中的setStoreSessionStatus方法，以适配当前组件需求!!!!!!!!
     setStoreSessionStatus(val) {
       this.$emit('update:modelSessionStatus', val);
     },
     getModelAvatar(avatar) {
       if (!avatar || !avatar.path) {
-        return require('@/assets/imgs/model_default_icon.png');
+        return getModelDefaultIcon();
       }
       return avatarSrc(avatar.path);
     },
