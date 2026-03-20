@@ -23,6 +23,7 @@
             @refresh="refresh"
             @queryCopy="queryCopy"
             @handleRecommendClick="handleRecommendClick"
+            @sub-conversion-toggle="onSubConversionToggle"
             :defaultUrl="editForm.avatar.path"
           />
         </div>
@@ -697,6 +698,10 @@ export default {
     handleInputHeightChange(height) {
       this.$refs['session-com'] &&
         this.$refs['session-com'].setHistoryBoxHeight(height);
+    },
+    // 处理子会话手动切换
+    onSubConversionToggle({ id, isOpen }) {
+      this.setSubConversionUserToggle(id, isOpen);
     },
   },
   mounted() {

@@ -18,7 +18,11 @@
 
             <div class="card-loading-box">
               <div class="card-box" v-loading="loading">
-                <div class="card card-item-create" @click="handleAddSkill()">
+                <div
+                  class="card card-item-create"
+                  id="skill-card-item-create"
+                  @click="handleAddSkill()"
+                >
                   <div class="app-card-create">
                     <div class="create-img-wrap">
                       <img
@@ -148,8 +152,41 @@ export default {
     align-items: center;
     gap: 10px;
   }
-  .card-item-create {
+
+  #skill-card-item-create {
+    background: #fff !important;
+    border: 1px solid $create_card_border_color;
+    box-shadow: 0px 8px 10px 0px rgba(80, 98, 161, 0.07);
     min-height: 172px;
+
+    .app-card-create {
+      flex: 1;
+      text-align: center;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+
+      .create-img-wrap {
+        display: inline-block;
+        vertical-align: middle;
+        margin-right: 18px;
+        position: relative;
+
+        .create-img {
+          width: 83px;
+          height: 84px;
+        }
+      }
+
+      span {
+        display: inline-block;
+        vertical-align: middle;
+        font-size: 16px;
+        color: $create_card_text_color;
+        font-weight: bold;
+      }
+    }
   }
 }
 </style>
