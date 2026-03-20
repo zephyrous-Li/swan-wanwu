@@ -21,6 +21,10 @@ import (
 	"google.golang.org/grpc"
 )
 
+const (
+	EventFailStatus = 4 //事件失败
+)
+
 func AssistantConversionStream(ctx *gin.Context, userId, orgId string, req request.ConversionStreamRequest, needLatestPublished bool) error {
 	// 1. CallAssistantConversationStream
 	chatCh, err := CallAssistantConversationStream(ctx, userId, orgId, req, needLatestPublished)
@@ -280,7 +284,22 @@ func buildAgentChatRespLineProcessor() func(sse_util.SSEWriterClient[string], st
 
 // --- agent sensitive ---
 
-type agentSensitiveService struct{}
+type agentSensitiveService struct {
+	CurrentOrder     int
+	CurrentEventType int
+	CurrentEventData *EventData
+}
+
+type EventData struct {
+	Status    int    `json:"status"`
+	Id        string `json:"id"`
+	EventType int    `json:"eventType"`
+	Name      string `json:"name"`
+	Profile   string `json:"profile"`
+	TimeCost  string `json:"timeCost"`
+	ParentId  string `json:"parentId"`
+	Order     int    `json:"order"`
+}
 
 func (s *agentSensitiveService) serviceType() string {
 	return constant.AppTypeAgent
@@ -294,21 +313,34 @@ func (s *agentSensitiveService) parseContent(raw string) (id, content string) {
 		return "", ""
 	}
 	resp := struct {
-		MsgID    string `json:"msg_id"`
-		Response string `json:"response"`
+		MsgID     string     `json:"msg_id"`
+		Response  string     `json:"response"`
+		EventType int        `json:"eventType"`
+		Order     int        `json:"order"`
+		EventData *EventData `json:"eventData"`
 	}{}
 	if err := json.Unmarshal([]byte(raw), &resp); err != nil {
 		return "", ""
 	}
+	s.CurrentOrder = resp.Order
+	s.CurrentEventType = resp.EventType
+	s.CurrentEventData = resp.EventData
 	return resp.MsgID, resp.Response
 }
 
 // buildSensitiveResp implements ChatService.
 func (s *agentSensitiveService) buildSensitiveResp(id string, content string) []string {
+	data := s.CurrentEventData
+	if data != nil {
+		data.Status = EventFailStatus
+	}
 	resp := map[string]interface{}{
 		"code":              0,
 		"message":           "success",
 		"response":          content,
+		"eventType":         s.CurrentEventType,
+		"order":             s.CurrentOrder,
+		"eventData":         data,
 		"gen_file_url_list": []interface{}{},
 		"history":           []interface{}{},
 		"finish":            1, // Note: The original JSON has "finish" misspelled as "finish"
