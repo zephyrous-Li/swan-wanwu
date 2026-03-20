@@ -149,7 +149,7 @@ export default {
     },
     apiParams() {
       return {
-        ...this.modelSetting,
+        ...this.formatChatModelSetting(this.modelSetting),
         modelId: this.modelId,
         sessionId: this.sessionId,
         modelExperienceId: this.modelExperienceId || '0',
@@ -161,6 +161,12 @@ export default {
     this.stopEventSource();
   },
   methods: {
+    formatChatModelSetting(modelSetting) {
+      const newModelSetting = JSON.parse(JSON.stringify(modelSetting));
+      if (newModelSetting.thinkingSupport !== undefined)
+        delete newModelSetting.thinkingSupport;
+      return newModelSetting;
+    },
     // 该函数会覆盖sseMethod中的setStoreSessionStatus方法，以适配当前组件需求!!!!!!!!
     setStoreSessionStatus(val) {
       this.$emit('update:modelSessionStatus', val);
