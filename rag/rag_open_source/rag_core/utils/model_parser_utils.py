@@ -58,7 +58,8 @@ def get_page_data(page_num, add_file_path, ocr_model_id):
 
         data = {
             "file_name": page_pdf_path,
-            "extract_image": 1
+            "extract_image": 1,
+            "extract_image_content": 1
         }
 
         if ocr_model_id == "":

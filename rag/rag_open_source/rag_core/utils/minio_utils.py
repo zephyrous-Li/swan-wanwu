@@ -189,12 +189,12 @@ def replace_minio_url(context: str, version: str = "private", image_url_prefix: 
     # 提取Markdown图片URL正则：![alt](url)
     pattern = r"!\[.*?\]\((.*?)\)"
     matches = list(re.finditer(pattern, context))
-
+    replace_info = []
     if not matches:
-        return context
+        return context, replace_info
 
     # 从后向前替换（避免替换后影响匹配位置）
-    replace_info = []
+
     for match in reversed(matches):
         url = match.group(1)
         if version != "private" and url.startswith(image_url_prefix):

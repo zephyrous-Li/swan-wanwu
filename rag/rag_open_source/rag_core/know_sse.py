@@ -253,6 +253,7 @@ async def search(request: Request):
                     # 标准格式
                     choices = datajson.get("choices", [{}])
                     content = choices[0].get("delta", {}).get("content", "")
+                    reasoning_content = choices[0].get("delta", {}).get("reasoning_content", "")
                 else:
                     # 嵌套格式 (data: { choices: ... })
                     # 必须先判断 data 是否为字典，防止 'data': None 导致崩溃
@@ -262,6 +263,7 @@ async def search(request: Request):
 
                     choices = data_obj.get("choices", [{}])
                     content = choices[0].get("message", {}).get("content", "")
+                    reasoning_content = choices[0].get("message", {}).get("reasoning_content", "")
 
                 finish_reason = choices[0].get("finish_reason", "")
                 if finish_reason == "stop":
@@ -284,6 +286,7 @@ async def search(request: Request):
                     "message": "success",
                     "msg_id": msg_id,
                     "data": {"output": content,
+                             "reasoning_content": reasoning_content,
                              "searchList": valid_search_list,
                              },
                     "history": history_tmp,
@@ -315,7 +318,7 @@ async def search(request: Request):
         logger.info(f"question:{question}。流式最后一个词返回时间：{end_time - start_time}秒,返回json:{output_str}")
 
     async def stream_generate(prompt, history, search_list, question, top_p, repetition_penalty, temperature,
-                              custom_model_info, do_sample, score, msg_id, llm_config):
+                              custom_model_info, do_sample, score, msg_id, llm_config, enable_thinking):
         model_name = llm_config.model_name
         if isinstance(llm_config, LlmModelConfig):
             llm_url = llm_config.endpoint_url + "/chat/completions"
@@ -347,6 +350,7 @@ async def search(request: Request):
             # "top_p": top_p,
             "repetition_penalty": repetition_penalty,
             "do_sample": do_sample,
+            "enable_thinking": enable_thinking,
             "stream": True,
             "messages": messages,
         }
@@ -396,7 +400,7 @@ async def search(request: Request):
 
 
     async def multimodal_stream_generate(prompt, history, search_list, question, top_p, repetition_penalty, temperature,
-                              custom_model_info, do_sample, score, msg_id, attachment_files, llm_config):
+                              custom_model_info, do_sample, score, msg_id, attachment_files, llm_config, enable_thinking):
         model_name = llm_config.model_name
         if isinstance(llm_config, LlmModelConfig):
             llm_url = llm_config.endpoint_url + "/chat/completions"
@@ -487,6 +491,7 @@ async def search(request: Request):
             "top_p": top_p,
             "repetition_penalty": repetition_penalty,
             "do_sample": do_sample,
+            "enable_thinking": enable_thinking,
             "stream": True,
             "messages": messages,
         }
@@ -595,6 +600,7 @@ async def search(request: Request):
     weights = json_request.get("weights", None)
     retrieve_method = json_request.get("retrieve_method", "hybrid_search")
     use_graph = json_request.get("use_graph", False)
+    enable_thinking = json_request.get("enable_thinking", None)
 
     # metadata filtering params
     metadata_filtering = json_request.get("metadata_filtering", False)
@@ -826,10 +832,10 @@ async def search(request: Request):
                 model_id = custom_model_info["llm_model_id"]
                 llm_config = get_model_configure(model_id)
                 if llm_config.is_multimodal:
-                    gen = await multimodal_stream_generate(prompt, history, search_list,question,top_p,repetition_penalty,temperature,custom_model_info,do_sample,score,msg_id,attachment_files,llm_config)
+                    gen = await multimodal_stream_generate(prompt, history, search_list,question,top_p,repetition_penalty,temperature,custom_model_info,do_sample,score,msg_id,attachment_files,llm_config,enable_thinking)
                     return EventSourceResponse(gen)
                 else:
-                    gen = await stream_generate(prompt, history, search_list,question,top_p,repetition_penalty,temperature,custom_model_info,do_sample,score,msg_id,llm_config)
+                    gen = await stream_generate(prompt, history, search_list,question,top_p,repetition_penalty,temperature,custom_model_info,do_sample,score,msg_id,llm_config,enable_thinking)
                     return EventSourceResponse(gen)
              # 知识召回为空，并且使用兜底话术返回，不需要大模型输出
             else:
