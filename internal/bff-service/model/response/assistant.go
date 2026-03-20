@@ -22,6 +22,7 @@ type Assistant struct {
 	WorkFlowInfos          []*AssistantWorkFlowInfo       `json:"workFlowInfos"`       // 工作流信息
 	MCPInfos               []*AssistantMCPInfo            `json:"mcpInfos"`            // MCP信息
 	ToolInfos              []*AssistantToolInfo           `json:"toolInfos"`           // 自定义工具、内置工具
+	SkillInfos             []*AssistantSkillInfo          `json:"skillInfos"`          // 技能配置
 	MultiAgentInfos        []*AssistantAgentInfo          `json:"multiAgentInfos"`     // 多智能体配置
 	CreatedAt              string                         `json:"createdAt"`           // 创建时间
 	UpdatedAt              string                         `json:"updatedAt"`           // 更新时间
@@ -63,6 +64,16 @@ type AssistantToolInfo struct {
 	Avatar     request.Avatar              `json:"avatar"`
 }
 
+type AssistantSkillInfo struct {
+	SkillId   string         `json:"skillId"`
+	SkillType string         `json:"skillType" validate:"required,oneof=builtin custom"`
+	SkillName string         `json:"skillName"`
+	Author    string         `json:"author"`
+	Enable    bool           `json:"enable"`
+	Valid     bool           `json:"valid"`
+	Avatar    request.Avatar `json:"avatar"`
+}
+
 type AssistantAgentInfo struct {
 	AgentId string         `json:"agentId"`
 	Name    string         `json:"name"`
@@ -71,6 +82,8 @@ type AssistantAgentInfo struct {
 	Avatar  request.Avatar `json:"avatar"`
 }
 
+// --- conversation ---
+
 type ConversationInfo struct {
 	ConversationId string `json:"conversationId"`
 	AssistantId    string `json:"assistantId"`
@@ -78,22 +91,28 @@ type ConversationInfo struct {
 	CreatedAt      string `json:"createdAt"`
 }
 
+type ConversationResponse struct {
+	Response string `json:"response"`
+	Order    int32  `json:"order"`
+}
+
 type ConversationDetailInfo struct {
-	Id                  string                 `json:"id"`
-	AssistantId         string                 `json:"assistantId"`
-	ConversationId      string                 `json:"conversationId"`
-	Prompt              string                 `json:"prompt"`
-	SysPrompt           string                 `json:"sysPrompt"`
-	Response            string                 `json:"response"`
-	SearchList          interface{}            `json:"searchList"`
-	QaType              int32                  `json:"qa_type"`
-	CreatedBy           string                 `json:"createdBy"`
-	CreatedAt           int64                  `json:"createdAt"`
-	UpdatedAt           int64                  `json:"updatedAt"`
-	RequestFiles        []AssistantRequestFile `json:"requestFiles"`
-	FileSize            int64                  `json:"fileSize"`
-	FileName            string                 `json:"fileName"`
-	SubConversationList []*SubConversation     `json:"subConversationList"`
+	Id                  string                  `json:"id"`
+	AssistantId         string                  `json:"assistantId"`
+	ConversationId      string                  `json:"conversationId"`
+	Prompt              string                  `json:"prompt"`
+	SysPrompt           string                  `json:"sysPrompt"`
+	Response            string                  `json:"response"`
+	ResponseList        []*ConversationResponse `json:"responseList"`
+	SearchList          interface{}             `json:"searchList"`
+	QaType              int32                   `json:"qa_type"`
+	CreatedBy           string                  `json:"createdBy"`
+	CreatedAt           int64                   `json:"createdAt"`
+	UpdatedAt           int64                   `json:"updatedAt"`
+	RequestFiles        []AssistantRequestFile  `json:"requestFiles"`
+	FileSize            int64                   `json:"fileSize"`
+	FileName            string                  `json:"fileName"`
+	SubConversationList []*SubConversation      `json:"subConversationList"`
 }
 
 type SubConversation struct {
@@ -106,6 +125,7 @@ type SubConversation struct {
 	TimeCost         string      `json:"timeCost"`         // 耗时
 	Status           int32       `json:"status"`           // 1:成功，2：失败
 	ConversationType string      `json:"conversationType"` // subAgent：子智能体；agentTool：主智能体工具；subAgentTool：子智能体工具
+	Order            int32       `json:"order"`
 }
 
 type AssistantRequestFile struct {
@@ -125,6 +145,42 @@ type ConversationIdResp struct {
 type AssistantCreateResp struct {
 	AssistantId string `json:"assistantId"`
 }
+
+// --- conversation sse ---
+
+type ConversationSSEData struct {
+	Code           int                      `json:"code"`
+	Message        string                   `json:"message"`
+	Response       string                   `json:"response"`
+	Order          int                      `json:"order"`
+	EventType      int                      `json:"eventType"`
+	EventData      interface{}              `json:"eventData"`
+	GenFileUrlList []interface{}            `json:"gen_file_url_list"`
+	History        []interface{}            `json:"history"`
+	Finish         int                      `json:"finish"`
+	Usage          ConversationSSEUsage     `json:"usage"`
+	SearchList     []interface{}            `json:"search_list"`
+	QaType         int                      `json:"qa_type"`
+	ResponseFiles  []*AssistantResponseFile `json:"responseFiles"`
+}
+type ConversationSSEUsage struct {
+	PromptTokens     int `json:"prompt_tokens"`
+	CompletionTokens int `json:"completion_tokens"`
+	TotalTokens      int `json:"total_tokens"`
+}
+
+type AssistantResponseFile struct {
+	FileName string `json:"name"`
+	FileSize int64  `json:"size"`
+	FileUrl  string `json:"fileUrl"`
+	MIMEType string `json:"mimeType"`
+
+	// 扩展信息：
+	// skill => {"name":"技能名称", "desc":"技能描述", "author":"技能作者", "avatar":{"path":"技能图标"}, "inResource": bool, "expiredAt": "过期时间7天", "skillSaveId": "保存的技能ID"}
+	MetaData map[string]interface{} `json:"metadata"`
+}
+
+// --- assistant template ---
 
 type AssistantTemplateInfo struct {
 	AssistantTemplateId string `json:"assistantTemplateId"` // 智能体模板Id

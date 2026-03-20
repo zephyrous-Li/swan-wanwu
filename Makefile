@@ -78,30 +78,35 @@ create-docker-net:
 
 check:
 	go vet ./...
-	go fmt ./...
-	docker run --rm -t -v $(PWD):/app -w /app golangci/golangci-lint:v1.64.8 bash -c 'golangci-lint run -v --timeout 3m'
+	gofmt -w cmd/ internal/ pkg/
+	goimports -w -local github.com/wanwulite/wanwu cmd/ internal/ pkg/
+	docker run --rm -t -v $(PWD):/app -w /app golangci/golangci-lint:v2.10.1 bash -c 'golangci-lint run -v --timeout 5m'
 
 check-callback:
 	docker run --rm -t -v $(PWD)/callback:/callback -w /callback crpi-6pj79y7ddzdpexs8.cn-hangzhou.personal.cr.aliyuncs.com/gromitlee/python:3.12-slim-isort7.0.0 isort --check-only --diff --color .
 	docker run --rm -t -v $(PWD)/callback:/callback -w /callback pyfound/black:25.11.0 black -t py312 --check --diff --color .
 
 doc:
-	docker run --name golang-swag --privileged=true --rm -v $(PWD):/app -w /app crpi-6pj79y7ddzdpexs8.cn-hangzhou.personal.cr.aliyuncs.com/gromitlee/golang:1.24.6-bookworm-swag1.16.6 bash -c 'make doc-swag'
+	docker run --name golang-swag --privileged=true --rm -v $(PWD):/app -w /app crpi-6pj79y7ddzdpexs8.cn-hangzhou.personal.cr.aliyuncs.com/gromitlee/golang:1.24.13-bookworm-swag1.16.6 bash -c 'make doc-swag'
 
 doc-swag:
-	# swag version v1.16.4
+	# swag version v1.16.6
 	# v1
 	swag fmt  -g guest.go -d internal/bff-service/server/http/handler/v1
 	swag init -g guest.go -d internal/bff-service/server/http/handler/v1 -o docs/v1 --md docs --pd
+	@echo '// nolint' | cat - docs/v1/docs.go > tmp && mv tmp docs/v1/docs.go
 	# openapi
 	swag fmt  -g openapi.go -d internal/bff-service/server/http/handler/openapi
 	swag init -g openapi.go -d internal/bff-service/server/http/handler/openapi -o docs/openapi --pd
+	@echo '// nolint' | cat - docs/openapi/docs.go > tmp && mv tmp docs/openapi/docs.go
 	# callback
 	swag fmt  -g callback.go -d internal/bff-service/server/http/handler/callback
 	swag init -g callback.go -d internal/bff-service/server/http/handler/callback -o docs/callback --pd
+	@echo '// nolint' | cat - docs/callback/docs.go > tmp && mv tmp docs/callback/docs.go
 	# openurl
 	swag fmt  -g openurl.go -d internal/bff-service/server/http/handler/openurl
 	swag init -g openurl.go -d internal/bff-service/server/http/handler/openurl -o docs/openurl --pd
+	@echo '// nolint' | cat - docs/openurl/docs.go > tmp && mv tmp docs/openurl/docs.go
 
 docker-image-backend:
 	docker build -f Dockerfile.backend --build-arg WANWU_ARCH=${WANWU_ARCH} -t wanwulite/wanwu-backend:${WANWU_VERSION}-$(shell git rev-parse --short HEAD)-${WANWU_ARCH} .
@@ -118,6 +123,12 @@ docker-image-callback:
 docker-image-callback-base:
 	docker build -f Dockerfile.callback-base --build-arg WANWU_ARCH=${WANWU_ARCH} -t wanwulite/callback-base:${WANWU_VERSION}-$(shell git rev-parse --short HEAD)-${WANWU_ARCH} .
 
+docker-image-wga-sandbox:
+	docker build -f Dockerfile.wga-sandbox --build-arg WANWU_ARCH=${WANWU_ARCH} -t wanwulite/wga-sandbox:${WANWU_VERSION}-$(shell git rev-parse --short HEAD)-${WANWU_ARCH} .
+
+docker-image-wga-sandbox-base:
+	docker build -f Dockerfile.wga-sandbox-base --build-arg WANWU_ARCH=${WANWU_ARCH} -t wanwulite/wga-sandbox-base:1.0.0.152-opencode1.1.65-${WANWU_ARCH} .
+
 grpc-protoc:
 	protoc --proto_path=. --go_out=paths=source_relative:api --go-grpc_out=paths=source_relative:api proto/*/*.proto
 
@@ -129,7 +140,7 @@ init:
 	go mod vendor
 
 pb:
-	docker run --name golang-grpc --privileged=true --rm -v $(PWD):/app -w /app crpi-6pj79y7ddzdpexs8.cn-hangzhou.personal.cr.aliyuncs.com/gromitlee/golang:1.24.6-bookworm-protoc29.4-gengo1.34.1-gengrpc1.5.1-gengw2.20.0-genapi2.20.0 bash -c 'make grpc-protoc'
+	docker run --name golang-grpc --privileged=true --rm -v $(PWD):/app -w /app crpi-6pj79y7ddzdpexs8.cn-hangzhou.personal.cr.aliyuncs.com/gromitlee/golang:1.24.13-bookworm-protoc29.4-gengo1.34.1-gengrpc1.5.1-gengw2.20.0-genapi2.20.0 bash -c 'make grpc-protoc'
 
 # --- mysql ---
 run-mysql:

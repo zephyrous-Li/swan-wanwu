@@ -4,7 +4,6 @@ import (
 	"path/filepath"
 	"strings"
 
-	err_code "github.com/UnicomAI/wanwu/api/proto/err-code"
 	errs "github.com/UnicomAI/wanwu/api/proto/err-code"
 	iam_service "github.com/UnicomAI/wanwu/api/proto/iam-service"
 	knowledgebase_doc_service "github.com/UnicomAI/wanwu/api/proto/knowledgebase-doc-service"
@@ -72,6 +71,7 @@ func GetDocList(ctx *gin.Context, userId, orgId string, r *request.DocListReq) (
 			EmbeddingModel:  embModelInfo,
 			LlmModelId:      knowledgeInfo.LlmModelId,
 			Category:        knowledgeInfo.Category,
+			Avatar:          cacheKnowledgeAvatar(ctx, knowledgeInfo.AvatarPath, knowledgeInfo.Category),
 		},
 	}, nil
 }
@@ -165,7 +165,7 @@ func ImportDoc(ctx *gin.Context, userId, orgId string, req *request.DocImportReq
 func ImportDocOpenapi(ctx *gin.Context, userId, orgId string, req *request.DocImportReq) error {
 	var err error
 	if req.ParserModelId != "" {
-		req.ParserModelId, err = getModelIdByUuid(ctx, req.ParserModelId)
+		req.ParserModelId, err = GetModelIdByUuid(ctx, req.ParserModelId)
 		if err != nil {
 			return err
 		}
@@ -211,7 +211,7 @@ func UpdateDocConfig(ctx *gin.Context, userId, orgId string, req *request.DocCon
 func UpdateDocConfigOpenapi(ctx *gin.Context, userId, orgId string, req *request.DocConfigUpdateReq) error {
 	var err error
 	if req.ParserModelId != "" {
-		req.ParserModelId, err = getModelIdByUuid(ctx, req.ParserModelId)
+		req.ParserModelId, err = GetModelIdByUuid(ctx, req.ParserModelId)
 		if err != nil {
 			return err
 		}
@@ -447,7 +447,7 @@ func buildDocSegmentResp(docSegmentListResp *knowledgebase_doc_service.DocSegmen
 
 func buildDocAnalyzerText(docAnalyzer []string) []string {
 	if len(docAnalyzer) == 0 {
-		return make([]string, 0)
+		return []string{"无"}
 	}
 	return lo.Map(docAnalyzer, func(item string, index int) string {
 		return docAnalyzerMap[item]
@@ -651,7 +651,7 @@ func GetDocUploadLimit(ctx *gin.Context, userId, orgId string, req *request.Quer
 	}
 	if knowledge == nil || knowledge.EmbeddingModelInfo == nil {
 		log.Errorf("查询知识库失败")
-		return nil, grpc_util.ErrorStatus(err_code.Code_BFFGeneral, "knowledge is nil")
+		return nil, grpc_util.ErrorStatus(errs.Code_BFFGeneral, "knowledge is nil")
 	}
 	embModelId := knowledge.EmbeddingModelInfo.ModelId
 	// 2.获取图片限制大小
@@ -677,15 +677,15 @@ func getEmbImageSize(ctx *gin.Context, userId, orgId, embModelId string) (int, e
 	}
 	// 校验模型类型
 	if modelInfo.ModelType != mp.ModelTypeMultiEmbedding {
-		return 0, grpc_util.ErrorStatus(err_code.Code_BFFGeneral, "modelType mismatch")
+		return 0, grpc_util.ErrorStatus(errs.Code_BFFGeneral, "modelType mismatch")
 	}
 	// 模型配置断言
 	modelConfig, ok := modelInfo.Config.(*mp_jina.MultiModalEmbedding)
 	if !ok {
-		return 0, grpc_util.ErrorStatus(err_code.Code_BFFGeneral, "embedding模型配置错误")
+		return 0, grpc_util.ErrorStatus(errs.Code_BFFGeneral, "embedding模型配置错误")
 	}
 	if modelConfig == nil || modelConfig.MaxImageSize == nil {
-		return 0, grpc_util.ErrorStatus(err_code.Code_BFFGeneral, "embedding模型配置错误")
+		return 0, grpc_util.ErrorStatus(errs.Code_BFFGeneral, "embedding模型配置错误")
 	}
 	return int(*(modelConfig.MaxImageSize)), nil
 }

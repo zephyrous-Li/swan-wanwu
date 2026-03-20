@@ -10,6 +10,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/UnicomAI/wanwu/pkg/constant"
 	mp "github.com/UnicomAI/wanwu/pkg/model-provider"
 	mp_jina "github.com/UnicomAI/wanwu/pkg/model-provider/mp-jina"
 	utils "github.com/UnicomAI/wanwu/pkg/util"
@@ -28,10 +29,6 @@ import (
 	http_client "github.com/UnicomAI/wanwu/pkg/http-client"
 	"github.com/UnicomAI/wanwu/pkg/log"
 	"github.com/gin-gonic/gin"
-)
-
-const (
-	MultiModalKnowledge = 2
 )
 
 var knowHttp = http_client.CreateDefault()
@@ -160,6 +157,7 @@ func CreateKnowledge(ctx *gin.Context, userId, orgId string, r *request.CreateKn
 		},
 		KnowledgeGraph: knowledgeGraph,
 		Category:       r.Category,
+		AvatarPath:     r.Avatar.Key,
 	})
 	if err != nil {
 		return nil, err
@@ -168,13 +166,13 @@ func CreateKnowledge(ctx *gin.Context, userId, orgId string, r *request.CreateKn
 }
 
 func CreateKnowledgeOpenapi(ctx *gin.Context, userId, orgId string, r *request.CreateKnowledgeReq) (*response.CreateKnowledgeResp, error) {
-	embModelId, err := getModelIdByUuid(ctx, r.EmbeddingModel.ModelId)
+	embModelId, err := GetModelIdByUuid(ctx, r.EmbeddingModel.ModelId)
 	if err != nil {
 		return nil, err
 	}
 	r.EmbeddingModel.ModelId = embModelId
 	if r.Category == request.CategoryKnowledge && r.KnowledgeGraph.Switch {
-		llmModelId, err := getModelIdByUuid(ctx, r.KnowledgeGraph.LLMModelId)
+		llmModelId, err := GetModelIdByUuid(ctx, r.KnowledgeGraph.LLMModelId)
 		if err != nil {
 			return nil, err
 		}
@@ -191,6 +189,7 @@ func UpdateKnowledge(ctx *gin.Context, userId, orgId string, r *request.UpdateKn
 		Description: r.Description,
 		UserId:      userId,
 		OrgId:       orgId,
+		AvatarPath:  r.Avatar.Key,
 	})
 	return err
 }
@@ -211,10 +210,6 @@ func DeleteKnowledge(ctx *gin.Context, userId, orgId string, r *request.DeleteKn
 // KnowledgeHit 知识库命中
 func KnowledgeHit(ctx *gin.Context, userId, orgId string, r *request.KnowledgeHitReq) (*response.KnowledgeHitResp, error) {
 	matchParams := r.KnowledgeMatchParams
-	err := checkRerank(ctx, userId, orgId, r)
-	if err != nil {
-		return nil, err
-	}
 	resp, err := knowledgeBase.KnowledgeHit(ctx.Request.Context(), &knowledgebase_service.KnowledgeHitReq{
 		Question:      r.Question,
 		UserId:        userId,
@@ -240,32 +235,38 @@ func KnowledgeHit(ctx *gin.Context, userId, orgId string, r *request.KnowledgeHi
 	return buildKnowledgeHitResp(resp), nil
 }
 
-func checkRerank(ctx *gin.Context, userId string, orgId string, r *request.KnowledgeHitReq) error {
-	rerankModel := &response.ModelInfo{}
-	var err error
+func checkRerank(ctx *gin.Context, rerankModelId, question string, hasImage bool) error {
 	// 获取rerank模型信息
-	if r.KnowledgeMatchParams.RerankModelId != "" {
-		rerankModel, err = GetModel(ctx, userId, orgId, &request.GetModelRequest{
-			BaseModelRequest: request.BaseModelRequest{ModelId: r.KnowledgeMatchParams.RerankModelId}})
+	var rerankModel *model_service.ModelInfo
+	var err error
+	// 纯图片搜索必选多模态rerank
+	if question == "" && rerankModelId == "" {
+		return errors.New("只输入图片必须选择多模态reranker")
+	}
+	if rerankModelId != "" {
+		rerankModel, err = model.GetModel(ctx, &model_service.GetModelReq{ModelId: rerankModelId})
 		if err != nil {
 			return err
 		}
-	}
-	// 纯图片搜索必选多模态rerank
-	if r.Question == "" {
-		if rerankModel.ModelType != mp.ModelTypeMultiRerank {
-			return grpc_util.ErrorStatus(err_code.Code_BFFInvalidArg, "只输入图片必须选择多模态reranker")
+		if rerankModel == nil {
+			return errors.New("所选reranker模型无法解析")
 		}
-	}
-	// 包含图片搜索 - 若用户选了多模态rerank - 需查看模型是否支持图片搜索
-	if len(r.DocInfo) > 0 {
-		if rerankModel.Provider == mp.ModelTypeMultiRerank {
-			modelConfig, ok := rerankModel.Config.(*mp_jina.MultiModalRerank)
-			if !ok || modelConfig == nil {
-				return grpc_util.ErrorStatus(err_code.Code_BFFInvalidArg, "所选多模态reranker模型无法解析")
+		// 纯图片搜索必选多模态rerank
+		if question == "" {
+			if rerankModel.ModelType != mp.ModelTypeMultiRerank {
+				return errors.New("只输入图片必须选择多模态reranker")
 			}
-			if !modelConfig.SupportImageInQuery {
-				return grpc_util.ErrorStatus(err_code.Code_BFFInvalidArg, "所选多模态reranker模型不支持输入图片")
+		}
+		// 包含图片搜索 - 若用户选了多模态rerank - 需查看模型是否支持图片搜索
+		if hasImage {
+			if rerankModel.ModelType == mp.ModelTypeMultiRerank {
+				cfg := mp_jina.MultiModalRerank{}
+				if err := json.Unmarshal([]byte(rerankModel.ProviderConfig), &cfg); err != nil {
+					return errors.New("所选多模态reranker模型无法解析")
+				}
+				if !cfg.SupportImageInQuery {
+					return errors.New("所选多模态reranker模型不支持输入图片")
+				}
 			}
 		}
 	}
@@ -274,7 +275,7 @@ func checkRerank(ctx *gin.Context, userId string, orgId string, r *request.Knowl
 
 func KnowledgeHitOpenapi(ctx *gin.Context, userId, orgId string, r *request.KnowledgeHitReq) (*response.KnowledgeHitResp, error) {
 	if r.KnowledgeMatchParams.RerankModelId != "" {
-		rerankModelId, err := getModelIdByUuid(ctx, r.KnowledgeMatchParams.RerankModelId)
+		rerankModelId, err := GetModelIdByUuid(ctx, r.KnowledgeMatchParams.RerankModelId)
 		if err != nil {
 			return nil, err
 		}
@@ -367,7 +368,7 @@ func buildUserKnowledgeList(knowledgeList []*response.KnowledgeInfo) (map[string
 			KnowledgeName: knowledge.RagName,
 		})
 		retMap[knowledge.CreateUserId] = knowledgeInfos
-		if knowledge.Category == MultiModalKnowledge {
+		if knowledge.Category == constant.MultiModalKnowledge {
 			enableVision = true
 		}
 	}
@@ -445,9 +446,12 @@ func buildKnowledgeInfoList(ctx *gin.Context, knowledgeListResp *knowledgebase_s
 		return &response.KnowledgeListResp{}
 	}
 	orgMap := buildOtherOrgInfoMap(ctx, knowledgeListResp)
-
 	var list []*response.KnowledgeInfo
 	for _, knowledge := range knowledgeListResp.KnowledgeList {
+		avatar := cacheKnowledgeAvatar(ctx, knowledge.AvatarPath, knowledge.Category)
+		if avatar.Path != "" {
+			avatar.Path = config.Cfg().Server.ApiBaseUrl + avatar.Path
+		}
 		share := knowledge.ShareCount > 1
 		list = append(list, &response.KnowledgeInfo{
 			KnowledgeId: knowledge.KnowledgeId,
@@ -476,6 +480,7 @@ func buildKnowledgeInfoList(ctx *gin.Context, knowledgeListResp *knowledgebase_s
 				ExternalApiId:         knowledge.KnowledgeExternalInfo.ExternalAPIId,
 				ExternalApiName:       knowledge.KnowledgeExternalInfo.ExternalAPIName,
 			},
+			Avatar: avatar,
 		})
 	}
 	return &response.KnowledgeListResp{KnowledgeList: list}
@@ -767,10 +772,10 @@ func ragLineProcessor(messageId, query string, hitData *KnowledgeHitData, histor
 		defer utils.PrintPanicStack()
 		if len(resp.Choices) > 0 {
 			var finish = 0
-			finishReason := resp.Choices[0].FinishReason
-			if finishReason == "stop" {
+			switch finishReason := resp.Choices[0].FinishReason; finishReason {
+			case "stop":
 				finish = 1
-			} else if finishReason == "sensitive_cancel" {
+			case "sensitive_cancel":
 				finish = 4
 			}
 

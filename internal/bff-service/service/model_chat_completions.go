@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"time"
 
 	err_code "github.com/UnicomAI/wanwu/api/proto/err-code"
 	model_service "github.com/UnicomAI/wanwu/api/proto/model-service"
@@ -47,7 +48,7 @@ func ModelChatCompletions(ctx *gin.Context, modelID string, req *mp_common.LLMRe
 		gin_util.Response(ctx, nil, grpc_util.ErrorStatus(err_code.Code_BFFGeneral, fmt.Sprintf("model %v chat completions err: invalid provider", modelInfo.ModelId)))
 		return
 	}
-
+	startTime := time.Now()
 	// chat completions
 	llmReq, err := iLLM.NewReq(req)
 	if err != nil {
@@ -70,8 +71,14 @@ func ModelChatCompletions(ctx *gin.Context, modelID string, req *mp_common.LLMRe
 			ctx.Set(gin_util.STATUS, status)
 			ctx.Set(gin_util.RESULT, retStr)
 			ctx.JSON(status, data)
+
+			costs := int(time.Since(startTime).Milliseconds())
+			recordModelStatistic(ctx, modelInfo, true,
+				data.Usage.PromptTokens, data.Usage.CompletionTokens, data.Usage.TotalTokens, costs, 0, false)
 			return
 		}
+		// 非流式调用失败
+		recordModelStatistic(ctx, modelInfo, false, 0, 0, 0, 0, 0, false)
 		gin_util.Response(ctx, nil, grpc_util.ErrorStatus(err_code.Code_BFFGeneral, fmt.Sprintf("model %v chat completions err: invalid resp", modelInfo.ModelId)))
 		return
 	}
@@ -81,8 +88,13 @@ func ModelChatCompletions(ctx *gin.Context, modelID string, req *mp_common.LLMRe
 	ctx.Header("Connection", "keep-alive")
 	ctx.Header("Content-Type", "text/event-stream; charset=utf-8")
 	var (
-		firstFlag = false // 思维链起始标识符，默认思维链未开始
-		endFlag   = false // 思维链结束标识符，默认思维链未结束
+		firstFlag         = false // 思维链起始标识符，默认思维链未开始
+		endFlag           = false // 思维链结束标识符，默认思维链未结束
+		firstTokenTime    time.Time
+		firstTokenLatency int
+		promptTokens      int
+		completionTokens  int
+		totalTokens       int
 	)
 	var data *mp_common.LLMResp
 	for sseResp := range sseCh {
@@ -92,6 +104,10 @@ func ModelChatCompletions(ctx *gin.Context, modelID string, req *mp_common.LLMRe
 			if len(data.Choices) > 0 && data.Choices[0].Delta != nil {
 				answer = answer + data.Choices[0].Delta.Content
 				delta := data.Choices[0].Delta
+				// 修复空 role 问题：部分模型在 thinking 模式下返回空 role
+				if delta.Role == "" {
+					delta.Role = mp_common.MsgRoleAssistant
+				}
 				if firstFlag && !endFlag && delta.ReasoningContent != nil {
 					delta.Content = delta.Content + *delta.ReasoningContent
 				}
@@ -113,10 +129,17 @@ func ModelChatCompletions(ctx *gin.Context, modelID string, req *mp_common.LLMRe
 				dataByte, _ := json.Marshal(data)
 				dataStr = fmt.Sprintf("data: %v\n", string(dataByte))
 			}
+			if firstTokenTime.IsZero() {
+				firstTokenTime = time.Now()
+				firstTokenLatency = int(time.Since(startTime).Milliseconds())
+			}
+			promptTokens = data.Usage.PromptTokens
+			completionTokens = data.Usage.CompletionTokens
+			totalTokens = data.Usage.TotalTokens
 		} else {
 			dataStr = fmt.Sprintf("%v\n", sseResp.String())
 		}
-		log.Infof("model %v chat completions sse: %v", modelInfo.ModelId, dataStr)
+		// log.Debugf("model %v chat completions sse: %v", modelInfo.ModelId, dataStr)
 		if _, err = ctx.Writer.Write([]byte(dataStr)); err != nil {
 			log.Errorf("model %v chat completions sse err: %v", modelInfo.ModelId, err)
 		}
@@ -124,4 +147,6 @@ func ModelChatCompletions(ctx *gin.Context, modelID string, req *mp_common.LLMRe
 	}
 	ctx.Set(gin_util.STATUS, http.StatusOK)
 	ctx.Set(gin_util.RESULT, answer)
+	recordModelStatistic(ctx, modelInfo, true,
+		promptTokens, completionTokens, totalTokens, 0, firstTokenLatency, true)
 }

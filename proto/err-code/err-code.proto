@@ -20,6 +20,7 @@ enum Code {
   BFFSingleLoginDisable = 110009; // 单因子登录禁用
   BFFAppType = 110010; // 应用类型错误
   BFFModelStatus = 110011; // 模型状态错误
+  BFFSkillParse = 110012; // 技能解析错误
 
   // --- iam-service ---
   // [120000, 129999]
@@ -166,7 +167,13 @@ enum Code {
   AssistantToolErr = 160006; // 智能体工具相关错误
   AssistantCustomPromptErr = 160007; // 智能体自定义提示错误
   AssistantMultiAgentErr = 160008; // 多智能体相关错误
-
+  SkillConversationCreateErr = 160009; // 创建技能错误
+  SkillConversationUpdateErr = 160010; // 更新技能错误
+  SkillConversationDeleteErr = 160011; // 删除技能错误
+  SkillConversationGetErr = 160012; // 获取技能错误
+  AssistantSkillCreateErr = 160013; // 智能体技能创建错误
+  AssistantSkillDeleteErr = 160014; // 智能体技能删除错误
+  AssistantSkillEnableSwitchErr = 160015; // 智能体技能启用/停用错误
 
   // --- workflow-service ---
   // [210000, 219999]
@@ -206,6 +213,7 @@ enum Code {
   AppUrlExpired = 300011; // App WebUrl过期错误
   AppConversation = 300012; // 对话流相关错误
   ApiKey = 300013; //ApiKey相关错误
+  AppModelRecord = 300014; //模型统计相关错误
 
   // --- mcp-service ---
   // [310000, 319999]
@@ -234,6 +242,7 @@ enum Code {
   MCPGetMCPServerToolListErr = 310022; // 获取MCP服务工具列表错误
   MCPUpdateCustomMCPErr = 310023; // 更新自定义MCP错误
   MCPUpdateBuiltinToolErr = 310024; // 更新内置工具错误
+  MCPCustomSkillErr = 310025; // 自定义技能相关错误
 
   // --- operate-service ---
   // [320000, 329999]

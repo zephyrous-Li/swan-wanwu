@@ -28,6 +28,7 @@ type KnowledgeBatchSelectReq struct {
 }
 
 type CreateKnowledgeReq struct {
+	Avatar         Avatar          `json:"avatar"` // 图标
 	Name           string          `json:"name"  validate:"required"`
 	Description    string          `json:"description"`
 	EmbeddingModel *EmbeddingModel `json:"embeddingModelInfo" validate:"required"`
@@ -39,6 +40,7 @@ type UpdateKnowledgeReq struct {
 	KnowledgeId string `json:"knowledgeId"   validate:"required"`
 	Name        string `json:"name"   validate:"required"`
 	Description string `json:"description"`
+	Avatar      Avatar `json:"avatar"` // 图标
 	CommonCheck
 }
 
@@ -178,7 +180,7 @@ type RagSearchKnowledgeBaseReq struct {
 	MetaFilterConditions []*MetadataFilterItem          `json:"metadata_filtering_conditions"` // 元数据过滤条件
 	AutoCitation         bool                           `json:"auto_citation"`                 // 是否启动知识图谱查询
 	RewriteQuery         bool                           `json:"rewrite_query"`                 // 是否query改写
-	EnableVision         bool                           `json:"enable_vision"`                 // 召回结果是否包含多模态文件
+	EnableVision         bool                           `json:"enable_vision"`                 // 召回结果是否包含多模态文件(只在callback层做最后的赋值)
 	AttachmentFiles      []*RagKnowledgeAttachment      `json:"attachment_files"`              // 上传的多模态文件
 }
 

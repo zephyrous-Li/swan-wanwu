@@ -2,6 +2,7 @@ package v1
 
 import (
 	"github.com/UnicomAI/wanwu/internal/bff-service/model/request"
+	"github.com/UnicomAI/wanwu/internal/bff-service/model/response"
 	"github.com/UnicomAI/wanwu/internal/bff-service/service"
 	"github.com/UnicomAI/wanwu/pkg/constant"
 	gin_util "github.com/UnicomAI/wanwu/pkg/gin-util"
@@ -344,6 +345,69 @@ func AssistantToolConfig(ctx *gin.Context) {
 	gin_util.Response(ctx, nil, err)
 }
 
+// AssistantSkillCreate
+//
+//	@Tags			agent
+//	@Summary		添加技能
+//	@Description	为智能体绑定技能
+//	@Security		JWT
+//	@Accept			json
+//	@Produce		json
+//	@Param			data	body		request.AssistantSkillAddRequest	true	"技能新增参数"
+//	@Success		200		{object}	response.Response
+//	@Router			/assistant/skill [post]
+func AssistantSkillCreate(ctx *gin.Context) {
+	userId, orgId := getUserID(ctx), getOrgID(ctx)
+	var req request.AssistantSkillAddRequest
+	if !gin_util.Bind(ctx, &req) {
+		return
+	}
+	err := service.AssistantSkillCreate(ctx, userId, orgId, req)
+	gin_util.Response(ctx, nil, err)
+}
+
+// AssistantSkillDelete
+//
+//	@Tags			agent
+//	@Summary		删除技能
+//	@Description	为智能体解绑技能
+//	@Security		JWT
+//	@Accept			json
+//	@Produce		json
+//	@Param			data	body		request.AssistantSkillDelRequest	true	"智能体id与技能id"
+//	@Success		200		{object}	response.Response
+//	@Router			/assistant/skill [delete]
+func AssistantSkillDelete(ctx *gin.Context) {
+	userId, orgId := getUserID(ctx), getOrgID(ctx)
+	var req request.AssistantSkillDelRequest
+	if !gin_util.Bind(ctx, &req) {
+		return
+	}
+	err := service.AssistantSkillDelete(ctx, userId, orgId, req)
+	gin_util.Response(ctx, nil, err)
+}
+
+// AssistantSkillEnableSwitch
+//
+//	@Tags			agent
+//	@Summary		启用/停用技能
+//	@Description	修改智能体绑定的技能的启用状态
+//	@Security		JWT
+//	@Accept			json
+//	@Produce		json
+//	@Param			data	body		request.AssistantSkillEnableSwitchRequest	true	"智能体id与技能id"
+//	@Success		200		{object}	response.Response
+//	@Router			/assistant/skill/switch [put]
+func AssistantSkillEnableSwitch(ctx *gin.Context) {
+	userId, orgId := getUserID(ctx), getOrgID(ctx)
+	var req request.AssistantSkillEnableSwitchRequest
+	if !gin_util.Bind(ctx, &req) {
+		return
+	}
+	err := service.AssistantSkillEnableSwitch(ctx, userId, orgId, req)
+	gin_util.Response(ctx, nil, err)
+}
+
 // ConversationCreate
 //
 //	@Tags			agent
@@ -451,23 +515,23 @@ func DraftAssistantConversionStream(ctx *gin.Context) {
 		return
 	}
 
-	// 获取会话id
-	conversationIdResp, _ := service.GetDraftConversationIdByAssistantID(ctx, userId, orgId, request.ConversationGetListRequest{
-		AssistantId: req.AssistantId,
-	})
-
-	// 创建会话id
-	if conversationIdResp == nil {
-		newConversationId, err := service.ConversationCreate(ctx, userId, orgId, request.ConversationCreateRequest{
+	if !req.IsCompare {
+		conversationIdResp, _ := service.GetDraftConversationIdByAssistantID(ctx, userId, orgId, request.ConversationGetListRequest{
 			AssistantId: req.AssistantId,
-			Prompt:      req.Prompt,
-		}, constant.ConversationTypeDraft)
-		if err != nil {
-			gin_util.Response(ctx, nil, err)
+		})
+
+		if conversationIdResp == nil {
+			newConversationId, err := service.ConversationCreate(ctx, userId, orgId, request.ConversationCreateRequest{
+				AssistantId: req.AssistantId,
+				Prompt:      req.Prompt,
+			}, constant.ConversationTypeDraft)
+			if err != nil {
+				gin_util.Response(ctx, nil, err)
+			}
+			req.ConversationId = newConversationId.ConversationId
+		} else {
+			req.ConversationId = conversationIdResp.ConversationId
 		}
-		req.ConversationId = newConversationId.ConversationId
-	} else {
-		req.ConversationId = conversationIdResp.ConversationId
 	}
 
 	if err := service.AssistantConversionStream(ctx, userId, orgId, req, false); err != nil {
@@ -500,7 +564,7 @@ func DraftAssistantConversationDetailList(ctx *gin.Context) {
 		AssistantId: req.AssistantId,
 	})
 	if err != nil {
-		gin_util.Response(ctx, nil, err)
+		gin_util.Response(ctx, response.PageResult{List: []response.ConversationDetailInfo{}}, nil)
 		return
 	}
 

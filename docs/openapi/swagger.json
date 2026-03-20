@@ -2100,6 +2100,14 @@
                 "id"
             ],
             "properties": {
+                "avatar": {
+                    "description": "头像",
+                    "allOf": [
+                        {
+                            "$ref": "#/definitions/request.Avatar"
+                        }
+                    ]
+                },
                 "category": {
                     "description": "知识库类别 0-知识库，1-问答库，2-多模态知识库",
                     "type": "integer"
@@ -2121,6 +2129,14 @@
                 },
                 "name": {
                     "type": "string"
+                },
+                "orgName": {
+                    "description": "知识库所属名称",
+                    "type": "string"
+                },
+                "share": {
+                    "description": "是分享，还是私有",
+                    "type": "boolean"
                 }
             }
         },
@@ -2144,6 +2160,14 @@
                 "name"
             ],
             "properties": {
+                "avatar": {
+                    "description": "图标",
+                    "allOf": [
+                        {
+                            "$ref": "#/definitions/request.Avatar"
+                        }
+                    ]
+                },
                 "category": {
                     "description": "0:知识库，1:问答库,2:多模态知识库",
                     "type": "integer"
@@ -2839,6 +2863,14 @@
                 "name"
             ],
             "properties": {
+                "avatar": {
+                    "description": "图标",
+                    "allOf": [
+                        {
+                            "$ref": "#/definitions/request.Avatar"
+                        }
+                    ]
+                },
                 "description": {
                     "type": "string"
                 },
@@ -2954,6 +2986,14 @@
         "response.DocKnowledgeInfo": {
             "type": "object",
             "properties": {
+                "avatar": {
+                    "description": "头像",
+                    "allOf": [
+                        {
+                            "$ref": "#/definitions/request.Avatar"
+                        }
+                    ]
+                },
                 "category": {
                     "description": "0: 知识库 1: 问答库 2: 多模态知识库",
                     "type": "integer"
@@ -3164,6 +3204,14 @@
         "response.KnowledgeInfo": {
             "type": "object",
             "properties": {
+                "avatar": {
+                    "description": "头像",
+                    "allOf": [
+                        {
+                            "$ref": "#/definitions/request.Avatar"
+                        }
+                    ]
+                },
                 "category": {
                     "description": "0: 知识库; 1: 问答库",
                     "type": "integer"
@@ -3372,6 +3420,10 @@
                 "provider"
             ],
             "properties": {
+                "allowEdit": {
+                    "description": "是否允许前端编辑（true: 允许编辑，false: 隐藏编辑按钮）",
+                    "type": "boolean"
+                },
                 "avatar": {
                     "description": "模型图标路径",
                     "allOf": [
@@ -3395,6 +3447,10 @@
                             "$ref": "#/definitions/mp.ProviderModelConfig"
                         }
                     ]
+                },
+                "importSource": {
+                    "description": "模型导入来源(builtin=平台内置,external=外部URL)",
+                    "type": "string"
                 },
                 "isActive": {
                     "description": "启用状态（true: 启用，false: 禁用）",

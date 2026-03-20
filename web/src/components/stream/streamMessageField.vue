@@ -19,6 +19,7 @@
       v-loading="loading"
       ref="timeScroll"
       @click="handleGlobalClick"
+      :style="{ 'max-height': historyBoxHeight }"
     >
       <div v-for="(n, i) in session_data.history" :key="`${i}sdhs`">
         <!--问题-->
@@ -27,30 +28,6 @@
             <img class="logo" :src="userAvatarSrc" />
             <div class="answer-content">
               <div class="answer-content-query">
-                <el-popover
-                  placement="bottom-start"
-                  trigger="hover"
-                  :visible-arrow="false"
-                  popper-class="query-copy-popover"
-                  content=""
-                >
-                  <p
-                    class="query-copy"
-                    @click="queryCopy(n.query)"
-                    style="cursor: pointer"
-                  >
-                    <i class="el-icon-s-order"></i>
-                    &nbsp;
-                    {{ $t('agent.copyToInput') }}
-                  </p>
-                  <span
-                    slot="reference"
-                    class="answer-text"
-                    style="display: inline-block; margin-top: 5px"
-                  >
-                    {{ n.query }}
-                  </span>
-                </el-popover>
                 <div class="echo-doc-box" v-if="hasFiles(n)">
                   <el-button
                     v-show="canScroll(i, n.showScrollBtn)"
@@ -60,6 +37,7 @@
                     class="scroll-btn left"
                     size="mini"
                     type="primary"
+                    style="z-index: 10"
                   ></el-button>
                   <div class="imgList" :ref="`imgList-${i}`">
                     <div
@@ -67,10 +45,12 @@
                       :key="`${j}sdsl`"
                       class="docInfo-img-container"
                     >
-                      <img
+                      <el-image
                         v-if="hasImgs(n, file)"
                         :src="file.fileUrl"
                         class="docIcon imgIcon"
+                        :preview-src-list="[file.fileUrl]"
+                        fit="cover"
                       />
                       <div v-else class="docInfo-container">
                         <img
@@ -101,6 +81,30 @@
                     type="primary"
                   ></el-button>
                 </div>
+                <el-popover
+                  placement="bottom-start"
+                  trigger="hover"
+                  :visible-arrow="false"
+                  popper-class="query-copy-popover"
+                  content=""
+                >
+                  <p
+                    class="query-copy"
+                    @click="queryCopy(n.query)"
+                    style="cursor: pointer"
+                  >
+                    <i class="el-icon-s-order"></i>
+                    &nbsp;
+                    {{ $t('agent.copyToInput') }}
+                  </p>
+                  <span
+                    slot="reference"
+                    class="answer-text"
+                    style="display: inline-block; margin-top: 5px"
+                  >
+                    {{ n.query }}
+                  </span>
+                </el-popover>
               </div>
             </div>
           </div>
@@ -143,25 +147,7 @@
           <div class="session-answer-wrapper">
             <img class="logo" :src="modelIconUrl || avatarSrc(defaultUrl)" />
             <div class="session-wrap" style="width: calc(100% - 30px)">
-              <!-- 子会话渲染区域 -->
-              <div
-                v-if="n.subConversions && n.subConversions.length"
-                class="sub-conversion-box"
-              >
-                <sub-conversion
-                  v-for="(conversion, idx) in n.subConversions"
-                  :key="idx"
-                  :conversion="conversion"
-                  :parents-index="i"
-                  @toggle-conversion="toggleSubConversion"
-                  @collapse-click="collapseClick"
-                ></sub-conversion>
-              </div>
-              <!-- <div
-                v-if="showDSBtn(n.response)"
-                class="deepseek"
-                @click="toggle($event, i)"
-              > -->
+              <!-- 思考块显示 (msg_type 逻辑) -->
               <div
                 class="deepseek"
                 v-if="
@@ -177,101 +163,203 @@
                 />
                 {{ getTitle(n.msg_type) }}
               </div>
-              <!-- <template>
+              <div v-else-if="chatType === 'rag'">
+                <img
+                  :src="require('@/assets/imgs/think-icon.png')"
+                  class="think_icon"
+                />
+                <div
+                  v-if="showDSBtn(n.response)"
+                  class="deepseek"
+                  @click="toggle($event, i)"
+                >
+                  {{ n.thinkText }}
+                  <i
+                    v-bind:class="{
+                      'el-icon-arrow-down': !n.isOpen,
+                      'el-icon-arrow-up': n.isOpen,
+                    }"
+                  ></i>
+                </div>
+                <span v-else class="deepseek">
+                  {{ $t('menu.knowledge') }}
+                </span>
+              </div>
+              <div
+                v-else-if="
+                  !(n.messageSequence && n.messageSequence.length) &&
+                  showDSBtn(n.response)
+                "
+              >
+                <div class="deepseek" @click="toggle($event, i)">
                   <img
                     :src="require('@/assets/imgs/think-icon.png')"
                     class="think_icon"
                   />
                   {{ n.thinkText }}
-                </template>
-                <i
-                  v-bind:class="{
-                    'el-icon-arrow-down': !n.isOpen,
-                    'el-icon-arrow-up': n.isOpen,
-                  }"
-                ></i> -->
-              <template v-else>
-                <div v-if="chatType === 'rag'">
-                  <img
-                    :src="require('@/assets/imgs/think-icon.png')"
-                    class="think_icon"
-                  />
-                  <div
-                    v-if="showDSBtn(n.response)"
-                    class="deepseek"
-                    @click="toggle($event, i)"
-                  >
-                    {{ n.thinkText }}
-                    <i
-                      v-bind:class="{
-                        'el-icon-arrow-down': !n.isOpen,
-                        'el-icon-arrow-up': n.isOpen,
-                      }"
-                    ></i>
-                  </div>
-                  <span v-else class="deepseek">
-                    {{ $t('menu.knowledge') }}
-                  </span>
+                  <i
+                    v-bind:class="{
+                      'el-icon-arrow-down': !n.isOpen,
+                      'el-icon-arrow-up': n.isOpen,
+                    }"
+                  ></i>
                 </div>
-                <div v-else>
-                  <div
-                    v-if="showDSBtn(n.response)"
-                    class="deepseek"
-                    @click="toggle($event, i)"
-                  >
-                    <img
-                      :src="require('@/assets/imgs/think-icon.png')"
-                      class="think_icon"
-                    />
-                    {{ n.thinkText }}
-                    <i
-                      v-bind:class="{
-                        'el-icon-arrow-down': !n.isOpen,
-                        'el-icon-arrow-up': n.isOpen,
-                      }"
-                    ></i>
-                  </div>
-                </div>
-              </template>
-              <!-- </div> -->
-              <template
-                v-if="
-                  (n.stableChunks && n.stableChunks.length) || n.activeResponse
-                "
-              >
-                <div class="answer-content">
-                  <div
-                    v-for="(chunk, idx) in n.stableChunks"
-                    :key="idx"
-                    class="chunk_stable"
-                    v-bind:class="{ 'ds-res': showDSBtn(chunk) }"
-                    v-html="showDSBtn(chunk) ? replaceHTML(chunk, n) : chunk"
-                  ></div>
-                  <div
-                    v-if="n.activeResponse"
-                    class="chunk_active"
-                    v-bind:class="{ 'ds-res': showDSBtn(n.activeResponse) }"
-                    v-html="
-                      showDSBtn(n.activeResponse)
-                        ? replaceHTML(n.activeResponse, n)
-                        : n.activeResponse
-                    "
-                  ></div>
-                </div>
-              </template>
+              </div>
+
+              <!-- 消息序列渲染 -->
               <div
-                v-else-if="n.response"
-                class="answer-content"
-                v-bind:class="{
-                  'ds-res': showDSBtn(n.response),
-                  hideDs: !n.isOpen,
-                }"
-                v-html="
-                  showDSBtn(n.response)
-                    ? replaceHTML(n.response, n)
-                    : n.response
-                "
-              ></div>
+                v-if="n.messageSequence && n.messageSequence.length"
+                class="message-sequence-wrapper"
+              >
+                <template v-for="(item, idx) in n.messageSequence">
+                  <!-- 子会话渲染块 -->
+                  <div
+                    v-if="item.type === 'sub'"
+                    :key="'sub-' + item.id + idx"
+                    class="sub-conversion-box order-sub"
+                  >
+                    <sub-conversion
+                      :conversion="findSubData(n, item.id)"
+                      :parents-index="i"
+                      @toggle-conversion="toggleSubConversion"
+                      @collapse-click="collapseClick"
+                    ></sub-conversion>
+                  </div>
+
+                  <!-- 主会话渲染块 -->
+                  <div
+                    v-else-if="item.type === 'main'"
+                    :key="'main-' + idx"
+                    class="order-main-chunk"
+                  >
+                    <!-- 片段内的思考按钮 -->
+                    <div
+                      v-if="
+                        showDSBtn(
+                          item.renderedContent || item.activeResponse || '',
+                        )
+                      "
+                    >
+                      <div class="deepseek" @click="toggle($event, i)">
+                        <img
+                          :src="require('@/assets/imgs/think-icon.png')"
+                          class="think_icon"
+                        />
+                        {{ n.thinkText }}
+                        <i
+                          v-bind:class="{
+                            'el-icon-arrow-down': !n.isOpen,
+                            'el-icon-arrow-up': n.isOpen,
+                          }"
+                        ></i>
+                      </div>
+                    </div>
+                    <template
+                      v-if="
+                        (item.stableChunks && item.stableChunks.length) ||
+                        item.activeResponse
+                      "
+                    >
+                      <div class="answer-content">
+                        <div
+                          v-for="(chunk, cIdx) in item.stableChunks"
+                          :key="'stable-' + cIdx"
+                          class="chunk_stable"
+                          v-bind:class="{ 'ds-res': showDSBtn(chunk) }"
+                          v-html="
+                            showDSBtn(chunk) ? replaceHTML(chunk, n) : chunk
+                          "
+                        ></div>
+                        <div
+                          v-if="item.activeResponse"
+                          class="chunk_active"
+                          v-bind:class="{
+                            'ds-res': showDSBtn(item.activeResponse),
+                          }"
+                          v-html="
+                            showDSBtn(item.activeResponse)
+                              ? replaceHTML(item.activeResponse, n)
+                              : item.activeResponse
+                          "
+                        ></div>
+                      </div>
+                    </template>
+                    <!-- 历史内容 -->
+                    <div
+                      v-else-if="item.renderedContent"
+                      class="answer-content order-main-renderedContent"
+                      v-bind:class="{
+                        'ds-res': showDSBtn(item.renderedContent),
+                        hideDs: !n.isOpen,
+                      }"
+                      v-html="
+                        showDSBtn(item.renderedContent)
+                          ? replaceHTML(item.renderedContent, n)
+                          : item.renderedContent
+                      "
+                    ></div>
+                  </div>
+                </template>
+              </div>
+
+              <!-- 如果没有 messageSequence(rag) -->
+              <template v-else>
+                <!-- 子会话渲染区域 -->
+                <div
+                  v-if="n.subConversions && n.subConversions.length"
+                  class="sub-conversion-box"
+                >
+                  <sub-conversion
+                    v-for="(conversion, idx) in n.subConversions"
+                    :key="idx"
+                    :conversion="conversion"
+                    :parents-index="i"
+                    @toggle-conversion="toggleSubConversion"
+                    @collapse-click="collapseClick"
+                  ></sub-conversion>
+                </div>
+
+                <!-- 主会话-->
+                <template
+                  v-if="
+                    (n.stableChunks && n.stableChunks.length) ||
+                    n.activeResponse
+                  "
+                >
+                  <div class="answer-content no-order-chunk-answer">
+                    <div
+                      v-for="(chunk, idx) in n.stableChunks"
+                      :key="idx"
+                      class="chunk_stable"
+                      v-bind:class="{ 'ds-res': showDSBtn(chunk) }"
+                      v-html="showDSBtn(chunk) ? replaceHTML(chunk, n) : chunk"
+                    ></div>
+                    <div
+                      v-if="n.activeResponse"
+                      class="chunk_active"
+                      v-bind:class="{ 'ds-res': showDSBtn(n.activeResponse) }"
+                      v-html="
+                        showDSBtn(n.activeResponse)
+                          ? replaceHTML(n.activeResponse, n)
+                          : n.activeResponse
+                      "
+                    ></div>
+                  </div>
+                </template>
+                <div
+                  v-else-if="n.response"
+                  class="answer-content history-answer"
+                  v-bind:class="{
+                    'ds-res': showDSBtn(n.response),
+                    hideDs: !n.isOpen,
+                  }"
+                  v-html="
+                    showDSBtn(n.response)
+                      ? replaceHTML(n.response, n)
+                      : n.response
+                  "
+                ></div>
+              </template>
             </div>
           </div>
           <!-- <div v-else class="session-answer-wrapper">
@@ -361,6 +449,15 @@
                 </el-collapse-transition>
               </template>
             </div>
+          </div>
+          <!-- 主体内容后的slot -->
+          <div class="answer-operation">
+            <slot
+              name="afterContent"
+              :skillsList="n.responseFiles"
+              :item="n"
+              :index="i"
+            />
           </div>
           <!--loading-->
           <div
@@ -581,6 +678,7 @@ export default {
       scrollContainerId: `timeScroll-${this._uid}`,
       // 复制提示计时器map
       copyTimerMap: new Map(),
+      historyBoxHeight: '', // 动态历史会话容器高度
     };
   },
   computed: {
@@ -992,6 +1090,7 @@ export default {
           document.getElementById(this.scrollContainerId).scrollHeight;
       });
     },
+
     codeScrollBottom() {
       this.$nextTick(() => {
         this.loading = false;
@@ -1035,8 +1134,8 @@ export default {
     },
     replaceHistory(data) {
       this.session_data.history = data;
-      this.session_data.history.forEach((n, index) => {
-        this.$nextTick(() => {
+      this.$nextTick(() => {
+        this.session_data.history.forEach((n, index) => {
           const setCitations = this.setCitations(index);
           this.$set(
             this.session_data.history[index],
@@ -1044,8 +1143,8 @@ export default {
             setCitations,
           );
         });
+        this.scrollBottom();
       });
-      this.scrollBottom();
     },
     removeLastHistory() {
       this.session_data.history.pop();
@@ -1208,7 +1307,7 @@ export default {
         this.cv && this.cv.resizeCurrImg(currImg);
       });
     },
-    // 暴露出去，初始化history列表
+    // 初始化history列表
     initHistoryList(list) {
       this.$set(this.session_data, 'history', list);
       this.$nextTick(() => {
@@ -1232,6 +1331,22 @@ export default {
         }, 1500);
         this.copyTimerMap.set(btn, timerId);
       }
+    },
+    // 获取子会话数据
+    findSubData(n, id) {
+      if (!n.subConversions) return null;
+      return n.subConversions.find(sub => sub.id === id);
+    },
+    // 动态设置滚动容器高度
+    setHistoryBoxHeight(inputHeight) {
+      if (inputHeight) {
+        const baseInputHeight = 56;
+        const offset = Math.max(0, inputHeight - baseInputHeight);
+        this.historyBoxHeight = `calc(100% - ${46 + offset}px)`;
+      } else {
+        this.historyBoxHeight = '';
+      }
+      this.scrollBottom();
     },
   },
 };
@@ -1334,6 +1449,8 @@ export default {
   word-break: break-all;
   height: 100%;
   overflow-y: auto;
+  display: flex;
+  flex-direction: column;
   .session-item {
     min-height: 80px;
     display: flex;
@@ -1372,7 +1489,7 @@ export default {
           margin-top: -8px;
         }
         .echo-doc-box {
-          margin-top: 10px;
+          margin-bottom: 10px;
           width: 100%;
           max-width: 100%;
           display: flex;
@@ -1410,7 +1527,39 @@ export default {
           }
           .docInfo-img-container {
             flex-shrink: 0; /* 防止图片被压缩 */
-            width: auto; /* 或固定宽度 */
+            // 单张图片
+            &:first-child:last-child {
+              width: 100%;
+              ::v-deep .el-image {
+                width: auto !important;
+                height: auto !important;
+                max-width: 100%;
+                display: block;
+                float: right;
+                border-radius: 6px;
+
+                .el-image__inner {
+                  width: 100% !important;
+                  height: 100% !important;
+                }
+              }
+            }
+            // 多张图片
+            &:not(:first-child:last-child) {
+              width: auto;
+              ::v-deep .el-image {
+                width: 70px !important;
+                height: 70px !important;
+                display: block;
+                border-radius: 6px;
+
+                .el-image__inner {
+                  width: 100% !important;
+                  height: 100% !important;
+                  object-position: left top;
+                }
+              }
+            }
             p {
               text-align: center;
               color: $color;
@@ -1420,12 +1569,6 @@ export default {
           .docIcon {
             width: 30px;
             height: 30px;
-          }
-          .imgIcon {
-            width: auto !important;
-            height: 70px !important;
-            display: block;
-            border-radius: 6px;
           }
           .docInfo {
             margin-left: 5px;
@@ -1603,6 +1746,7 @@ export default {
 
   .history-box {
     height: calc(100% - 46px);
+    flex: 1;
     overflow-y: auto !important;
     padding: 20px;
   }
@@ -1666,7 +1810,6 @@ export default {
   }
 
   .sub-conversion-box {
-    margin-bottom: 10px;
     border-radius: 8px;
     overflow: hidden;
     display: flex;
@@ -1816,5 +1959,11 @@ img.failed::after {
   &-loading {
     margin: 0;
   }
+}
+
+.message-sequence-wrapper {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
 }
 </style>

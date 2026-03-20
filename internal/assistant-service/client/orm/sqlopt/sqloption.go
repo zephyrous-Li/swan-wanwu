@@ -189,3 +189,24 @@ func WithConversationType(conversationType string) SQLOption {
 		return db
 	})
 }
+
+func WithConversationId(conversationId string) SQLOption {
+	return funcSQLOption(func(db *gorm.DB) *gorm.DB {
+		if conversationId != "" {
+			return db.Where("conversation_id = ?", conversationId)
+		}
+		return db
+	})
+}
+
+func WithSkillId(skillId string) SQLOption {
+	return funcSQLOption(func(db *gorm.DB) *gorm.DB {
+		return db.Where("skill_id = ?", skillId)
+	})
+}
+
+func WithSkillType(skillType string) SQLOption {
+	return funcSQLOption(func(db *gorm.DB) *gorm.DB {
+		return db.Where("skill_type = ?", skillType)
+	})
+}

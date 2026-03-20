@@ -16,7 +16,7 @@ func registerAssistant(apiV1 *gin.RouterGroup) {
 
 	mid.Sub("app.agent").Reg(apiV1, "/assistant", http.MethodPost, v1.AssistantCreate, "创建智能体")
 	mid.Sub("app.agent").Reg(apiV1, "/assistant", http.MethodPut, v1.AssistantUpdate, "修改智能体基本信息")
-	mid.Sub("app.agent").Reg(apiV1, "/assistant/config", http.MethodPut, v1.AssistantConfigUpdate, "修改智能体配置信息", middleware.AuthModel([]string{"modelConfig.modelId", "rerankConfig.modelId", "recommendConfig.modelConfig.modelId"}))
+	mid.Sub("app.agent").Reg(apiV1, "/assistant/config", http.MethodPut, v1.AssistantConfigUpdate, "修改智能体配置信息", middleware.AuthModelByModelId([]string{"modelConfig.modelId", "rerankConfig.modelId", "recommendConfig.modelConfig.modelId"}))
 	mid.Sub("app.agent").Reg(apiV1, "/assistant/draft", http.MethodGet, v1.GetDraftAssistantInfo, "查看草稿智能体详情")
 	mid.Sub("app.agent").Reg(apiV1, "/assistant", http.MethodGet, v1.GetPublishedAssistantInfo, "查看已发布智能体详情")
 	mid.Sub("app.agent").Reg(apiV1, "/assistant/copy", http.MethodPost, v1.AssistantCopy, "智能体复制")
@@ -33,6 +33,10 @@ func registerAssistant(apiV1 *gin.RouterGroup) {
 	mid.Sub("app.agent").Reg(apiV1, "/assistant/tool", http.MethodDelete, v1.AssistantToolDelete, "删除智能体工具，包括自定义工具和内置工具")
 	mid.Sub("app.agent").Reg(apiV1, "/assistant/tool/switch", http.MethodPut, v1.AssistantToolEnableSwitch, "智能体启用/停用自定义内置工具")
 	mid.Sub("app.agent").Reg(apiV1, "/assistant/tool/config", http.MethodPut, v1.AssistantToolConfig, "配置智能体工具，包括自定义工具和内置工具")
+
+	mid.Sub("app.agent").Reg(apiV1, "/assistant/skill", http.MethodPost, v1.AssistantSkillCreate, "添加skills，包括自定义跟内置")
+	mid.Sub("app.agent").Reg(apiV1, "/assistant/skill", http.MethodDelete, v1.AssistantSkillDelete, "删除skills，包括自定义跟内置")
+	mid.Sub("app.agent").Reg(apiV1, "/assistant/skill/switch", http.MethodPut, v1.AssistantSkillEnableSwitch, "启动/停用skills")
 
 	mid.Sub("app.agent").Reg(apiV1, "/assistant/multi-agent", http.MethodPost, v1.MultiAgentCreate, "添加多智能体配置-子智能体")
 	mid.Sub("app.agent").Reg(apiV1, "/assistant/multi-agent", http.MethodDelete, v1.MultiAgentDelete, "删除多智能体配置-子智能体")

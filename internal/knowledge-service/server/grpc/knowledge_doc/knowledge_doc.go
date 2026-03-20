@@ -20,9 +20,7 @@ import (
 	"github.com/UnicomAI/wanwu/internal/knowledge-service/service"
 	import_service "github.com/UnicomAI/wanwu/internal/knowledge-service/task/import-service"
 	"github.com/UnicomAI/wanwu/pkg/log"
-	pkg_util "github.com/UnicomAI/wanwu/pkg/util"
-	util2 "github.com/UnicomAI/wanwu/pkg/util"
-	wanwu_util "github.com/UnicomAI/wanwu/pkg/util"
+	pkgUtil "github.com/UnicomAI/wanwu/pkg/util"
 	"github.com/samber/lo"
 	"google.golang.org/protobuf/types/known/emptypb"
 )
@@ -450,7 +448,7 @@ func buildAddMetaList(req *knowledgebase_doc_service.UpdateDocMetaDataReq) []*mo
 		if reqMeta.Option == MetaOptionAdd {
 			addList = append(addList, &model.KnowledgeDocMeta{
 				KnowledgeId: req.KnowledgeId,
-				MetaId:      wanwu_util.NewID(),
+				MetaId:      pkgUtil.NewID(),
 				Key:         reqMeta.Key,
 				ValueType:   reqMeta.ValueType,
 				Rule:        "",
@@ -548,14 +546,15 @@ func (s *Service) GetDocCategoryUploadTip(ctx context.Context, req *knowledgebas
 	}
 	if len(taskList) > 0 {
 		task := taskList[0]
-		if task.Status == model.KnowledgeImportError {
+		switch task.Status {
+		case model.KnowledgeImportError:
 			return &knowledgebase_doc_service.DocImportTipResp{
 				KnowledgeId:   req.KnowledgeId,
 				KnowledgeName: knowledge.Name,
 				Message:       "\n" + task.ErrorMsg,
 				UploadStatus:  DocImportError,
 			}, nil
-		} else if task.Status == model.KnowledgeImportFinish {
+		case model.KnowledgeImportFinish:
 			return &knowledgebase_doc_service.DocImportTipResp{
 				KnowledgeId:   req.KnowledgeId,
 				KnowledgeName: knowledge.Name,
@@ -727,6 +726,7 @@ func buildDocListResp(list []*model.KnowledgeDoc, importTaskList []*model.Knowle
 			Keywords:         buildKeywords(keywords),
 			LlmModelId:       knowledgeGraph.LlmModelId,
 			Category:         int32(knowledge.Category),
+			AvatarPath:       knowledge.AvatarPath,
 		},
 	}
 }
@@ -739,7 +739,7 @@ func buildDocInfo(item *model.KnowledgeDoc, segmentConfigMap map[string]*model.S
 		DocSize:       item.FileSize,
 		DocType:       item.FileType,
 		KnowledgeId:   item.KnowledgeId,
-		UploadTime:    util2.Time2Str(item.CreatedAt),
+		UploadTime:    pkgUtil.Time2Str(item.CreatedAt),
 		Status:        int32(util.BuildDocRespStatus(item.Status)),
 		ErrorMsg:      item.ErrorMsg,
 		SegmentMethod: buildSegmentMethod(item, segmentConfigMap),
@@ -923,7 +923,7 @@ func buildImportTask(req *knowledgebase_doc_service.ImportDocReq) (*model.Knowle
 		docImportMetaData = string(importMetaDataByte)
 	}
 	return &model.KnowledgeImportTask{
-		ImportId:      wanwu_util.NewID(),
+		ImportId:      pkgUtil.NewID(),
 		KnowledgeId:   req.KnowledgeId,
 		ImportType:    int(req.DocImportType),
 		SegmentConfig: string(segmentConfig),
@@ -981,7 +981,7 @@ func buildReImportTask(req *knowledgebase_doc_service.UpdateDocImportConfigReq, 
 		return nil, err
 	}
 	return &model.KnowledgeImportTask{
-		ImportId:      wanwu_util.NewID(),
+		ImportId:      pkgUtil.NewID(),
 		KnowledgeId:   docImportReq.KnowledgeId,
 		ImportType:    int(docImportReq.DocImportType),
 		TaskType:      model.ImportTaskTypeUpdateConfig,
@@ -1015,7 +1015,7 @@ func buildReimportTask(req *knowledgebase_doc_service.ReImportDocReq, task *mode
 		return nil, err
 	}
 	return &model.KnowledgeImportTask{
-		ImportId:      wanwu_util.NewID(),
+		ImportId:      pkgUtil.NewID(),
 		KnowledgeId:   req.KnowledgeId,
 		ImportType:    task.ImportType,
 		TaskType:      model.ImportTaskTypeUpdateConfig,
@@ -1043,7 +1043,7 @@ func buildDocExportTask(req *knowledgebase_doc_service.ExportDocReq) (*model.Kno
 		return nil, err
 	}
 	return &model.KnowledgeExportTask{
-		ExportId:     wanwu_util.NewID(),
+		ExportId:     pkgUtil.NewID(),
 		KnowledgeId:  req.KnowledgeId,
 		CreatedAt:    time.Now().UnixMilli(),
 		UpdatedAt:    time.Now().UnixMilli(),
@@ -1071,10 +1071,8 @@ func buildSegmentListResp(importTask *model.KnowledgeImportTask, doc *model.Know
 		log.Errorf("SegmentConfig process error %s", err.Error())
 		return nil, err
 	}
-	var analyzer = &model.DocAnalyzer{}
-	err = json.Unmarshal([]byte(importTask.DocAnalyzer), analyzer)
+	analyzerList, err := replaceAnalyzerByFileType(importTask, doc)
 	if err != nil {
-		log.Errorf("DocAnalyzer process error %s", err.Error())
 		return nil, err
 	}
 	segmentConfigMap := buildSegmentConfigMap([]*model.KnowledgeImportTask{importTask})
@@ -1082,7 +1080,7 @@ func buildSegmentListResp(importTask *model.KnowledgeImportTask, doc *model.Know
 		FileName:            doc.Name,
 		MaxSegmentSize:      int32(config.MaxSplitter),
 		SegType:             config.SegmentType,
-		CreatedAt:           util2.Time2Str(doc.CreatedAt),
+		CreatedAt:           pkgUtil.Time2Str(doc.CreatedAt),
 		Splitter:            buildSplitter(config.Splitter),
 		PageTotal:           buildPageTotal(int32(segmentListResp.ChunkTotalNum), req.PageSize),
 		SegmentTotalNum:     int32(segmentListResp.ChunkTotalNum),
@@ -1090,9 +1088,58 @@ func buildSegmentListResp(importTask *model.KnowledgeImportTask, doc *model.Know
 		MetaDataList:        buildMetaList(metaDataList),
 		SegmentImportStatus: buildSegmentImportStatus(segmentImportTask),
 		SegmentMethod:       buildSegmentMethod(doc, segmentConfigMap),
-		DocAnalyzer:         analyzer.AnalyzerList,
+		DocAnalyzer:         analyzerList,
 	}
 	return resp, nil
+}
+
+// replaceAnalyzerByFileType 根据不同文件类型，替换文件解析方式
+func replaceAnalyzerByFileType(importTask *model.KnowledgeImportTask, doc *model.KnowledgeDoc) ([]string, error) {
+	var analyzer = &model.DocAnalyzer{}
+	err := json.Unmarshal([]byte(importTask.DocAnalyzer), analyzer)
+	if err != nil {
+		log.Errorf("DocAnalyzer process error %s", err.Error())
+		return nil, err
+	}
+
+	// 获取可用文件后缀
+	cfg := config.GetConfig().UsageLimit
+	audioMap := sliceToMap(strings.Split(cfg.AudioTypes, ";"))
+	docMap := sliceToMap(strings.Split(cfg.DocTypes, ";"))
+	imageMap := sliceToMap(strings.Split(cfg.ImageTypes, ";"))
+	videoMap := sliceToMap(strings.Split(cfg.VideoTypes, ";"))
+
+	fileType := strings.TrimPrefix(doc.FileType, ".")
+
+	// 文档类型直接返回原始解析方式
+	if docMap[fileType] {
+		return analyzer.AnalyzerList, nil
+	}
+
+	analyzerList := make([]string, 0)
+	if videoMap[fileType] {
+		analyzerList = append(analyzerList, filterAnalyzer(analyzer.AnalyzerList, "asr", "multimodal")...)
+	}
+	if audioMap[fileType] {
+		analyzerList = append(analyzerList, filterAnalyzer(analyzer.AnalyzerList, "asr")...)
+	}
+	if imageMap[fileType] {
+		analyzerList = append(analyzerList, filterAnalyzer(analyzer.AnalyzerList, "multimodal")...)
+	}
+
+	return analyzerList, nil
+}
+
+// filterAnalyzer 从 analyzerList 中过滤出 allowed 中的解析方式
+func filterAnalyzer(analyzerList []string, allowed ...string) []string {
+	allowedMap := sliceToMap(allowed)
+	var result []string
+	for _, item := range analyzerList {
+		if allowedMap[item] {
+			result = append(result, item)
+		}
+	}
+	return result
 }
 
 func buildChildSegmentListResp(resp *service.ChildContentListResp) (*knowledgebase_doc_service.GetDocChildSegmentListResp, error) {
@@ -1116,14 +1163,14 @@ func buildSegmentImportStatus(segmentImportTask *model.DocSegmentImportTask) str
 	if segmentImportTask == nil {
 		return ""
 	}
-	if segmentImportTask.Status == model.DocSegmentImportInit {
+	switch segmentImportTask.Status {
+	case model.DocSegmentImportInit:
 		return segmentImportingMessage
-	} else if segmentImportTask.Status == model.DocSegmentImportImporting {
+	case model.DocSegmentImportImporting:
 		timeSpan := time.Now().UnixMilli() - segmentImportTask.UpdatedAt
 		if timeSpan < fiveMinutes {
 			return segmentImportingMessage
 		}
-		//大于5分钟标识异步任务中间断了，todo 异步更新任务
 	}
 	if segmentImportTask.SuccessCount <= 0 {
 		return segmentCompleteFail
@@ -1207,7 +1254,7 @@ func buildDocMetaModelList(metaDataList []*knowledgebase_doc_service.MetaData, o
 		if data.Option == MetaOptionAdd {
 			addList = append(addList, &model.KnowledgeDocMeta{
 				KnowledgeId: knowledgeId,
-				MetaId:      wanwu_util.NewID(),
+				MetaId:      pkgUtil.NewID(),
 				DocId:       docId,
 				Key:         data.Key,
 				ValueMain:   data.Value,
@@ -1405,7 +1452,7 @@ func batchReimportDoc(req *knowledgebase_doc_service.ReImportDocReq, tasks map[s
 }
 
 func ReimportOneDoc(ctx context.Context, req *knowledgebase_doc_service.ReImportDocReq, docTask *model.KnowledgeImportTask, knowledge *model.KnowledgeBase, docId string, status int) (err error) {
-	defer pkg_util.PrintPanicStackWithCall(func(panicOccur bool, recoverError error) {
+	defer pkgUtil.PrintPanicStackWithCall(func(panicOccur bool, recoverError error) {
 		if recoverError != nil {
 			err = recoverError
 		}
@@ -1438,7 +1485,7 @@ func ReimportOneDoc(ctx context.Context, req *knowledgebase_doc_service.ReImport
 }
 
 func updateOneDocImportConfig(ctx context.Context, req *knowledgebase_doc_service.UpdateDocImportConfigReq, knowledge *model.KnowledgeBase, docId string) (err error) {
-	defer pkg_util.PrintPanicStackWithCall(func(panicOccur bool, recoverError error) {
+	defer pkgUtil.PrintPanicStackWithCall(func(panicOccur bool, recoverError error) {
 		if recoverError != nil {
 			err = recoverError
 		}

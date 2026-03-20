@@ -81,7 +81,7 @@ export default {
       index: '应用开发',
       all: '全部',
       agent: '智能体',
-      rag: '文本问答',
+      rag: '知识问答',
       workflow: '工作流',
       chatflow: '对话流',
       custom: '自定义工具',
@@ -213,7 +213,9 @@ export default {
         '支持英文、数字、下划线(_)、中划线(-)、(.)，2-50个字符，不能以下划线为开头',
       version: '支持英文、数字、(.)',
       inferUrl: 'Base Url，例如：',
-      apiKey: '输入APIKey, 例如：',
+      apiKey: '输入API Key, 例如：',
+      appKey: '输入APP Key',
+      accessKey: '输入Access Key',
       codeSent: '已向邮箱发送验证码及初始密码，首次登录请修改密码。',
     },
     select: {
@@ -281,7 +283,7 @@ export default {
       },
       {
         key: 'rag',
-        name: '文本问答',
+        name: '知识问答',
         desc: '用于生成单轮对话任务，支持上传私域知识库',
       },
       {
@@ -297,7 +299,7 @@ export default {
     workflowExport: '文件导入',
     workflow: '工作流',
     chat: '对话流',
-    rag: '文本问答',
+    rag: '知识问答',
     agent: '智能体',
     agentTemp: '智能体模板',
     agentAuto: '自定义智能体',
@@ -509,6 +511,9 @@ export default {
     support: '支持',
     noSupport: '不支持',
     noInferUrl: '暂无统一示例',
+    all: '全部',
+    public: '公有模型',
+    private: '我的模型',
     type: {
       yuanjing: '联通元景',
       qwen: '通义千问',
@@ -519,6 +524,11 @@ export default {
       asr: '语音识别模型',
     },
     table: {
+      scopeType: '公开范围',
+      all: '全局可见',
+      private: '仅自己可见',
+      org: '组织内可见',
+      model: '模型ID',
       modelName: '模型名称',
       modelDisplayName: '模型显示名称',
       modelDesc: '模型描述',
@@ -656,6 +666,20 @@ export default {
     select: '选这个',
     promptCompareLimit: '最多可添加4个提示词',
     comparePrompt: '对比提示词',
+    skills: {
+      app: {
+        builtIn: '内置',
+        custom: '自定义',
+        addText: '创建自定义Skills',
+        moreText: '点击发现更多Skills',
+      },
+      createSlogan: '一句话创建Skills',
+      createPlaceholder: '选择一款模型，告诉我想要生成什么Skill吧',
+      sendCustom: '发送到资源库',
+      noModelIdTips: '请选择一个模型',
+      deleteHint:
+        '删除后，历史引用了本skills的智能体将自动取消引用，且此操作不可撤回,确定要删除吗？',
+    },
   },
 
   // 工作流/对话流
@@ -861,7 +885,7 @@ export default {
       '您导入的文件正在异步处理中，请耐心等待，您可以尝试，刷新列表获取导入结果。',
     editKnowledge: '编辑知识库',
     delKnowledgeTips:
-      '若此知识库已被智能体、文本问答或工作流使用，删除知识库将导致该功能不可用',
+      '若此知识库已被智能体、知识问答或工作流使用，删除知识库将导致该功能不可用',
     noStatus: '无状态信息',
     categoryNameRules: '命名只能包含小写英文、中文、数字、特殊符号-_',
     chunkTypeConfigTips:
@@ -1535,18 +1559,18 @@ export default {
     uploadImg: '请上传智能体图标',
   },
   ragDialog: {
-    createApp: '文本问答创建',
-    editApp: '文本问答编辑',
-    agentLogo: '文本问答图标',
+    createApp: '知识问答创建',
+    editApp: '知识问答编辑',
+    agentLogo: '知识问答图标',
     changeImg: '点击换图',
-    agentName: '文本问答名称',
-    agentDesc: '文本问答描述',
+    agentName: '知识问答名称',
+    agentDesc: '知识问答描述',
     nameplaceholder:
-      '输入文本问答名称 ，仅支持中文、英文、数字、下划线、中划线、英文（.）',
-    descplaceholder: '输入文本描述，将展示给文本问答用户 ',
-    pluginNameRules: ' 文本问答名称须在30字符以内',
-    nameRules: '请填写文本问答名称',
-    logoRules: '请上传文本问答图标',
+      '输入知识问答名称 ，仅支持中文、英文、数字、下划线、中划线、英文（.）',
+    descplaceholder: '输入文本描述，将展示给知识问答用户 ',
+    pluginNameRules: ' 知识问答名称须在30字符以内',
+    nameRules: '请填写知识问答名称',
+    logoRules: '请上传知识问答图标',
   },
   fileChunk: {
     fileClear: '文件清除成功',

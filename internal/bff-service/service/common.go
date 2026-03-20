@@ -87,7 +87,7 @@ func UploadAvatar(ctx *gin.Context, fileHeader *multipart.FileHeader) (string, e
 	if err != nil {
 		return "", grpc_util.ErrorStatusWithKey(err_code.Code_BFFInvalidArg, "bff_avatar_upload_error", err.Error())
 	}
-	defer file.Close()
+	defer func() { _ = file.Close() }()
 
 	// 读取图片到内存缓冲区
 	imgBuf := new(bytes.Buffer)
@@ -209,6 +209,14 @@ func cacheToolAvatar(ctx *gin.Context, toolType string, avatarObjectPath string)
 		return cacheMCPServiceAvatar(ctx, avatarObjectPath)
 	}
 	return avatar
+}
+
+// skill custom
+func cacheSkillAvatar(ctx *gin.Context, avatarObjectPath string) request.Avatar {
+	if avatarObjectPath == "" {
+		return request.Avatar{Path: config.Cfg().DefaultIcon.CustomSkillIcon}
+	}
+	return CacheAvatar(ctx, avatarObjectPath, true)
 }
 
 // mcp square & custom
@@ -360,7 +368,7 @@ func cacheWorkflowAvatar(avatarURL, appType string) request.Avatar {
 		log.Errorf("cache avatar %v download %v err: %v", avatarURL, newAvatarURL, err)
 		return avatar
 	}
-	defer resp.Body.Close()
+	defer func() { _ = resp.Body.Close() }()
 	if resp.StatusCode != http.StatusOK {
 		log.Errorf("cache avatar %v download %v HTTP error: %v", avatarURL, newAvatarURL, resp.Status)
 		return avatar
@@ -395,6 +403,23 @@ func cachePromptAvatar(ctx *gin.Context, avatarObjectPath string) request.Avatar
 	avatar := request.Avatar{}
 	if avatarObjectPath == "" {
 		avatar.Path = config.Cfg().DefaultIcon.PromptIcon
+		return avatar
+	}
+	return CacheAvatar(ctx, avatarObjectPath, true)
+}
+
+// knowledge custom
+func cacheKnowledgeAvatar(ctx *gin.Context, avatarObjectPath string, knowledgeType int32) request.Avatar {
+	avatar := request.Avatar{}
+	if avatarObjectPath == "" {
+		switch knowledgeType {
+		case constant.KnowledgeBase:
+			avatar.Path = config.Cfg().DefaultIcon.KnowledgeIcon
+		case constant.KnowledgeQA:
+			avatar.Path = config.Cfg().DefaultIcon.QAIcon
+		default:
+			avatar.Path = config.Cfg().DefaultIcon.KnowledgeIcon
+		}
 		return avatar
 	}
 	return CacheAvatar(ctx, avatarObjectPath, true)

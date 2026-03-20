@@ -38,17 +38,18 @@ type IClient interface {
 	ConvertAppType(ctx context.Context, appId, oldAppType, newAppType string) *err_code.Status
 
 	// --- safety ---
-	CreateSensitiveWordTable(ctx context.Context, userId, orgId, tableName, remark string) (string, *err_code.Status)
+	CreateSensitiveWordTable(ctx context.Context, userId, orgId, tableName, remark, tableType string) (string, *err_code.Status)
 	UpdateSensitiveWordTable(ctx context.Context, tableId uint32, tableName, remark string) *err_code.Status
 	UpdateSensitiveWordTableReply(ctx context.Context, tableId uint32, reply string) *err_code.Status
 	DeleteSensitiveWordTable(ctx context.Context, tableId uint32) *err_code.Status
-	GetSensitiveWordTableList(ctx context.Context, userId, orgId string) ([]*model.SensitiveWordTable, *err_code.Status)
+	GetSensitiveWordTableList(ctx context.Context, userId, orgId, tableType string) ([]*model.SensitiveWordTable, *err_code.Status)
 	GetSensitiveVocabularyList(ctx context.Context, tableId uint32, offset, limit int32) ([]*model.SensitiveWordVocabulary, int64, *err_code.Status)
 	UploadSensitiveVocabulary(ctx context.Context, userId, orgId, importType, word, sensitiveType, filePath string, tableId uint32) *err_code.Status
 	DeleteSensitiveVocabulary(ctx context.Context, tableId, wordId uint32) *err_code.Status
 	GetSensitiveWordTableListWithWordsByIDs(ctx context.Context, tableIds []string) ([]*orm.SensitiveWordTableWithWord, *err_code.Status)
 	GetSensitiveWordTableListByIDs(ctx context.Context, tableIds []string) ([]*model.SensitiveWordTable, *err_code.Status)
 	GetSensitiveWordTableByID(ctx context.Context, tableId uint32) (*model.SensitiveWordTable, *err_code.Status)
+	GetGlobalSensitiveWordTableList(ctx context.Context) ([]*model.SensitiveWordTable, *err_code.Status)
 
 	// --- web_url ---
 	CreateAppUrl(ctx context.Context, appUrl *model.AppUrl) *err_code.Status
@@ -64,4 +65,10 @@ type IClient interface {
 	GetChatflowApplication(ctx context.Context, orgId, userId, workflowId string) (*model.ChatflowApplcation, *err_code.Status)
 	GetChatflowApplicationByApplicationID(ctx context.Context, orgId, userId, applicationId string) (*model.ChatflowApplcation, *err_code.Status)
 	CreateChatflowApplication(ctx context.Context, orgId, userId, workflowId, applicationId string) *err_code.Status
+
+	// --- statistic ---
+	GetModelStatistic(ctx context.Context, userId, orgId, startDate, endDate string, modelIds []string, modelType string) (*orm.ModelStatistic, *err_code.Status)
+	GetModelStatisticList(ctx context.Context, userId, orgId, startDate, endDate string, modelIds []string, modelType string, offset, limit int32) (*orm.ModelStatisticList, *err_code.Status)
+	RecordModelStatistic(ctx context.Context, userId, orgId, modelId, model, modelType string,
+		promptTokens, completionTokens, totalTokens, firstTokenLatency, costs int64, isSuccess bool, isStream bool, provider string) *err_code.Status
 }

@@ -155,8 +155,9 @@
               </span>
             </p>
             <div class="rl">
-              <el-select
+              <modelSelect
                 v-model="editForm.modelParams"
+                :options="modelOptions"
                 :placeholder="
                   $t('knowledgeManage.create.modelSearchPlaceholder')
                 "
@@ -165,31 +166,8 @@
                 class="cover-input-icon model-select"
                 :loading="modelLoading"
                 filterable
-                value-key="modelId"
-              >
-                <el-option
-                  v-for="item in modelOptions"
-                  :key="item.modelId"
-                  :label="item.displayName"
-                  :value="item.modelId"
-                >
-                  <div class="model-option-content">
-                    <span class="model-name">{{ item.displayName }}</span>
-                    <div
-                      class="model-select-tags"
-                      v-if="item.tags && item.tags.length > 0"
-                    >
-                      <span
-                        v-for="(tag, tagIdx) in item.tags"
-                        :key="tagIdx"
-                        class="model-select-tag"
-                      >
-                        {{ tag.text }}
-                      </span>
-                    </div>
-                  </div>
-                </el-option>
-              </el-select>
+                warning
+              />
             </div>
           </div>
         </div>
@@ -251,49 +229,49 @@
             </span>
           </p>
         </div>
-        <!--        <div-->
-        <!--          class="block"-->
-        <!--          v-if="-->
-        <!--            editForm.visionsupport === 'support' &&-->
-        <!--            getCategory !== KNOWLEDGE &&-->
-        <!--            visionsupportRerank-->
-        <!--          "-->
-        <!--        >-->
-        <!--          <p class="block-title common-set">-->
-        <!--            <span class="common-set-label">-->
-        <!--              {{ $t('agent.form.vision') }}-->
-        <!--              <el-tooltip-->
-        <!--                class="item"-->
-        <!--                effect="dark"-->
-        <!--                :content="$t('agent.form.visionTips1')"-->
-        <!--                placement="top"-->
-        <!--              >-->
-        <!--                <span class="el-icon-question question-tips"></span>-->
-        <!--              </el-tooltip>-->
-        <!--            </span>-->
-        <!--            &lt;!&ndash;            <span class="common-add" @click="showVisualSet">&ndash;&gt;-->
-        <!--            &lt;!&ndash;              <el-tooltip&ndash;&gt;-->
-        <!--            &lt;!&ndash;                class="item"&ndash;&gt;-->
-        <!--            &lt;!&ndash;                effect="dark"&ndash;&gt;-->
-        <!--            &lt;!&ndash;                :content="$t('agent.form.visionTips')"&ndash;&gt;-->
-        <!--            &lt;!&ndash;                placement="top-start"&ndash;&gt;-->
-        <!--            &lt;!&ndash;              >&ndash;&gt;-->
-        <!--            &lt;!&ndash;                <span class="el-icon-s-operation operation">&ndash;&gt;-->
-        <!--            &lt;!&ndash;                  <span class="handleBtn">{{ $t('agent.form.config') }}</span>&ndash;&gt;-->
-        <!--            &lt;!&ndash;                </span>&ndash;&gt;-->
-        <!--            &lt;!&ndash;              </el-tooltip>&ndash;&gt;-->
-        <!--            &lt;!&ndash;            </span>&ndash;&gt;-->
-        <!--            <el-switch-->
-        <!--              :value="editForm.visionConfig.picNum === 1"-->
-        <!--              @input="-->
-        <!--                val => {-->
-        <!--                  editForm.visionConfig.picNum = val ? 1 : 0;-->
-        <!--                  setMaxPicNum(editForm.visionConfig.picNum);-->
-        <!--                }-->
-        <!--              "-->
-        <!--            ></el-switch>-->
-        <!--          </p>-->
-        <!--        </div>-->
+        <div
+          class="block"
+          v-if="
+            editForm.visionsupport === 'support' &&
+            getCategory !== KNOWLEDGE &&
+            visionsupportRerank
+          "
+        >
+          <p class="block-title common-set">
+            <span class="common-set-label">
+              {{ $t('agent.form.vision') }}
+              <el-tooltip
+                class="item"
+                effect="dark"
+                :content="$t('agent.form.visionTips1')"
+                placement="top"
+              >
+                <span class="el-icon-question question-tips"></span>
+              </el-tooltip>
+            </span>
+            <!--            <span class="common-add" @click="showVisualSet">-->
+            <!--              <el-tooltip-->
+            <!--                class="item"-->
+            <!--                effect="dark"-->
+            <!--                :content="$t('agent.form.visionTips')"-->
+            <!--                placement="top-start"-->
+            <!--              >-->
+            <!--                <span class="el-icon-s-operation operation">-->
+            <!--                  <span class="handleBtn">{{ $t('agent.form.config') }}</span>-->
+            <!--                </span>-->
+            <!--              </el-tooltip>-->
+            <!--            </span>-->
+            <el-switch
+              :value="editForm.visionConfig.picNum === 1"
+              @input="
+                val => {
+                  editForm.visionConfig.picNum = val ? 1 : 0;
+                  setMaxPicNum(editForm.visionConfig.picNum);
+                }
+              "
+            ></el-switch>
+          </p>
+        </div>
       </div>
       <div class="drawer-test block">
         <Chat
@@ -353,8 +331,10 @@ import {
 import CopyIcon from '@/components/copyIcon.vue';
 import { avatarSrc } from '@/utils/util';
 import visualSet from '@/views/agent/components/visualSet.vue';
+import modelSelect from '@/components/modelSelect.vue';
 export default {
   components: {
+    modelSelect,
     visualSet,
     CopyIcon,
     LinkIcon,

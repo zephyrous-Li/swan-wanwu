@@ -84,15 +84,9 @@ const constantRoutes = [
         meta: { perm: [PERMS.PERMISSION] },
       },
       {
-        path: '/statistics',
-        component: resolve =>
-          require(['@/views/permission/statistics'], resolve),
-        meta: { perm: [PERMS.STATISTIC] },
-      },
-      {
-        path: '/oauth',
-        component: resolve => require(['@/views/permission/oauth'], resolve),
-        meta: { perm: [PERMS.OAUTH] },
+        path: '/operation',
+        component: resolve => require(['@/views/operation'], resolve),
+        meta: { perm: [PERMS.OPERATION] },
       },
       {
         path: '/docCenter/pages/:id(.*)*',
@@ -116,15 +110,19 @@ const constantRoutes = [
       {
         path: '/skill',
         component: resolve =>
-          require([
-            '@/views/templateSquare/skills/skillTempSquare.vue',
-          ], resolve),
+          require(['@/views/templateSquare/skills/index.vue'], resolve),
         meta: { perm: [PERMS.SKILL] },
       },
       {
         path: '/skill/detail',
         component: resolve =>
           require(['@/views/templateSquare/tempDetail.vue'], resolve),
+        meta: { perm: [PERMS.SKILL] },
+      },
+      {
+        path: '/skill/create',
+        component: resolve =>
+          require(['@/views/templateSquare/skills/custom/create.vue'], resolve),
         meta: { perm: [PERMS.SKILL] },
       },
       {
@@ -142,6 +140,12 @@ const constantRoutes = [
         path: '/prompt',
         component: resolve => require(['@/views/tool'], resolve),
         meta: { perm: [PERMS.PROMPT], routeType: PROMPT },
+      },
+      {
+        path: '/promptEvaluate',
+        name: 'promptEvaluate',
+        meta: { perm: [PERMS.PROMPT] },
+        component: resolve => require(['@/views/promptEvaluate'], resolve),
       },
       {
         path: '/mcpService',

@@ -513,6 +513,10 @@ definitions:
     type: object
   request.AppKnowledgeBase:
     properties:
+      avatar:
+        allOf:
+        - $ref: '#/definitions/request.Avatar'
+        description: 头像
       category:
         description: 知识库类别 0-知识库，1-问答库，2-多模态知识库
         type: integer
@@ -529,6 +533,12 @@ definitions:
         $ref: '#/definitions/request.MetaDataFilterParams'
       name:
         type: string
+      orgName:
+        description: 知识库所属名称
+        type: string
+      share:
+        description: 是分享，还是私有
+        type: boolean
     required:
     - id
     type: object
@@ -543,6 +553,10 @@ definitions:
     type: object
   request.CreateKnowledgeReq:
     properties:
+      avatar:
+        allOf:
+        - $ref: '#/definitions/request.Avatar'
+        description: 图标
       category:
         description: 0:知识库，1:问答库,2:多模态知识库
         type: integer
@@ -1024,6 +1038,10 @@ definitions:
     type: object
   request.UpdateKnowledgeReq:
     properties:
+      avatar:
+        allOf:
+        - $ref: '#/definitions/request.Avatar'
+        description: 图标
       description:
         type: string
       knowledgeId:
@@ -1103,6 +1121,10 @@ definitions:
     type: object
   response.DocKnowledgeInfo:
     properties:
+      avatar:
+        allOf:
+        - $ref: '#/definitions/request.Avatar'
+        description: 头像
       category:
         description: '0: 知识库 1: 问答库 2: 多模态知识库'
         type: integer
@@ -1246,6 +1268,10 @@ definitions:
     type: object
   response.KnowledgeInfo:
     properties:
+      avatar:
+        allOf:
+        - $ref: '#/definitions/request.Avatar'
+        description: 头像
       category:
         description: '0: 知识库; 1: 问答库'
         type: integer
@@ -1389,6 +1415,9 @@ definitions:
     type: object
   response.ModelInfo:
     properties:
+      allowEdit:
+        description: '是否允许前端编辑（true: 允许编辑，false: 隐藏编辑按钮）'
+        type: boolean
       avatar:
         allOf:
         - $ref: '#/definitions/request.Avatar'
@@ -1403,6 +1432,9 @@ definitions:
         allOf:
         - $ref: '#/definitions/mp.ProviderModelConfig'
         description: 仅用于swagger展示；模型对应供应商中的对应llm、embedding或rerank结构是config实际的参数
+      importSource:
+        description: 模型导入来源(builtin=平台内置,external=外部URL)
+        type: string
       isActive:
         description: '启用状态（true: 启用，false: 禁用）'
         type: boolean
