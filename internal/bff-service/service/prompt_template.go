@@ -291,7 +291,8 @@ func getPromptCustom(ctx *gin.Context, modelId string, reqInfo *mp_common.LLMReq
 			completionTokens = data.Usage.CompletionTokens
 			totalTokens = data.Usage.TotalTokens
 		} else {
-			dataStr = sseResp.String()
+			// 流式过程中，大模型sse返回的这一行是空行，即sseResp.String()==""；前端正常展示，也需要这个空行
+			dataStr = fmt.Sprintf("%v\n", sseResp.String())
 		}
 
 		// 写入
