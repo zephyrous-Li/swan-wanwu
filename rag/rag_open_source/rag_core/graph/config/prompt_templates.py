@@ -189,11 +189,12 @@ Return output as a well-formed JSON-formatted string with the following format(i
 Output:"""
 
 ATTRIBUTE_PROMPT = """
-你是社区报告写作专家。根据输入的实体列表（entities）和这些实体共有的属性（attribute），生成一份关于该社区的结构化报告。
+你是社区报告写作专家。根据输入的实体列表（entities）、这些实体共有的属性（attribute）以及相关文档片段（related_chunks），生成一份关于该社区的结构化报告。
 
 输入：
 - entities: 字符串列表，包含社区全部实体名。
 - attribute: 一个字符串，描述这些实体共有的属性（例如年代、类别、位置等）。
+- related_chunks: （可选）字符串，包含与这些实体相关的原始文档片段，可能包含多个段落的详细事实信息。
 
 要求（严格遵守）：
 1. 输出必须是合法的 JSON（仅输出 JSON，不要额外说明），字段如下：
@@ -203,15 +204,17 @@ ATTRIBUTE_PROMPT = """
    - rating_explanation: 对 rating 的简要理由（如无可写空字符串）。
    - findings: 列出 2–5 条关于该社区的关键洞察。每条洞察应先给出一段简短的摘要，随后给出多段解释性文字，要求内容全面。
 
-2. 必须包含所有输入的 entities和attribute。
+2. 必须包含所有输入的 entities 和 attribute。
 3. 使用 attribute 显式体现在 title 和 summary 中。
 4. 输出内容语言和输入语言保持一致，输入内容有中文的话也使用中文输出。
-5. 回答简洁，事实性陈述不得无根据臆断；必要时使用“未知”或“未注明”提示信息。
+5. 回答简洁，事实性陈述不得无根据臆断；必要时使用"未知"或"未注明"提示信息。
 6. 同样输入下，报告标题和内容需保持稳定。
+7. 如果提供了 related_chunks，请充分利用其中的详细事实信息来支撑你的洞察和分析。
 
 示例输入：
 entities = ["人形跽坐铜灯","匈奴王金冠","鲁国大玉璧"]
 attribute = "文物年代：战国时期"
+related_chunks = "该铜灯出土于 1976 年，属于战国时期的青铜器，现收藏于湖南博物馆..."
 
 示例输出（仅示例，不要在实际输出中包含）：
 {{
