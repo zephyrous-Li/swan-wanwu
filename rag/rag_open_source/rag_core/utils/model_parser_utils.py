@@ -58,7 +58,8 @@ def get_page_data(page_num, add_file_path, ocr_model_id):
 
         data = {
             "file_name": page_pdf_path,
-            "extract_image": 1
+            "extract_image": 1,
+            "extract_image_content": 1
         }
 
         if ocr_model_id == "":
@@ -84,7 +85,7 @@ def get_page_data(page_num, add_file_path, ocr_model_id):
                 r = requests.post(wanwu_ocr_url, files=files, headers=headers, data=data, timeout=60)
                 logger.info("====>wanwu_ocr_url=%s,data=%s" % (wanwu_ocr_url, json.dumps(data, ensure_ascii=False)))
                 ret_json = r.json()
-                logger.info(f"model_parser_utils.get_page_data result: {ret_json}")
+                # logger.info(f"model_parser_utils.get_page_data result: {ret_json}")
                 r.raise_for_status()  # 触发HTTP错误状态码的异常
                 if ret_json.get("code") == "200":
                     text = ret_json["content"]
