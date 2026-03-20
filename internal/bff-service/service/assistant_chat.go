@@ -22,7 +22,7 @@ import (
 )
 
 const (
-	EventFailStatus = 4 //事件失败
+	agentEventFailStatus = 4 //事件失败
 )
 
 func AssistantConversionStream(ctx *gin.Context, userId, orgId string, req request.ConversionStreamRequest, needLatestPublished bool) error {
@@ -285,12 +285,12 @@ func buildAgentChatRespLineProcessor() func(sse_util.SSEWriterClient[string], st
 // --- agent sensitive ---
 
 type agentSensitiveService struct {
-	CurrentOrder     int
-	CurrentEventType int
-	CurrentEventData *EventData
+	currentOrder     int
+	currentEventType int
+	currentEventData *agentEventData
 }
 
-type EventData struct {
+type agentEventData struct {
 	Status    int    `json:"status"`
 	Id        string `json:"id"`
 	EventType int    `json:"eventType"`
@@ -313,33 +313,33 @@ func (s *agentSensitiveService) parseContent(raw string) (id, content string) {
 		return "", ""
 	}
 	resp := struct {
-		MsgID     string     `json:"msg_id"`
-		Response  string     `json:"response"`
-		EventType int        `json:"eventType"`
-		Order     int        `json:"order"`
-		EventData *EventData `json:"eventData"`
+		MsgID     string          `json:"msg_id"`
+		Response  string          `json:"response"`
+		EventType int             `json:"eventType"`
+		Order     int             `json:"order"`
+		EventData *agentEventData `json:"eventData"`
 	}{}
 	if err := json.Unmarshal([]byte(raw), &resp); err != nil {
 		return "", ""
 	}
-	s.CurrentOrder = resp.Order
-	s.CurrentEventType = resp.EventType
-	s.CurrentEventData = resp.EventData
+	s.currentOrder = resp.Order
+	s.currentEventType = resp.EventType
+	s.currentEventData = resp.EventData
 	return resp.MsgID, resp.Response
 }
 
 // buildSensitiveResp implements ChatService.
 func (s *agentSensitiveService) buildSensitiveResp(id string, content string) []string {
-	data := s.CurrentEventData
+	data := s.currentEventData
 	if data != nil {
-		data.Status = EventFailStatus
+		data.Status = agentEventFailStatus
 	}
 	resp := map[string]interface{}{
 		"code":              0,
 		"message":           "success",
 		"response":          content,
-		"eventType":         s.CurrentEventType,
-		"order":             s.CurrentOrder,
+		"eventType":         s.currentEventType,
+		"order":             s.currentOrder,
 		"eventData":         data,
 		"gen_file_url_list": []interface{}{},
 		"history":           []interface{}{},

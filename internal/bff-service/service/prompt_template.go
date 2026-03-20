@@ -291,7 +291,7 @@ func getPromptCustom(ctx *gin.Context, modelId string, reqInfo *mp_common.LLMReq
 			completionTokens = data.Usage.CompletionTokens
 			totalTokens = data.Usage.TotalTokens
 		} else {
-			dataStr = fmt.Sprintf("%v\n", sseResp.String())
+			dataStr = sseResp.String()
 		}
 
 		// 写入

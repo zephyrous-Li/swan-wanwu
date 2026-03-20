@@ -371,7 +371,7 @@ func (resp *llmResp) ConvertResp() (*LLMResp, bool) {
 
 	ret := &LLMResp{}
 	if err := json.Unmarshal([]byte(raw), ret); err != nil {
-		log.Errorf("llm stream resp (%v) convert to openai resp err: %v", raw, err)
+		log.Errorf("llm resp (%v) convert to openai resp err: %v", raw, err)
 		return nil, false
 	}
 

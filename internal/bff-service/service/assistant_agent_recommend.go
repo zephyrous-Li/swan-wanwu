@@ -200,7 +200,7 @@ func AgentRecommendChatCompletions(ctx *gin.Context, modelID string, req *mp_com
 				}
 				resp := buildRecommendResp(errorFlag, data)
 				dataByte, _ := json.Marshal(resp)
-				dataStr = fmt.Sprintf("data: %v\n", string(dataByte))
+				dataStr = fmt.Sprintf("data: %v\n\n", string(dataByte))
 			}
 			if firstTokenTime.IsZero() {
 				firstTokenTime = time.Now()
@@ -210,7 +210,7 @@ func AgentRecommendChatCompletions(ctx *gin.Context, modelID string, req *mp_com
 			completionTokens = data.Usage.CompletionTokens
 			totalTokens = data.Usage.TotalTokens
 		} else {
-			dataStr = fmt.Sprintf("%v\n", sseResp.String())
+			dataStr = sseResp.String()
 		}
 		if _, err = ctx.Writer.Write([]byte(dataStr)); err != nil {
 			log.Errorf("model %v chat completions sse err: %v", modelInfo.ModelId, err)

@@ -165,13 +165,16 @@ func ModelExperienceLLM(ctx *gin.Context, userId, orgId string, req *request.Mod
 				}
 				if !endFlag && delta.Content != "" && ((delta.ReasoningContent != nil &&
 					*delta.ReasoningContent == "") || delta.ReasoningContent == nil) && firstFlag {
-					delta.Content = "\n<think>\n" + delta.Content
+					delta.Content = "\n</think>\n" + delta.Content
 					endFlag = true
 				}
 				if !firstFlag && delta.ReasoningContent != nil && *delta.ReasoningContent != "" && delta.Content == "" {
 					delta.Content = "<think>\n" + delta.Content + *delta.ReasoningContent
 					firstFlag = true
 				}
+
+				// v0.4.4临时将delta.ReasoningContent置空，适配前端显示
+				delta.ReasoningContent = nil
 			}
 
 			dataByte, _ := json.Marshal(data)

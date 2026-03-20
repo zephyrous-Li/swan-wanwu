@@ -1,7 +1,6 @@
 package service
 
 import (
-	"encoding/json"
 	"fmt"
 	"net/http"
 	"time"
@@ -83,10 +82,10 @@ func ModelChatCompletions(ctx *gin.Context, modelID string, req *mp_common.LLMRe
 		return
 	}
 	// stream
-	var answer string
 	ctx.Header("Cache-Control", "no-cache")
 	ctx.Header("Connection", "keep-alive")
 	ctx.Header("Content-Type", "text/event-stream; charset=utf-8")
+	var answer string
 	var (
 		firstTokenTime    time.Time
 		firstTokenLatency int
@@ -107,8 +106,7 @@ func ModelChatCompletions(ctx *gin.Context, modelID string, req *mp_common.LLMRe
 			if lineProcessor != nil {
 				dataStr = fmt.Sprintf("data: %v\n", lineProcessor(data))
 			} else {
-				dataByte, _ := json.Marshal(data)
-				dataStr = fmt.Sprintf("data: %v\n", string(dataByte))
+				dataStr = sseResp.String()
 			}
 			if firstTokenTime.IsZero() {
 				firstTokenTime = time.Now()
@@ -118,7 +116,7 @@ func ModelChatCompletions(ctx *gin.Context, modelID string, req *mp_common.LLMRe
 			completionTokens = data.Usage.CompletionTokens
 			totalTokens = data.Usage.TotalTokens
 		} else {
-			dataStr = fmt.Sprintf("%v\n", sseResp.String())
+			dataStr = sseResp.String()
 		}
 		// log.Debugf("model %v chat completions sse: %v", modelInfo.ModelId, dataStr)
 		if _, err = ctx.Writer.Write([]byte(dataStr)); err != nil {
