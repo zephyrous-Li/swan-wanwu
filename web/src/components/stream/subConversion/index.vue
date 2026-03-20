@@ -1,10 +1,23 @@
 <template>
   <!-- 子会话渲染列表 -->
-  <div class="sub-conversion-item">
+  <div
+    class="sub-conversion-item"
+    :data-pid="conversion.id"
+    :data-conversationType="conversion.conversationType"
+  >
     <div class="sub-conversion-header">
       <div class="left-info">
-        <img class="logo" :src="avatarSrc(conversion.profile)" />
-        <span class="conversion-name">{{ conversion.name }}</span>
+        <img
+          :class="[
+            'logo',
+            conversion.conversationType ===
+              AGENT_MESSAGE_CONFIG.SUB_AGENT.CONVERSATION_TYPE && 'logo-large',
+          ]"
+          :src="avatarSrc(conversion.profile)"
+        />
+        <el-tooltip effect="dark" :content="conversion.name" placement="top">
+          <span class="conversion-name">{{ conversion.name }}</span>
+        </el-tooltip>
         <span class="conversion-status">
           <i
             v-if="conversion.status === 1 || conversion.status === 2"
@@ -37,7 +50,23 @@
       </div>
     </div>
     <div v-show="conversion.isOpen" class="sub-conversion-content-wrapper">
-      <div v-if="conversion.response" class="sub-conversion-content">
+      <Knowlege
+        v-if="
+          conversion.conversationType ===
+          AGENT_MESSAGE_CONFIG.MAIN_KNOWLEDGE.CONVERSATION_TYPE
+        "
+        :conversion="conversion"
+        :parents-index="parentsIndex"
+      />
+      <div
+        v-if="conversion.response"
+        class="sub-conversion-content"
+        :class="{
+          'is-think':
+            conversion.conversationType ===
+            AGENT_MESSAGE_CONFIG.MAIN_THINK.CONVERSATION_TYPE,
+        }"
+      >
         <template>
           <template
             v-if="
@@ -102,6 +131,8 @@
               <span v-if="searchItem.title">
                 <i
                   class="subTag"
+                  data-citation-type="sub"
+                  :data-pid="conversion.id"
                   :data-parents-index="parentsIndex"
                   :data-collapse="searchItem.collapse ? 'true' : 'false'"
                 >
@@ -134,9 +165,14 @@
 <script>
 import { md } from '@/mixins/markdown-it';
 import { avatarSrc } from '@/utils/util';
+import Knowlege from './knowlege.vue';
+import { AGENT_MESSAGE_CONFIG } from '@/components/stream/constants';
 
 export default {
   name: 'SubConversion',
+  components: {
+    Knowlege,
+  },
   props: {
     /**
      * 子会话数据
@@ -164,6 +200,7 @@ export default {
   emits: ['toggle-conversion', 'collapse-click'],
   data() {
     return {
+      AGENT_MESSAGE_CONFIG,
       md: md,
     };
   },
@@ -186,12 +223,17 @@ export default {
   border: 1px solid #eef0f5;
 
   .logo {
-    width: 30px;
-    height: 30px;
+    width: 18px;
+    height: 18px;
     border-radius: 6px;
     object-fit: cover;
     flex-shrink: 0; /* 防止头像被压缩 */
     background: none; /* 头像无背景色 */
+
+    &.logo-large {
+      width: 30px;
+      height: 30px;
+    }
   }
 
   ::v-deep li {
@@ -206,6 +248,7 @@ export default {
     background: #f2f3f8;
     border-bottom: 1px solid #eef0f5;
     font-size: 13px;
+    gap: 4px;
 
     .left-info {
       display: flex;
@@ -213,6 +256,20 @@ export default {
       gap: 8px;
       font-weight: 500;
       color: #333;
+      flex: 1;
+      min-width: 0;
+      min-height: 30px;
+
+      .conversion-name {
+        min-width: 0;
+        overflow: hidden;
+        white-space: nowrap;
+        text-overflow: ellipsis;
+      }
+
+      .conversion-status {
+        flex-shrink: 0;
+      }
     }
 
     .right-info {
@@ -249,6 +306,10 @@ export default {
     background: #fff;
     padding: 10px;
     border-radius: 6px;
+
+    &.is-think {
+      color: #999;
+    }
 
     img {
       width: 80% !important;

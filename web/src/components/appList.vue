@@ -656,8 +656,10 @@ export default {
       if (!this.apptype[_appType]) {
         return '';
       }
-      return _appType === AGENT && category === 2
-        ? this.$t('appSpace.multiAgent')
+      return _appType === AGENT
+        ? category === 2
+          ? this.$t('appSpace.multiAgent')
+          : this.$t('appSpace.singleAgent')
         : AppType[_appType];
     },
   },

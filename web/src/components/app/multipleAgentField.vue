@@ -31,7 +31,12 @@
               />
             </div>
             <div class="info">
-              <span class="name ellipsis">{{ item.name }}</span>
+              <span
+                class="name ellipsis"
+                @click="handleToSubAgent(item.agentId)"
+              >
+                {{ item.name }}
+              </span>
               <span class="desc ellipsis">{{ item.desc }}</span>
             </div>
           </div>
@@ -171,6 +176,14 @@ export default {
         })
         .catch(() => {});
     },
+    // 跳转到子智能体
+    handleToSubAgent(subAgentId) {
+      const routeUrl = this.$router.resolve({
+        path: '/agent/test',
+        query: { id: subAgentId },
+      });
+      window.open(routeUrl.href, '_blank');
+    },
   },
 };
 </script>
@@ -287,6 +300,10 @@ export default {
             font-size: 14px;
             font-weight: 600;
             color: #1c1d23;
+            cursor: pointer;
+            &:hover {
+              color: $color;
+            }
           }
           .desc {
             font-size: 12px;

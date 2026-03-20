@@ -301,6 +301,27 @@ export default {
       // 创建文件预览URL
       this.fileUrl = URL.createObjectURL(file.raw);
 
+      // 格式拦截
+      const acceptedExtensions = this.tipsArr
+        .split(',')
+        .map(ext => ext.trim().toLowerCase());
+      const isAccepted = acceptedExtensions.some(ext =>
+        filename.toLowerCase().endsWith(ext),
+      );
+
+      if (!isAccepted) {
+        this.$message.warning(
+          this.$t('common.fileUpload.typeFileTip1') +
+            this.tipsArr +
+            this.$t('common.fileUpload.typeFileTip'),
+        );
+        const index = fileList.indexOf(file);
+        if (index > -1) {
+          fileList.splice(index, 1);
+        }
+        return;
+      }
+
       if (this.fileType === 'image/*') {
         // 图片类型可累加至6个
         if (fileList.length > 6) {

@@ -182,6 +182,7 @@ export default {
       detail: '详情 >>',
       all: '全选',
       filter: '筛选',
+      viewAll: '查看全部',
     },
     switch: {
       start: '开启',
@@ -318,13 +319,14 @@ export default {
     workflow: '工作流',
     chat: '对话流',
     rag: '知识问答',
-    agent: '单智能体',
+    agent: '智能体',
     agentTemp: '智能体模板',
     agentAuto: '自定义智能体',
     publishSet: '发布配置',
     public: '公开',
     private: '私密',
     multiAgent: '多智能体',
+    singleAgent: '单智能体',
   },
   uploadDialog: {
     title: '文件上传',
