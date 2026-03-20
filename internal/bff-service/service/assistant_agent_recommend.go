@@ -200,7 +200,7 @@ func AgentRecommendChatCompletions(ctx *gin.Context, modelID string, req *mp_com
 				}
 				resp := buildRecommendResp(errorFlag, data)
 				dataByte, _ := json.Marshal(resp)
-				dataStr = fmt.Sprintf("data: %v\n\n", string(dataByte))
+				dataStr = fmt.Sprintf("data: %v\n", string(dataByte))
 			}
 			if firstTokenTime.IsZero() {
 				firstTokenTime = time.Now()
@@ -210,7 +210,8 @@ func AgentRecommendChatCompletions(ctx *gin.Context, modelID string, req *mp_com
 			completionTokens = data.Usage.CompletionTokens
 			totalTokens = data.Usage.TotalTokens
 		} else {
-			dataStr = sseResp.String()
+			// 流式过程中，大模型sse返回的这一行是空行，即sseResp.String()==""；前端正常展示，也需要这个空行
+			dataStr = fmt.Sprintf("%v\n", sseResp.String())
 		}
 		if _, err = ctx.Writer.Write([]byte(dataStr)); err != nil {
 			log.Errorf("model %v chat completions sse err: %v", modelInfo.ModelId, err)
