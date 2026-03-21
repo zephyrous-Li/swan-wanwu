@@ -30,7 +30,7 @@ func newOpencodeConverter() *opencodeConverter {
 	}
 }
 
-func (c *opencodeConverter) Convert(line string) (*schema.Message, error) {
+func (c *opencodeConverter) Convert(line string) ([]*schema.Message, error) {
 	event, err := wga_sandbox.ParseOpencodeEvent([]byte(line))
 	if err != nil {
 		return nil, err
@@ -50,19 +50,39 @@ func (c *opencodeConverter) Convert(line string) (*schema.Message, error) {
 		return nil, nil
 	}
 
-	return &schema.Message{
-		Role:             schema.Assistant,
-		Content:          content.content,
-		ReasoningContent: content.reasoningContent,
-		ToolCalls:        content.toolCalls,
-	}, nil
+	var messages []*schema.Message
+
+	if len(content.toolCalls) > 0 || content.content != "" || content.reasoningContent != "" {
+		messages = append(messages, &schema.Message{
+			Role:             schema.Assistant,
+			Content:          content.content,
+			ReasoningContent: content.reasoningContent,
+			ToolCalls:        content.toolCalls,
+		})
+	}
+
+	if content.toolResult != nil {
+		messages = append(messages, &schema.Message{
+			Role:       schema.Tool,
+			ToolCallID: content.toolResult.callID,
+			Content:    content.toolResult.content,
+		})
+	}
+
+	return messages, nil
 }
 
 type messageContent struct {
 	content          string
 	reasoningContent string
 	toolCalls        []schema.ToolCall
+	toolResult       *toolResult
 	skip             bool
+}
+
+type toolResult struct {
+	callID  string
+	content string
 }
 
 type partParser func(json.RawMessage) (messageContent, error)
@@ -97,7 +117,8 @@ func parseToolUsePart(part json.RawMessage) (messageContent, error) {
 		data, _ := json.Marshal(p.State.Input)
 		input = string(data)
 	}
-	return messageContent{
+
+	result := messageContent{
 		toolCalls: []schema.ToolCall{
 			{
 				ID:   p.CallID,
@@ -108,7 +129,26 @@ func parseToolUsePart(part json.RawMessage) (messageContent, error) {
 				},
 			},
 		},
-	}, nil
+	}
+
+	switch p.State.Status {
+	case "completed":
+		if p.State.Output != "" {
+			result.toolResult = &toolResult{
+				callID:  p.CallID,
+				content: p.State.Output,
+			}
+		}
+	case "error":
+		if p.State.Error != "" {
+			result.toolResult = &toolResult{
+				callID:  p.CallID,
+				content: p.State.Error,
+			}
+		}
+	}
+
+	return result, nil
 }
 
 func parseFilePart(part json.RawMessage) (messageContent, error) {

@@ -3,7 +3,6 @@ package ag_ui_util
 import (
 	"context"
 	"encoding/json"
-	"strings"
 
 	aguievents "github.com/ag-ui-protocol/ag-ui/sdks/community/go/pkg/core/events"
 	"github.com/google/uuid"
@@ -13,7 +12,6 @@ import (
 	"github.com/UnicomAI/wanwu/pkg/util"
 )
 
-// opencode 事件类型（内部使用）。
 type opencodeEventType string
 
 const (
@@ -22,13 +20,11 @@ const (
 	opencodeEventTypeReasoning opencodeEventType = "reasoning"
 )
 
-// opencodeEvent opencode 事件结构（内部使用）。
 type opencodeEvent struct {
 	Type opencodeEventType `json:"type"`
 	Part json.RawMessage   `json:"part"`
 }
 
-// opencodeErrorPart opencode 错误事件内容（内部使用）。
 type opencodeErrorPart struct {
 	Error struct {
 		Name string `json:"name"`
@@ -38,13 +34,11 @@ type opencodeErrorPart struct {
 	} `json:"error"`
 }
 
-// OpencodeTranslator opencode 事件转换器。
 type OpencodeTranslator struct {
 	BaseState
 	activeToolCalls map[string]bool
 }
 
-// NewOpencodeTranslator 创建 opencode 转换器。
 func NewOpencodeTranslator(runID, threadID string) *OpencodeTranslator {
 	return &OpencodeTranslator{
 		BaseState:       NewBaseState(runID, threadID),
@@ -52,7 +46,6 @@ func NewOpencodeTranslator(runID, threadID string) *OpencodeTranslator {
 	}
 }
 
-// TranslateStream 转换事件流。
 func (t *OpencodeTranslator) TranslateStream(ctx context.Context, in <-chan string) <-chan aguievents.Event {
 	out := make(chan aguievents.Event, 1024)
 	go func() {
@@ -89,21 +82,15 @@ func (t *OpencodeTranslator) TranslateStream(ctx context.Context, in <-chan stri
 	return out
 }
 
-// translate 转换单个 opencode 事件。
 func (t *OpencodeTranslator) translate(_ context.Context, line string) []aguievents.Event {
 	var evt opencodeEvent
 	if err := json.Unmarshal([]byte(line), &evt); err != nil {
-		log.Warnf("[ag-ui-util][%s] failed to parse opencode event: %v", t.runID, err)
+		log.Warnf("[ag-ui-util][%s] failed to parse opencode event: %v", t.RunID(), err)
 		return nil
 	}
 
-	if t.runFinished {
-		log.Warnf("[ag-ui-util][%s] stream already finished, ignoring event: %s", t.runID, evt.Type)
-		return nil
-	}
-
-	if t.messageID == "" {
-		t.messageID = uuid.NewString()
+	if t.MessageID() == "" {
+		t.SetMessageID(uuid.NewString())
 	}
 
 	var events []aguievents.Event
@@ -125,7 +112,7 @@ func (t *OpencodeTranslator) translate(_ context.Context, line string) []aguieve
 func (t *OpencodeTranslator) translateText(partData json.RawMessage) []aguievents.Event {
 	var part opencode.TextPart
 	if err := json.Unmarshal(partData, &part); err != nil {
-		log.Warnf("[ag-ui-util][%s] failed to parse text part: %v", t.runID, err)
+		log.Warnf("[ag-ui-util][%s] failed to parse text part: %v", t.RunID(), err)
 		return nil
 	}
 
@@ -135,16 +122,17 @@ func (t *OpencodeTranslator) translateText(partData json.RawMessage) []aguievent
 
 	var events []aguievents.Event
 	events = append(events, t.EnsureRunStarted()...)
+	events = append(events, t.EndReasoningMessage()...)
 	events = append(events, t.EndReasoning()...)
 	events = append(events, t.StartTextMessage()...)
-	events = append(events, aguievents.NewTextMessageContentEvent(t.messageID, part.Text))
+	events = append(events, aguievents.NewTextMessageContentEvent(t.MessageID(), part.Text))
 	return events
 }
 
 func (t *OpencodeTranslator) translateReasoning(partData json.RawMessage) []aguievents.Event {
 	var part opencode.ReasoningPart
 	if err := json.Unmarshal(partData, &part); err != nil {
-		log.Warnf("[ag-ui-util][%s] failed to parse reasoning part: %v", t.runID, err)
+		log.Warnf("[ag-ui-util][%s] failed to parse reasoning part: %v", t.RunID(), err)
 		return nil
 	}
 
@@ -154,18 +142,17 @@ func (t *OpencodeTranslator) translateReasoning(partData json.RawMessage) []agui
 
 	var events []aguievents.Event
 	events = append(events, t.EnsureRunStarted()...)
-	events = append(events, t.StartTextMessage()...)
+	events = append(events, t.EndTextMessage()...)
 	events = append(events, t.StartReasoning()...)
-
-	content := strings.ReplaceAll(part.Text, "\n", "\n> ")
-	events = append(events, aguievents.NewTextMessageContentEvent(t.messageID, content))
+	events = append(events, t.StartReasoningMessage()...)
+	events = append(events, aguievents.NewReasoningMessageContentEvent(t.ReasoningMessageID(), part.Text))
 	return events
 }
 
 func (t *OpencodeTranslator) translateError(partData json.RawMessage) []aguievents.Event {
 	var part opencodeErrorPart
 	if err := json.Unmarshal(partData, &part); err != nil {
-		log.Warnf("[ag-ui-util][%s] failed to parse error part: %v", t.runID, err)
+		log.Warnf("[ag-ui-util][%s] failed to parse error part: %v", t.RunID(), err)
 		return nil
 	}
 
@@ -176,23 +163,28 @@ func (t *OpencodeTranslator) translateError(partData json.RawMessage) []aguieven
 
 	var events []aguievents.Event
 	events = append(events, t.EnsureRunStarted()...)
+	events = append(events, t.EndReasoningMessage()...)
 	events = append(events, t.EndReasoning()...)
 	events = append(events, t.StartTextMessage()...)
-	events = append(events, aguievents.NewTextMessageContentEvent(t.messageID, msg))
+	events = append(events, aguievents.NewTextMessageContentEvent(t.MessageID(), msg))
 	return events
 }
 
 func (t *OpencodeTranslator) translateToolUse(partData json.RawMessage) []aguievents.Event {
 	var part opencode.ToolPart
 	if err := json.Unmarshal(partData, &part); err != nil {
-		log.Warnf("[ag-ui-util][%s] failed to parse tool_use part: %v", t.runID, err)
+		log.Warnf("[ag-ui-util][%s] failed to parse tool_use part: %v", t.RunID(), err)
 		return nil
 	}
 
 	var events []aguievents.Event
 	events = append(events, t.EnsureRunStarted()...)
+	events = append(events, t.EndReasoningMessage()...)
 	events = append(events, t.EndReasoning()...)
-	events = append(events, t.StartTextMessage()...)
+
+	if t.MessageID() == "" {
+		t.SetMessageID(uuid.NewString())
+	}
 
 	toolCallID := part.CallID
 	if toolCallID == "" {
@@ -202,7 +194,7 @@ func (t *OpencodeTranslator) translateToolUse(partData json.RawMessage) []aguiev
 	switch part.State.Status {
 	case opencode.ToolPartStateStatusPending, opencode.ToolPartStateStatusRunning:
 		if !t.activeToolCalls[toolCallID] {
-			events = append(events, aguievents.NewToolCallStartEvent(toolCallID, part.Tool, aguievents.WithParentMessageID(t.messageID)))
+			events = append(events, aguievents.NewToolCallStartEvent(toolCallID, part.Tool, aguievents.WithParentMessageID(t.MessageID())))
 			t.activeToolCalls[toolCallID] = true
 			if input := t.getToolInput(part.State); input != "" {
 				events = append(events, aguievents.NewToolCallArgsEvent(toolCallID, input))
@@ -211,7 +203,7 @@ func (t *OpencodeTranslator) translateToolUse(partData json.RawMessage) []aguiev
 
 	case opencode.ToolPartStateStatusCompleted:
 		if !t.activeToolCalls[toolCallID] {
-			events = append(events, aguievents.NewToolCallStartEvent(toolCallID, part.Tool, aguievents.WithParentMessageID(t.messageID)))
+			events = append(events, aguievents.NewToolCallStartEvent(toolCallID, part.Tool, aguievents.WithParentMessageID(t.MessageID())))
 			if input := t.getToolInput(part.State); input != "" {
 				events = append(events, aguievents.NewToolCallArgsEvent(toolCallID, input))
 			}
@@ -225,7 +217,7 @@ func (t *OpencodeTranslator) translateToolUse(partData json.RawMessage) []aguiev
 
 	case opencode.ToolPartStateStatusError:
 		if !t.activeToolCalls[toolCallID] {
-			events = append(events, aguievents.NewToolCallStartEvent(toolCallID, part.Tool, aguievents.WithParentMessageID(t.messageID)))
+			events = append(events, aguievents.NewToolCallStartEvent(toolCallID, part.Tool, aguievents.WithParentMessageID(t.MessageID())))
 			events = append(events, aguievents.NewToolCallEndEvent(toolCallID))
 		} else {
 			events = append(events, aguievents.NewToolCallEndEvent(toolCallID))

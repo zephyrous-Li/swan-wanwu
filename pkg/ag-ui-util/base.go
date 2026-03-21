@@ -1,27 +1,26 @@
-// Package ag_ui_util 提供 AG-UI 协议的事件转换功能。
 package ag_ui_util
 
 import (
 	"context"
 	"encoding/json"
-	"strings"
 
 	"github.com/UnicomAI/wanwu/pkg/util"
 	aguievents "github.com/ag-ui-protocol/ag-ui/sdks/community/go/pkg/core/events"
+	"github.com/google/uuid"
 )
 
-// BaseState 转换器基础状态。
 type BaseState struct {
-	runID       string
-	threadID    string
-	messageID   string
-	runStarted  bool
-	runFinished bool
-	textStarted bool
-	inReasoning bool
+	runID               string
+	threadID            string
+	messageID           string
+	reasoningMessageID  string
+	runStarted          bool
+	runFinished         bool
+	textStarted         bool
+	reasoningStarted    bool
+	reasoningMsgStarted bool
 }
 
-// NewBaseState 创建基础状态。
 func NewBaseState(runID, threadID string) BaseState {
 	return BaseState{
 		runID:    runID,
@@ -29,11 +28,15 @@ func NewBaseState(runID, threadID string) BaseState {
 	}
 }
 
-func (s *BaseState) RunID() string     { return s.runID }
-func (s *BaseState) ThreadID() string  { return s.threadID }
-func (s *BaseState) MessageID() string { return s.messageID }
+func (s *BaseState) RunID() string              { return s.runID }
+func (s *BaseState) ThreadID() string           { return s.threadID }
+func (s *BaseState) MessageID() string          { return s.messageID }
+func (s *BaseState) ReasoningMessageID() string { return s.reasoningMessageID }
 
-// EnsureRunStarted 确保已发送 RunStarted 事件。
+func (s *BaseState) SetMessageID(messageID string) {
+	s.messageID = messageID
+}
+
 func (s *BaseState) EnsureRunStarted() []aguievents.Event {
 	if s.runStarted {
 		return nil
@@ -42,16 +45,17 @@ func (s *BaseState) EnsureRunStarted() []aguievents.Event {
 	return []aguievents.Event{aguievents.NewRunStartedEvent(s.threadID, s.runID)}
 }
 
-// StartTextMessage 开始文本消息。
 func (s *BaseState) StartTextMessage() []aguievents.Event {
 	if s.textStarted {
 		return nil
 	}
 	s.textStarted = true
+	if s.messageID == "" {
+		s.messageID = uuid.NewString()
+	}
 	return []aguievents.Event{aguievents.NewTextMessageStartEvent(s.messageID, aguievents.WithRole("assistant"))}
 }
 
-// EndTextMessage 结束文本消息。
 func (s *BaseState) EndTextMessage() []aguievents.Event {
 	if !s.textStarted {
 		return nil
@@ -60,25 +64,41 @@ func (s *BaseState) EndTextMessage() []aguievents.Event {
 	return []aguievents.Event{aguievents.NewTextMessageEndEvent(s.messageID)}
 }
 
-// StartReasoning 开始 reasoning，返回 reasoningStart 事件（仅第一次）。
 func (s *BaseState) StartReasoning() []aguievents.Event {
-	if s.inReasoning {
+	if s.reasoningStarted {
 		return nil
 	}
-	s.inReasoning = true
-	return []aguievents.Event{aguievents.NewTextMessageContentEvent(s.messageID, reasoningStart)}
+	s.reasoningStarted = true
+	return []aguievents.Event{aguievents.NewReasoningStartEvent(s.messageID)}
 }
 
-// EndReasoning 结束 reasoning，返回 reasoningEnd 事件。
+func (s *BaseState) StartReasoningMessage() []aguievents.Event {
+	if s.reasoningMsgStarted {
+		return nil
+	}
+	s.reasoningMsgStarted = true
+	if s.reasoningMessageID == "" {
+		s.reasoningMessageID = uuid.NewString()
+	}
+	return []aguievents.Event{aguievents.NewReasoningMessageStartEvent(s.reasoningMessageID, "reasoning")}
+}
+
+func (s *BaseState) EndReasoningMessage() []aguievents.Event {
+	if !s.reasoningMsgStarted {
+		return nil
+	}
+	s.reasoningMsgStarted = false
+	return []aguievents.Event{aguievents.NewReasoningMessageEndEvent(s.reasoningMessageID)}
+}
+
 func (s *BaseState) EndReasoning() []aguievents.Event {
-	if !s.inReasoning {
+	if !s.reasoningStarted {
 		return nil
 	}
-	s.inReasoning = false
-	return []aguievents.Event{aguievents.NewTextMessageContentEvent(s.messageID, reasoningEnd)}
+	s.reasoningStarted = false
+	return []aguievents.Event{aguievents.NewReasoningEndEvent(s.messageID)}
 }
 
-// FinishBase 生成基础结束事件。
 func (s *BaseState) FinishBase() []aguievents.Event {
 	if s.runFinished {
 		return nil
@@ -86,13 +106,13 @@ func (s *BaseState) FinishBase() []aguievents.Event {
 	s.runFinished = true
 	var events []aguievents.Event
 	events = append(events, s.EnsureRunStarted()...)
+	events = append(events, s.EndReasoningMessage()...)
 	events = append(events, s.EndReasoning()...)
 	events = append(events, s.EndTextMessage()...)
 	events = append(events, aguievents.NewRunFinishedEvent(s.threadID, s.runID))
 	return events
 }
 
-// EventsToJSONChannel 将事件流转换为 JSON 字符串流。
 func EventsToJSONChannel(ctx context.Context, in <-chan aguievents.Event) <-chan string {
 	out := make(chan string, 1024)
 	go func() {
@@ -115,22 +135,6 @@ func EventsToJSONChannel(ctx context.Context, in <-chan aguievents.Event) <-chan
 	return out
 }
 
-const (
-	reasoningStart = "\n> 💭 \n> "
-	reasoningEnd   = "\n\n"
-)
-
-// RemoveReasoningContent 移除文本中的推理内容。
 func RemoveReasoningContent(content string) string {
-	for {
-		idx := strings.Index(content, reasoningStart)
-		if idx == -1 {
-			return content
-		}
-		endIdx := strings.Index(content[idx:], reasoningEnd)
-		if endIdx == -1 {
-			return content[:idx]
-		}
-		content = content[:idx] + content[idx+endIdx+len(reasoningEnd):]
-	}
+	return content
 }

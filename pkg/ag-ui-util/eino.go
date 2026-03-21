@@ -2,8 +2,8 @@ package ag_ui_util
 
 import (
 	"context"
+	"fmt"
 	"io"
-	"strings"
 
 	"github.com/UnicomAI/wanwu/pkg/util"
 	aguievents "github.com/ag-ui-protocol/ag-ui/sdks/community/go/pkg/core/events"
@@ -12,13 +12,11 @@ import (
 	"github.com/google/uuid"
 )
 
-// EinoTranslator eino AgentEvent 转换器。
 type EinoTranslator struct {
 	BaseState
 	toolCallIDs map[string]bool
 }
 
-// NewEinoTranslator 创建 eino 转换器。
 func NewEinoTranslator(runID, threadID string) *EinoTranslator {
 	return &EinoTranslator{
 		BaseState:   NewBaseState(runID, threadID),
@@ -26,7 +24,6 @@ func NewEinoTranslator(runID, threadID string) *EinoTranslator {
 	}
 }
 
-// TranslateStream 转换事件流。
 func (t *EinoTranslator) TranslateStream(ctx context.Context, iter *adk.AsyncIterator[*adk.AgentEvent]) <-chan aguievents.Event {
 	out := make(chan aguievents.Event, 1024)
 	go func() {
@@ -49,7 +46,6 @@ func (t *EinoTranslator) TranslateStream(ctx context.Context, iter *adk.AsyncIte
 			}
 
 			if event.Err != nil {
-				// 发送错误信息作为文本消息
 				errMsg := &schema.Message{
 					Role:    schema.Assistant,
 					Content: "[error] " + event.Err.Error(),
@@ -72,17 +68,15 @@ func (t *EinoTranslator) TranslateStream(ctx context.Context, iter *adk.AsyncIte
 				continue
 			}
 
-			if t.messageID == "" {
-				t.messageID = uuid.NewString()
+			if t.MessageID() == "" {
+				t.SetMessageID(uuid.NewString())
 			}
 
 			msgOutput := event.Output.MessageOutput
 
 			if msgOutput.IsStreaming {
-				// 流式模式：边接收边发送
 				t.translateStream(ctx, msgOutput, out)
 			} else {
-				// 非流式模式
 				for _, evt := range t.translateMessage(msgOutput.Message) {
 					select {
 					case out <- evt:
@@ -96,7 +90,6 @@ func (t *EinoTranslator) TranslateStream(ctx context.Context, iter *adk.AsyncIte
 	return out
 }
 
-// translateStream 处理流式消息，边接收边发送。
 func (t *EinoTranslator) translateStream(ctx context.Context, msgOutput *adk.MessageVariant, out chan<- aguievents.Event) {
 	if msgOutput.MessageStream == nil {
 		return
@@ -138,6 +131,9 @@ func (t *EinoTranslator) translateMessage(msg *schema.Message) []aguievents.Even
 	if msg.Role == schema.Tool && msg.ToolCallID != "" {
 		var events []aguievents.Event
 		events = append(events, t.EnsureRunStarted()...)
+		events = append(events, t.EndReasoningMessage()...)
+		events = append(events, t.EndReasoning()...)
+		events = append(events, t.EndTextMessage()...)
 		events = append(events, aguievents.NewToolCallResultEvent(uuid.NewString(), msg.ToolCallID, msg.Content))
 		return events
 	}
@@ -149,35 +145,41 @@ func (t *EinoTranslator) translateMessage(msg *schema.Message) []aguievents.Even
 
 	var events []aguievents.Event
 	events = append(events, t.EnsureRunStarted()...)
-	events = append(events, t.StartTextMessage()...)
 
-	// 处理 reasoning
-	if msg.ReasoningContent != "" {
-		events = append(events, t.StartReasoning()...)
-		content := strings.ReplaceAll(msg.ReasoningContent, "\n", "\n> ")
-		events = append(events, aguievents.NewTextMessageContentEvent(t.messageID, content))
-	}
-
-	// 处理普通内容，结束 reasoning 状态
-	if msg.Content != "" {
+	if len(msg.ToolCalls) > 0 {
+		events = append(events, t.EndReasoningMessage()...)
 		events = append(events, t.EndReasoning()...)
-		events = append(events, aguievents.NewTextMessageContentEvent(t.messageID, msg.Content))
+		events = append(events, t.EndTextMessage()...)
+
+		for _, tc := range msg.ToolCalls {
+			if tc.ID == "" || tc.Function.Name == "" {
+				continue
+			}
+			fmt.Printf("tool call arg: %v\n", tc.Function.Arguments)
+			if !t.toolCallIDs[tc.ID] {
+				events = append(events, aguievents.NewToolCallStartEvent(tc.ID, tc.Function.Name, aguievents.WithParentMessageID(t.MessageID())))
+				fmt.Printf("tool call start: %v\n", tc.Function)
+				if tc.Function.Arguments != "" {
+					events = append(events, aguievents.NewToolCallArgsEvent(tc.ID, tc.Function.Arguments))
+				}
+				events = append(events, aguievents.NewToolCallEndEvent(tc.ID))
+				t.toolCallIDs[tc.ID] = true
+			}
+		}
 	}
 
-	// 处理工具调用
-	for _, tc := range msg.ToolCalls {
-		// 跳过无效的 ToolCall
-		if tc.ID == "" || tc.Function.Name == "" {
-			continue
-		}
-		if !t.toolCallIDs[tc.ID] {
-			events = append(events, aguievents.NewToolCallStartEvent(tc.ID, tc.Function.Name, aguievents.WithParentMessageID(t.messageID)))
-			if tc.Function.Arguments != "" {
-				events = append(events, aguievents.NewToolCallArgsEvent(tc.ID, tc.Function.Arguments))
-			}
-			events = append(events, aguievents.NewToolCallEndEvent(tc.ID))
-			t.toolCallIDs[tc.ID] = true
-		}
+	if msg.ReasoningContent != "" {
+		events = append(events, t.EndTextMessage()...)
+		events = append(events, t.StartReasoning()...)
+		events = append(events, t.StartReasoningMessage()...)
+		events = append(events, aguievents.NewReasoningMessageContentEvent(t.ReasoningMessageID(), msg.ReasoningContent))
+	}
+
+	if msg.Content != "" {
+		events = append(events, t.EndReasoningMessage()...)
+		events = append(events, t.EndReasoning()...)
+		events = append(events, t.StartTextMessage()...)
+		events = append(events, aguievents.NewTextMessageContentEvent(t.MessageID(), msg.Content))
 	}
 
 	return events

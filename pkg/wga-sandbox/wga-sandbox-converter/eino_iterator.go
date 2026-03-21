@@ -6,7 +6,6 @@ import (
 	"github.com/UnicomAI/wanwu/pkg/util"
 	wga_sandbox_option "github.com/UnicomAI/wanwu/pkg/wga-sandbox/wga-sandbox-option"
 	"github.com/cloudwego/eino/adk"
-	"github.com/cloudwego/eino/schema"
 )
 
 func ConvertToEinoIterator(
@@ -29,22 +28,21 @@ func ConvertToEinoIterator(
 				if !ok {
 					return
 				}
-				msg, err := conv.Convert(line)
+				msgs, err := conv.Convert(line)
 				if err != nil {
 					generator.Send(&adk.AgentEvent{Err: err})
 					continue
 				}
-				if msg == nil {
-					continue
-				}
-				generator.Send(&adk.AgentEvent{
-					Output: &adk.AgentOutput{
-						MessageOutput: &adk.MessageVariant{
-							Message: msg,
-							Role:    schema.Assistant,
+				for _, msg := range msgs {
+					generator.Send(&adk.AgentEvent{
+						Output: &adk.AgentOutput{
+							MessageOutput: &adk.MessageVariant{
+								Message: msg,
+								Role:    msg.Role,
+							},
 						},
-					},
-				})
+					})
+				}
 			}
 		}
 	}()
