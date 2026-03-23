@@ -156,7 +156,7 @@
           >
             <div class="card-top">
               <img
-                class="card-img"
+                class="common-card-logo ml-10"
                 :src="
                   item.avatar && item.avatar.path
                     ? avatarSrc(item.avatar.path)
@@ -544,16 +544,6 @@ export default {
     display: flex;
     align-items: center;
     justify-content: space-between;
-  }
-  .card-img {
-    width: 46px;
-    height: 46px;
-    object-fit: cover;
-    background: #ffffff;
-    box-shadow: 0 1px 4px 0 rgba(0, 0, 0, 0.15);
-    border-radius: 8px;
-    border: 0 solid #d9d9d9;
-    margin-right: 10px;
   }
   .card-title {
     width: calc(100% - 90px);

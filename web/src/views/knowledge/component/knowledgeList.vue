@@ -44,7 +44,7 @@
           </div>
           <div>
             <img
-              class="logo"
+              class="common-card-logo ml-10"
               :src="
                 avatarSrc(
                   n.avatar?.path,
@@ -379,16 +379,6 @@ export default {
 
     .desc {
       padding-top: 5px;
-    }
-
-    .logo {
-      border-radius: 50%;
-      background: #f1f4ff;
-      box-shadow: none;
-      padding: 5px !important;
-      width: 65px !important;
-      height: 65px !important;
-      object-fit: cover;
     }
 
     .tagList {

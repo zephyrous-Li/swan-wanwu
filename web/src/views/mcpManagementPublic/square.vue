@@ -41,7 +41,7 @@
                   >
                     <div class="card-title">
                       <img
-                        class="card-logo"
+                        class="common-card-logo"
                         :src="
                           item.avatar && item.avatar.path
                             ? avatarSrc(item.avatar.path)
@@ -302,11 +302,6 @@ export default {
           }
         }
       }
-    }
-    .card-logo {
-      width: 50px;
-      height: 50px;
-      object-fit: cover;
     }
   }
   .card-search {
