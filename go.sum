@@ -39,8 +39,8 @@ github.com/StackExchange/wmi v0.0.0-20190523213315-cbe66965904d h1:G0m3OIz70MZUW
 github.com/StackExchange/wmi v0.0.0-20190523213315-cbe66965904d/go.mod h1:3eOhrUMpNV+6aFIbp5/iudMxNCF27Vw2OZgy4xEx0Fg=
 github.com/ThinkInAIXYZ/go-mcp v0.2.22 h1:GLl1idQdM0I1Of7MlAbtnmtmLixJi9zNYJf8GgnfDmU=
 github.com/ThinkInAIXYZ/go-mcp v0.2.22/go.mod h1:KnUWUymko7rmOgzvIjxwX0uB9oiJeLF/Q3W9cRt8fVg=
-github.com/ag-ui-protocol/ag-ui/sdks/community/go v0.0.0-20260221022154-c11d702bd168 h1:SSw+476tMvp1pG8qVH0FkzOhuAgV+lK0XdA9IJgLjDQ=
-github.com/ag-ui-protocol/ag-ui/sdks/community/go v0.0.0-20260221022154-c11d702bd168/go.mod h1:ERAMOexUee4AIuoxksuuGoEcHl3aqLwaazjGwlR9ZCI=
+github.com/ag-ui-protocol/ag-ui/sdks/community/go v0.0.0-20260313163727-d5d9573cef5b h1:LEjKru0Q+SeXP6qbtGedQ4K/nD5wibZhge0f3UW8GqQ=
+github.com/ag-ui-protocol/ag-ui/sdks/community/go v0.0.0-20260313163727-d5d9573cef5b/go.mod h1:ERAMOexUee4AIuoxksuuGoEcHl3aqLwaazjGwlR9ZCI=
 github.com/airbrake/gobrake v3.6.1+incompatible/go.mod h1:wM4gu3Cn0W0K7GUuVWnlXZU11AGBXMILnrdOU8Kn00o=
 github.com/alecthomas/template v0.0.0-20160405071501-a0175ee3bccc/go.mod h1:LOuyumcjzFXgccqObfd/Ljyb9UuFJ6TxHnclSeseNhc=
 github.com/alecthomas/template v0.0.0-20190718012654-fb15b899a751/go.mod h1:LOuyumcjzFXgccqObfd/Ljyb9UuFJ6TxHnclSeseNhc=

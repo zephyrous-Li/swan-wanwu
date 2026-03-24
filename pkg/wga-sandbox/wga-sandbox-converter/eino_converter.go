@@ -6,7 +6,7 @@ import (
 )
 
 type EinoConverter interface {
-	Convert(line string) (*schema.Message, error)
+	Convert(line string) ([]*schema.Message, error)
 }
 
 func NewEinoConverter(runnerType wga_sandbox_option.RunnerType) EinoConverter {
