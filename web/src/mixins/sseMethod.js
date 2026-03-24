@@ -308,10 +308,50 @@ export default {
         parseSub,
         convertLatexSyntax,
       });
+      // 思考内容渲染器：自定义 md 包装器，在 render 前去除每行行首空格
+      // 防止 markdown-it 将行首4个以上空格识别为代码块（Indented Code Block）
+      const reasoningMd = {
+        render: text =>
+          md.render(
+            text
+              .split('\n')
+              .map(line => line.trimStart())
+              .join('\n'),
+          ),
+        utils: md.utils,
+      };
+      const reasoningProcessor = new StreamProcessor({
+        lastIndex,
+        md: reasoningMd,
+        parseSub,
+        convertLatexSyntax,
+      });
 
       this._print = new Print({
         onPrintEnd: () => {
           this.onMainPrintEnd && this.onMainPrintEnd();
+        },
+      });
+
+      // 正文缓冲队列：在思考内容打字完毕前，所有正文内容首先入此队列
+      this._pendingOutputQueue = [];
+      // SSE 服务端层面：标记服务端是否已经完成所有推理内容的推送
+      this._reasoningSSEDone = false;
+
+      // 思考打字机：完毕时将缓冲内容批量送入正文打字机
+      this._reasoningPrint = new Print({
+        onPrintEnd: () => {
+          // onPrintEnd 在队列暂时为空时就会触发，可能多次触发
+          // 只有服务端也确认完成了推理推送（_reasoningSSEDone），这次队列清空才是真正结束
+          if (this._reasoningSSEDone) {
+            this._isInReasoning = false;
+            if (this._pendingOutputQueue && this._pendingOutputQueue.length) {
+              this._pendingOutputQueue.forEach(item => {
+                this._print.print(item.sentence, item.commonData, item.cb);
+              });
+              this._pendingOutputQueue = [];
+            }
+          }
         },
       });
       let history_list = sessionCom.getSessionData();
@@ -376,7 +416,6 @@ export default {
 
               if (data.code === 0 || data.code === 1) {
                 //finish 0：进行中  1：关闭   2:敏感词关闭
-                let _sentence = '';
                 const reasoning =
                   data.data && data.data.reasoning_content
                     ? data.data.reasoning_content
@@ -384,67 +423,118 @@ export default {
                 const output =
                   data.data && data.data.output ? data.data.output : '';
 
-                if (reasoning) {
-                  if (!this._isInReasoning) {
-                    _sentence = `<think>${reasoning}`;
-                    this._isInReasoning = true;
-                  } else {
-                    _sentence = reasoning;
-                  }
-                } else if (output) {
-                  if (this._isInReasoning) {
-                    _sentence = `</think>${output}`;
-                    this._isInReasoning = false;
-                  } else {
-                    _sentence = output;
-                  }
-                }
-
-                // 如果是最后一条消息且仍处于思考中，强制闭合
-                if (data.finish === 1 && this._isInReasoning) {
-                  _sentence += '</think>';
-                  this._isInReasoning = false;
-                }
-
-                this._print.print(
-                  {
-                    response: _sentence,
-                    finish: data.finish,
-                  },
-                  commonData,
-                  (worldObj, search_list) => {
-                    this.setStoreSessionStatus(0);
+                const doRender = (worldObj, search_list, field) => {
+                  this.setStoreSessionStatus(0);
+                  if (field === 'main') {
                     processor.updateSearchList(search_list);
                     processor.append(worldObj.world);
+                  } else {
+                    reasoningProcessor.updateSearchList(search_list);
+                    reasoningProcessor.append(worldObj.world);
+                  }
 
-                    const renderResult = processor.getRenderResult();
+                  const renderResult = processor.getRenderResult();
+                  const reasoningRenderResult =
+                    reasoningProcessor.getRenderResult();
 
-                    let fillData = {
-                      ...commonData,
-                      ...renderResult,
-                      finish: worldObj.finish,
-                      searchList: search_list
-                        ? search_list.map(n => ({
-                            ...n,
-                            snippet: n.snippet ? md.render(n.snippet) : '',
-                          }))
-                        : [],
-                    };
+                  let fillData = {
+                    ...commonData,
+                    ...renderResult,
+                    activeReasoning: reasoningRenderResult.activeResponse || '',
+                    stableReasoningChunks:
+                      reasoningRenderResult.stableChunks || [],
+                    finish: worldObj.finish,
+                    searchList: search_list
+                      ? search_list.map(n => ({
+                          ...n,
+                          snippet: n.snippet ? md.render(n.snippet) : '',
+                        }))
+                      : commonData.searchList,
+                  };
 
-                    if (worldObj.finish === 2) {
-                      fillData.response = this.$t('sse.sensitiveTips');
-                      sessionCom.replaceLastData(lastIndex, fillData);
-                      this.$nextTick(() => sessionCom.scrollBottom());
-                      this.setStoreSessionStatus(-1);
-                    } else {
-                      sessionCom.replaceLastData(lastIndex, fillData);
+                  if (worldObj.finish === 2) {
+                    fillData.response = this.$t('sse.sensitiveTips');
+                    sessionCom.replaceLastData(lastIndex, fillData);
+                    this.$nextTick(() => sessionCom.scrollBottom());
+                    this.setStoreSessionStatus(-1);
+                  } else {
+                    sessionCom.replaceLastData(lastIndex, fillData);
+                  }
+
+                  if (worldObj.isEnd && worldObj.finish === 1) {
+                    this.setStoreSessionStatus(-1);
+                  }
+                };
+
+                if (reasoning) {
+                  // 首次收到 reasoning ，激活缓冲路径
+                  if (!this._isInReasoning) {
+                    this._isInReasoning = true;
+                  }
+                  this._reasoningPrint.print(
+                    {
+                      response: reasoning,
+                      finish: data.finish,
+                    },
+                    commonData,
+                    (worldObj, search_list) =>
+                      doRender(worldObj, search_list, 'reasoning'),
+                  );
+                }
+
+                if (
+                  output ||
+                  (!reasoning && (data.finish === 1 || data.finish === 2))
+                ) {
+                  const mainSentence = {
+                    response: output || '',
+                    finish: data.finish,
+                  };
+                  const mainCb = (worldObj, search_list) =>
+                    doRender(worldObj, search_list, 'main');
+
+                  // 首次收到 output，说明服务端推理已完成，设置 SSE 层标志位
+                  if (output && !this._reasoningSSEDone) {
+                    this._reasoningSSEDone = true;
+                    // 如果此时思考打字机队列恰好已为空（全部打字完毕），需要主动触发清空逻辑
+                    // 因为此清空和 onPrintEnd 互为补充：
+                    //   - onPrintEnd 先于 _reasoningSSEDone ：被忽略过，现在需要主动触发
+                    //   - onPrintEnd 后于 _reasoningSSEDone ：将由 onPrintEnd 正常处理
+                    if (
+                      this._isInReasoning &&
+                      this._reasoningPrint.sIndex >=
+                        this._reasoningPrint.sentenceArr.length &&
+                      this._reasoningPrint.printStatus === 0
+                    ) {
+                      this._isInReasoning = false;
+                      if (
+                        this._pendingOutputQueue &&
+                        this._pendingOutputQueue.length
+                      ) {
+                        this._pendingOutputQueue.forEach(pendingItem => {
+                          this._print.print(
+                            pendingItem.sentence,
+                            pendingItem.commonData,
+                            pendingItem.cb,
+                          );
+                        });
+                        this._pendingOutputQueue = [];
+                      }
                     }
+                  }
 
-                    if (worldObj.isEnd && worldObj.finish === 1) {
-                      this.setStoreSessionStatus(-1);
-                    }
-                  },
-                );
+                  if (this._isInReasoning) {
+                    // 思考动画还未完毕：将正文入缓冲队列
+                    this._pendingOutputQueue.push({
+                      sentence: mainSentence,
+                      commonData,
+                      cb: mainCb,
+                    });
+                  } else {
+                    // 无思考内容或思考已完毕：直通送入正文打字机
+                    this._print.print(mainSentence, commonData, mainCb);
+                  }
+                }
               } else if (data.code === 7 || data.code === -1) {
                 this.setStoreSessionStatus(-1);
                 sessionCom.replaceLastData(lastIndex, {

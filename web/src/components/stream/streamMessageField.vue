@@ -138,7 +138,9 @@
             !n.error &&
             (n.response ||
               n.msg_type ||
-              (n.subConversions && n.subConversions.length))
+              (n.subConversions && n.subConversions.length) ||
+              n.activeReasoning ||
+              (n.stableReasoningChunks && n.stableReasoningChunks.length))
           "
           class="session-answer"
           :id="'message-container' + i"
@@ -169,11 +171,25 @@
                   class="think_icon"
                 />
                 <div
-                  v-if="showDSBtn(n.response)"
+                  v-if="
+                    showDSBtn(n.response || '') ||
+                    n.activeReasoning ||
+                    (n.stableReasoningChunks && n.stableReasoningChunks.length)
+                  "
                   class="deepseek"
                   @click="toggle($event, i)"
                 >
-                  {{ n.thinkText }}
+                  {{
+                    n.activeReasoning ||
+                    (n.stableReasoningChunks && n.stableReasoningChunks.length)
+                      ? n.finish === 0 &&
+                        !n.response &&
+                        !n.activeResponse &&
+                        (!n.stableChunks || n.stableChunks.length === 0)
+                        ? n.thinkText || $t('agent.thinking')
+                        : $t('agent.thinked')
+                      : n.thinkText
+                  }}
                   <i
                     v-bind:class="{
                       'el-icon-arrow-down': !n.isOpen,
@@ -188,7 +204,9 @@
               <div
                 v-else-if="
                   !(n.messageSequence && n.messageSequence.length) &&
-                  showDSBtn(n.response)
+                  (showDSBtn(n.response || '') ||
+                    n.activeReasoning ||
+                    (n.stableReasoningChunks && n.stableReasoningChunks.length))
                 "
               >
                 <div class="deepseek" @click="toggle($event, i)">
@@ -196,7 +214,17 @@
                     :src="require('@/assets/imgs/think-icon.png')"
                     class="think_icon"
                   />
-                  {{ n.thinkText }}
+                  {{
+                    n.activeReasoning ||
+                    (n.stableReasoningChunks && n.stableReasoningChunks.length)
+                      ? n.finish === 0 &&
+                        !n.response &&
+                        !n.activeResponse &&
+                        (!n.stableChunks || n.stableChunks.length === 0)
+                        ? n.thinkText || $t('agent.thinking')
+                        : $t('agent.thinked')
+                      : n.thinkText
+                  }}
                   <i
                     v-bind:class="{
                       'el-icon-arrow-down': !n.isOpen,
@@ -320,6 +348,34 @@
                 </div>
 
                 <!-- 主会话-->
+                <!-- 透传的独立思考过程区域 -->
+                <template
+                  v-if="
+                    (n.stableReasoningChunks &&
+                      n.stableReasoningChunks.length) ||
+                    n.activeReasoning
+                  "
+                >
+                  <div
+                    class="answer-content no-order-chunk-answer reasoning-area ds-res"
+                    v-show="n.isOpen"
+                  >
+                    <section class="reasoning-area-content">
+                      <div
+                        v-for="(chunk, idx) in n.stableReasoningChunks"
+                        :key="'r-' + idx"
+                        class="chunk_stable"
+                        v-html="chunk"
+                      ></div>
+                      <div
+                        v-if="n.activeReasoning"
+                        class="chunk_active"
+                        v-html="n.activeReasoning"
+                      ></div>
+                    </section>
+                  </div>
+                </template>
+
                 <template
                   v-if="
                     (n.stableChunks && n.stableChunks.length) ||
@@ -2007,5 +2063,9 @@ img.failed::after {
   display: flex;
   flex-direction: column;
   gap: 10px;
+}
+
+.reasoning-area {
+  margin-bottom: 8px;
 }
 </style>
