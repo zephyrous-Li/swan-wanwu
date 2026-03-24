@@ -89,7 +89,7 @@ export default {
   }
 
   .mcp-content {
-    padding: 0 10px;
+    padding: 0 20px;
     width: 100%;
     height: 100%;
   }
