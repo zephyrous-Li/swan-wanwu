@@ -1,14 +1,11 @@
 <template>
   <div class="page-wrapper modelAccess">
-    <div
-      class="table-wrap list-common wrap-fullheight"
-      style="padding-top: 20px"
-    >
+    <div class="table-wrap list-common wrap-fullheight">
       <!--<div class="page-title">
         <img class="page-title-img" src="@/assets/imgs/model.svg" alt="" />
         <span class="page-title-name">{{ $t('modelAccess.title') }}</span>
       </div>-->
-      <div class="tabs" style="margin: 0 20px">
+      <div class="tabs tabs-x-top">
         <div
           v-for="item in isSystem
             ? tabList.filter(({ type }) => !type)

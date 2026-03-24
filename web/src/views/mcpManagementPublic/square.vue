@@ -1,6 +1,6 @@
 <template>
   <div class="page-wrapper mcp-management">
-    <div class="common_bg">
+    <div class="common_bg" style="padding-top: 10px">
       <!--<div class="page-title">
         <img class="page-title-img" src="@/assets/imgs/mcp_menu.svg" alt="" />
         <span class="page-title-name">{{ $t('menu.mcp') }}</span>
@@ -162,8 +162,9 @@ export default {
     }
     .tab-span.is-active {
       color: $color;
-      background: #fff;
+      background: $color_opacity;
       font-weight: bold;
+      border-radius: 16px;
     }
     .mcp-main {
       display: flex;

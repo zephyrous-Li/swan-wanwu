@@ -9,16 +9,20 @@
       />
       <span class="page-title-name">{{ $t('menu.operationManage') }}</span>
     </div>
-    <div class="setting-tabs" v-if="checkPerm(operationPerm)">
+    <div
+      class="tabs tabs-x-top"
+      style="margin-bottom: -20px"
+      v-if="checkPerm(operationPerm)"
+    >
       <div
-        :class="['setting-tab', { active: tabActive === 0 }]"
+        :class="['tab', { active: tabActive === 0 }]"
         @click="tabClick(0)"
         v-if="checkPerm(oauthPerm)"
       >
         {{ $t('oauth.title') }}
       </div>
       <div
-        :class="['setting-tab', { active: tabActive === 1 }]"
+        :class="['tab', { active: tabActive === 1 }]"
         @click="tabClick(1)"
         v-if="checkPerm(statisticsPerm)"
       >
@@ -61,31 +65,13 @@ export default {
 </script>
 
 <style lang="scss" scoped>
+@import '@/style/tabs.scss';
 .page-title {
   .el-icon-arrow-left {
     margin-right: 10px;
     font-size: 15px;
     cursor: pointer;
     color: $color_title;
-  }
-}
-.setting-tabs {
-  margin: 20px 20px -20px 20px;
-  .setting-tab {
-    display: inline-block;
-    vertical-align: middle;
-    width: 160px;
-    height: 40px;
-    border-bottom: 1px solid #333;
-    font-size: 14px;
-    line-height: 40px;
-    text-align: center;
-    cursor: pointer;
-  }
-  .active {
-    background: #333;
-    color: #fff;
-    font-weight: bold;
   }
 }
 </style>

@@ -51,9 +51,9 @@
     </div>
     <div class="tempSquare-main">
       <div class="left-info">
-        <div class="tempSquare-tabs">
+        <div class="tabs">
           <div
-            :class="['tempSquare-tab', { active: tabActive === 0 }]"
+            :class="['tab', { active: tabActive === 0 }]"
             @click="tabClick(0)"
           >
             {{ $t('square.info') }}
@@ -269,6 +269,7 @@ export default {
 };
 </script>
 <style lang="scss">
+@import '@/style/tabs.scss';
 .tempSquare-detail {
   padding: 20px;
   overflow: auto;
@@ -326,24 +327,6 @@ export default {
     .left-info {
       width: calc(100% - 420px);
       margin-right: 20px;
-      .tempSquare-tabs {
-        margin: 20px 0 0 0;
-        .tempSquare-tab {
-          display: inline-block;
-          vertical-align: middle;
-          width: 160px;
-          height: 40px;
-          border-bottom: 1px solid #333;
-          line-height: 40px;
-          text-align: center;
-          cursor: pointer;
-        }
-        .active {
-          background: #333;
-          color: #fff;
-          font-weight: bold;
-        }
-      }
       .overview {
         .overview-item {
           display: flex;

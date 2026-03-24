@@ -18,15 +18,15 @@
         ref="searchInput"
         @handleSearch="handleSearch"
       />
-      <div class="workflow-tabs" v-if="[workflow, chat].includes(type)">
+      <div class="tabs workflow-tabs" v-if="[workflow, chat].includes(type)">
         <div
-          :class="['workflow-tab', { active: tabActive === workflow }]"
+          :class="['tab', { active: tabActive === workflow }]"
           @click="tabClick(workflow)"
         >
           {{ $t('appSpace.workflow') }}
         </div>
         <div
-          :class="['workflow-tab', { active: tabActive === chat }]"
+          :class="['tab', { active: tabActive === chat }]"
           @click="tabClick(chat)"
         >
           {{ $t('appSpace.chat') }}
@@ -214,30 +214,15 @@ export default {
 };
 </script>
 <style lang="scss" scoped>
+@import '@/style/tabs.scss';
 .header-right {
   display: inline-block;
   float: right;
 }
 .workflow-tabs {
-  margin-top: 20px;
+  margin-top: 14px;
+  margin-bottom: 0 !important;
   display: inline-block;
   width: calc(100% - 200px);
-
-  .workflow-tab {
-    display: inline-block;
-    vertical-align: middle;
-    width: 160px;
-    height: 40px;
-    border-bottom: 1px solid #333;
-    line-height: 40px;
-    text-align: center;
-    cursor: pointer;
-  }
-
-  .active {
-    background: #333;
-    color: #fff;
-    font-weight: bold;
-  }
 }
 </style>

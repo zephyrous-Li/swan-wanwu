@@ -19,8 +19,9 @@
     }
     .tab-span.is-active {
       color: $color;
-      background: #fff;
+      background: $color_opacity;
       font-weight: bold;
+      border-radius: 16px;
     }
     .tempSquare-main {
       display: flex;
