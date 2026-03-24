@@ -135,8 +135,6 @@ func ModelExperienceLLM(ctx *gin.Context, userId, orgId string, req *request.Mod
 	var answer string
 	var reasonContent string
 	var (
-		firstFlag         = false // 思维链起始标识符，默认思维链未开始
-		endFlag           = false // 思维链结束标识符，默认思维链未结束
 		firstTokenTime    time.Time
 		firstTokenLatency int
 		promptTokens      int
@@ -155,30 +153,12 @@ func ModelExperienceLLM(ctx *gin.Context, userId, orgId string, req *request.Mod
 			if len(data.Choices) > 0 && data.Choices[0].Delta != nil {
 				delta := data.Choices[0].Delta
 				answer = answer + delta.Content
-
 				if delta.ReasoningContent != nil {
 					reasonContent = reasonContent + *delta.ReasoningContent
 				}
-
-				if firstFlag && !endFlag && delta.ReasoningContent != nil {
-					delta.Content = delta.Content + *delta.ReasoningContent
-				}
-				if !endFlag && delta.Content != "" && ((delta.ReasoningContent != nil &&
-					*delta.ReasoningContent == "") || delta.ReasoningContent == nil) && firstFlag {
-					delta.Content = "\n</think>\n" + delta.Content
-					endFlag = true
-				}
-				if !firstFlag && delta.ReasoningContent != nil && *delta.ReasoningContent != "" && delta.Content == "" {
-					delta.Content = "<think>\n" + delta.Content + *delta.ReasoningContent
-					firstFlag = true
-				}
-
-				// v0.4.4临时将delta.ReasoningContent置空，适配前端显示
-				delta.ReasoningContent = nil
 			}
 
-			dataByte, _ := json.Marshal(data)
-			dataStr = fmt.Sprintf("data: %v\n", string(dataByte))
+			dataStr = sseResp.String()
 			if firstTokenTime.IsZero() {
 				firstTokenTime = time.Now()
 				firstTokenLatency = int(time.Since(startTime).Milliseconds())
