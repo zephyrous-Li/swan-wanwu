@@ -39,7 +39,7 @@
         >
           <div class="card-title">
             <img
-              class="card-logo"
+              class="common-card-logo"
               :src="avatarSrc(item.avatar.path, defaultAvatar)"
             />
             <div class="mcp_detailBox">
@@ -165,10 +165,8 @@ export default {
 };
 </script>
 <style lang="scss">
-.card-logo {
-  width: 50px;
-  height: 50px;
-  object-fit: cover;
+.mcp-content-box {
+  padding-top: 10px;
 }
 .mcp-content-box .noData {
   width: 100%;

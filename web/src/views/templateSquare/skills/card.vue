@@ -2,7 +2,7 @@
   <div class="card" @click.stop="handleClick">
     <div class="card-title">
       <img
-        class="card-logo"
+        class="common-card-logo"
         v-if="info.avatar && info.avatar.path"
         :src="avatarSrc(info.avatar.path)"
       />
@@ -188,11 +188,6 @@ export default {
       }
     }
   }
-}
-.card-logo {
-  width: 50px;
-  height: 50px;
-  object-fit: cover;
 }
 
 .card-bottom-right {
