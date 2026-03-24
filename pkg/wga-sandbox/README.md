@@ -146,7 +146,7 @@ runSession, outputCh, _ := wga_sandbox.Run(ctx,
     }),
 )
 
-tr := ag_ui_util.NewOpencodeTranslator("run-456", "thread-123")
+tr := ag_ui_util.NewOpencodeTranslator("thread-123", "run-456")
 eventCh := tr.TranslateStream(ctx, outputCh)
 ```
 

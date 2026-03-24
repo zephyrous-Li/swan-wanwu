@@ -8,36 +8,39 @@ import (
 	aguievents "github.com/ag-ui-protocol/ag-ui/sdks/community/go/pkg/core/events"
 	"github.com/cloudwego/eino/adk"
 	"github.com/cloudwego/eino/schema"
-	"github.com/google/uuid"
 )
 
+// AgentActivitySimple 表示单个智能体的活动状态。
 type AgentActivitySimple struct {
-	activityType        string
-	activityID          string
-	agentName           string
-	reasoningID         string
-	reasoningMsgID      string
-	textMsgID           string
-	reasoningStarted    bool
-	reasoningMsgStarted bool
-	textStarted         bool
-	toolCallStarted     map[string]bool
-	toolCallMsgIDs      map[string]string
+	*MessageState
+	activityType    string
+	activityID      string
+	agentName       string
+	toolCallStarted map[string]bool
 }
 
-func NewAgentActivitySimple(agentName, activityType string) *AgentActivitySimple {
+const subAgentActivityType = "sub_agent"
+
+func NewAgentActivitySimple(agentName string) *AgentActivitySimple {
 	return &AgentActivitySimple{
-		activityType:    activityType,
-		activityID:      uuid.NewString(),
+		MessageState:    NewMessageState(),
+		activityType:    subAgentActivityType,
+		activityID:      aguievents.GenerateStepID(),
 		agentName:       agentName,
 		toolCallStarted: make(map[string]bool),
-		toolCallMsgIDs:  make(map[string]string),
 	}
 }
 
-type EinoMultiAgentSimpleTranslator struct {
-	runID              string
+// EinoMultiAgentTranslator 将 eino AgentEvent 转换为 AG-UI 事件，用于多智能体场景。
+// 通过 ACTIVITY_SNAPSHOT 事件标识当前运行的智能体。
+//
+// ActivitySnapshot 结构示例：
+//
+//	{"type":"ACTIVITY_SNAPSHOT","messageId":"step-xxx","activityType":"sub_agent",
+//	 "content":{"agentName":"Plan Agent","instanceNum":1,"status":"started"}}
+type EinoMultiAgentTranslator struct {
 	threadID           string
+	runID              string
 	runStarted         bool
 	runFinished        bool
 	toolCallIDs        map[string]bool
@@ -46,17 +49,18 @@ type EinoMultiAgentSimpleTranslator struct {
 	agentInstanceCount map[string]int
 }
 
-func NewEinoMultiAgentSimpleTranslator(runID, threadID string) *EinoMultiAgentSimpleTranslator {
-	return &EinoMultiAgentSimpleTranslator{
-		runID:              runID,
+// NewEinoMultiAgentTranslator 创建多智能体转换器。
+func NewEinoMultiAgentTranslator(threadID, runID string) *EinoMultiAgentTranslator {
+	return &EinoMultiAgentTranslator{
 		threadID:           threadID,
+		runID:              runID,
 		toolCallIDs:        make(map[string]bool),
 		agentActivities:    make([]*AgentActivitySimple, 0),
 		agentInstanceCount: make(map[string]int),
 	}
 }
 
-func (t *EinoMultiAgentSimpleTranslator) TranslateStream(ctx context.Context, iter *adk.AsyncIterator[*adk.AgentEvent]) <-chan aguievents.Event {
+func (t *EinoMultiAgentTranslator) TranslateStream(ctx context.Context, iter *adk.AsyncIterator[*adk.AgentEvent]) <-chan aguievents.Event {
 	out := make(chan aguievents.Event, 1024)
 	go func() {
 		defer util.PrintPanicStack()
@@ -141,29 +145,27 @@ func (t *EinoMultiAgentSimpleTranslator) TranslateStream(ctx context.Context, it
 	return out
 }
 
-func (t *EinoMultiAgentSimpleTranslator) switchAgent(newAgent string) []aguievents.Event {
+func (t *EinoMultiAgentTranslator) switchAgent(newAgent string) []aguievents.Event {
 	var events []aguievents.Event
 
 	if t.currentActivity != nil {
 		events = append(events, t.endCurrentAgentActivity()...)
 	}
 
-	activityType := t.getActivityType(newAgent)
-
 	t.agentInstanceCount[newAgent]++
 	instanceNum := t.agentInstanceCount[newAgent]
 
-	activity := NewAgentActivitySimple(newAgent, activityType)
+	activity := NewAgentActivitySimple(newAgent)
 	t.agentActivities = append(t.agentActivities, activity)
 
 	content := map[string]interface{}{
 		"agentName":   newAgent,
 		"instanceNum": instanceNum,
-		"status":      "start",
+		"status":      "started",
 	}
 	events = append(events, aguievents.NewActivitySnapshotEvent(
 		activity.activityID,
-		activityType,
+		activity.activityType,
 		content,
 	))
 
@@ -172,24 +174,7 @@ func (t *EinoMultiAgentSimpleTranslator) switchAgent(newAgent string) []aguieven
 	return events
 }
 
-func (t *EinoMultiAgentSimpleTranslator) getActivityType(agentName string) string {
-	switch agentName {
-	case "Plan Agent", "PlanAgent":
-		return "plan_activity"
-	case "Research Agent", "ResearchAgent":
-		return "research_activity"
-	case "Report Agent", "ReportAgent":
-		return "report_activity"
-	case "Supervisor Agent", "SupervisorAgent":
-		return "supervisor_activity"
-	case "Multi-Modal Agent", "MultiModalAgent", "Multi-ModalAgent":
-		return "multimodal_activity"
-	default:
-		return "agent_activity"
-	}
-}
-
-func (t *EinoMultiAgentSimpleTranslator) endCurrentAgentActivity() []aguievents.Event {
+func (t *EinoMultiAgentTranslator) endCurrentAgentActivity() []aguievents.Event {
 	if t.currentActivity == nil {
 		return nil
 	}
@@ -197,20 +182,8 @@ func (t *EinoMultiAgentSimpleTranslator) endCurrentAgentActivity() []aguievents.
 	activity := t.currentActivity
 	var events []aguievents.Event
 
-	if activity.reasoningMsgStarted {
-		events = append(events, aguievents.NewReasoningMessageEndEvent(activity.reasoningMsgID))
-		activity.reasoningMsgStarted = false
-	}
-
-	if activity.reasoningStarted {
-		events = append(events, aguievents.NewReasoningEndEvent(activity.reasoningID))
-		activity.reasoningStarted = false
-	}
-
-	if activity.textStarted {
-		events = append(events, aguievents.NewTextMessageEndEvent(activity.textMsgID))
-		activity.textStarted = false
-	}
+	// 结束所有活跃的消息
+	events = append(events, activity.EndAll()...)
 
 	content := map[string]interface{}{
 		"agentName": activity.agentName,
@@ -225,7 +198,7 @@ func (t *EinoMultiAgentSimpleTranslator) endCurrentAgentActivity() []aguievents.
 	return events
 }
 
-func (t *EinoMultiAgentSimpleTranslator) translateMessageForCurrentAgent(msg *schema.Message) []aguievents.Event {
+func (t *EinoMultiAgentTranslator) translateMessageForCurrentAgent(msg *schema.Message) []aguievents.Event {
 	if t.currentActivity == nil {
 		return nil
 	}
@@ -233,15 +206,17 @@ func (t *EinoMultiAgentSimpleTranslator) translateMessageForCurrentAgent(msg *sc
 	return t.translateMessageWithActivity(msg, t.currentActivity)
 }
 
-func (t *EinoMultiAgentSimpleTranslator) translateMessageWithActivity(msg *schema.Message, activity *AgentActivitySimple) []aguievents.Event {
+func (t *EinoMultiAgentTranslator) translateMessageWithActivity(msg *schema.Message, activity *AgentActivitySimple) []aguievents.Event {
 	if msg == nil {
 		return nil
 	}
 
 	var events []aguievents.Event
 
+	// 处理工具调用结果
 	if msg.Role == schema.Tool && msg.ToolCallID != "" {
-		toolResultMessageID := uuid.NewString()
+		events = append(events, activity.EndAll()...)
+		toolResultMessageID := aguievents.GenerateMessageID()
 		events = append(events, aguievents.NewToolCallResultEvent(toolResultMessageID, msg.ToolCallID, msg.Content))
 		return events
 	}
@@ -252,70 +227,46 @@ func (t *EinoMultiAgentSimpleTranslator) translateMessageWithActivity(msg *schem
 	}
 
 	if len(msg.ToolCalls) > 0 {
+		parentMsgID := activity.TextMsgID()
+		events = append(events, activity.EndAll()...)
+
 		for _, tc := range msg.ToolCalls {
 			if tc.ID == "" || tc.Function.Name == "" {
 				continue
 			}
 			if !t.toolCallIDs[tc.ID] {
-				var toolCallMsgID string
-				if activity.toolCallMsgIDs[tc.ID] == "" {
-					toolCallMsgID = uuid.NewString()
-					activity.toolCallMsgIDs[tc.ID] = toolCallMsgID
-				} else {
-					toolCallMsgID = activity.toolCallMsgIDs[tc.ID]
-				}
+				toolCallID := tc.ID
 				if !activity.toolCallStarted[tc.ID] {
-					events = append(events, aguievents.NewToolCallStartEvent(toolCallMsgID, tc.Function.Name))
+					events = append(events, aguievents.NewToolCallStartEvent(toolCallID, tc.Function.Name, aguievents.WithParentMessageID(parentMsgID)))
 					activity.toolCallStarted[tc.ID] = true
 				}
 				if tc.Function.Arguments != "" {
-					events = append(events, aguievents.NewToolCallArgsEvent(toolCallMsgID, tc.Function.Arguments))
+					events = append(events, aguievents.NewToolCallArgsEvent(toolCallID, tc.Function.Arguments))
 				}
-				events = append(events, aguievents.NewToolCallEndEvent(toolCallMsgID))
+				events = append(events, aguievents.NewToolCallEndEvent(toolCallID))
 				t.toolCallIDs[tc.ID] = true
 			}
 		}
 	}
 
 	if msg.ReasoningContent != "" {
-		if activity.textStarted {
-			events = append(events, aguievents.NewTextMessageEndEvent(activity.textMsgID))
-			activity.textStarted = false
-		}
-		if !activity.reasoningStarted {
-			activity.reasoningID = uuid.NewString()
-			events = append(events, aguievents.NewReasoningStartEvent(activity.reasoningID))
-			activity.reasoningStarted = true
-		}
-		if !activity.reasoningMsgStarted {
-			activity.reasoningMsgID = uuid.NewString()
-			events = append(events, aguievents.NewReasoningMessageStartEvent(activity.reasoningMsgID, "reasoning"))
-			activity.reasoningMsgStarted = true
-		}
-		events = append(events, aguievents.NewReasoningMessageContentEvent(activity.reasoningMsgID, msg.ReasoningContent))
+		events = append(events, activity.EndTextMessage()...)
+		events = append(events, activity.StartReasoning()...)
+		events = append(events, activity.StartReasoningMessage()...)
+		events = append(events, aguievents.NewReasoningMessageContentEvent(activity.ReasoningMsgID(), msg.ReasoningContent))
 	}
 
 	if msg.Content != "" {
-		if activity.reasoningMsgStarted {
-			events = append(events, aguievents.NewReasoningMessageEndEvent(activity.reasoningMsgID))
-			activity.reasoningMsgStarted = false
-		}
-		if activity.reasoningStarted {
-			events = append(events, aguievents.NewReasoningEndEvent(activity.reasoningID))
-			activity.reasoningStarted = false
-		}
-		if !activity.textStarted {
-			activity.textMsgID = uuid.NewString()
-			events = append(events, aguievents.NewTextMessageStartEvent(activity.textMsgID, aguievents.WithRole("assistant")))
-			activity.textStarted = true
-		}
-		events = append(events, aguievents.NewTextMessageContentEvent(activity.textMsgID, msg.Content))
+		events = append(events, activity.EndReasoningMessage()...)
+		events = append(events, activity.EndReasoning()...)
+		events = append(events, activity.StartTextMessage()...)
+		events = append(events, aguievents.NewTextMessageContentEvent(activity.TextMsgID(), msg.Content))
 	}
 
 	return events
 }
 
-func (t *EinoMultiAgentSimpleTranslator) translateStreamForAgent(ctx context.Context, msgOutput *adk.MessageVariant, out chan<- aguievents.Event) {
+func (t *EinoMultiAgentTranslator) translateStreamForAgent(ctx context.Context, msgOutput *adk.MessageVariant, out chan<- aguievents.Event) {
 	if msgOutput.MessageStream == nil {
 		return
 	}
@@ -350,7 +301,7 @@ func (t *EinoMultiAgentSimpleTranslator) translateStreamForAgent(ctx context.Con
 	}
 }
 
-func (t *EinoMultiAgentSimpleTranslator) finishAllAgents() []aguievents.Event {
+func (t *EinoMultiAgentTranslator) finishAllAgents() []aguievents.Event {
 	var events []aguievents.Event
 
 	if t.currentActivity != nil {

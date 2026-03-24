@@ -1,3 +1,7 @@
+// Package ag_ui_util 提供 AG-UI 协议的事件转换功能。
+//
+// 本实现采用串行处理模式，是 AG-UI 完整规范的子集。
+// 完整的 AG-UI 协议规范请参考 README.md。
 package ag_ui_util
 
 import (
@@ -6,37 +10,51 @@ import (
 
 	"github.com/UnicomAI/wanwu/pkg/util"
 	aguievents "github.com/ag-ui-protocol/ag-ui/sdks/community/go/pkg/core/events"
-	"github.com/google/uuid"
 )
 
+// BaseState 维护 AG-UI 事件流的基础状态。
+// 跟踪 Run 和消息的活跃状态，确保事件的正确顺序。
 type BaseState struct {
-	runID               string
-	threadID            string
-	messageID           string
-	reasoningMessageID  string
-	runStarted          bool
-	runFinished         bool
-	textStarted         bool
-	reasoningStarted    bool
-	reasoningMsgStarted bool
+	threadID    string
+	runID       string
+	runStarted  bool
+	runFinished bool
+	*MessageState
 }
 
-func NewBaseState(runID, threadID string) BaseState {
+// NewBaseState 创建基础状态。
+func NewBaseState(threadID, runID string) BaseState {
 	return BaseState{
-		runID:    runID,
-		threadID: threadID,
+		threadID:     threadID,
+		runID:        runID,
+		MessageState: NewMessageState(),
 	}
 }
 
-func (s *BaseState) RunID() string              { return s.runID }
-func (s *BaseState) ThreadID() string           { return s.threadID }
-func (s *BaseState) MessageID() string          { return s.messageID }
-func (s *BaseState) ReasoningMessageID() string { return s.reasoningMessageID }
-
-func (s *BaseState) SetMessageID(messageID string) {
-	s.messageID = messageID
+func (s *BaseState) ThreadID() string    { return s.threadID }
+func (s *BaseState) RunID() string       { return s.runID }
+func (s *BaseState) MessageID() string   { return s.TextMsgID() }
+func (s *BaseState) ReasoningID() string { return s.MessageState.ReasoningID() }
+func (s *BaseState) ReasoningMessageID() string {
+	return s.ReasoningMsgID()
 }
 
+func (s *BaseState) SetMessageID(messageID string) {
+	s.SetTextMsgID(messageID)
+}
+
+// ResetMessageID 重置消息状态，用于 Tool 消息处理完毕后准备接收新的 Assistant 消息。
+//
+// 根据 AG-UI 协议：
+//   - TOOL_CALL_RESULT 创建独立的 ToolMessage，不自动重置 TextMessage/Reasoning 状态
+//   - 但 Tool 消息意味着当前轮次结束，后续 Assistant 响应应使用新的 messageId
+//   - 同时重置 bool 状态是防御性编程，确保即使未调用 End 方法也能正确重置
+func (s *BaseState) ResetMessageID() {
+	s.Reset()
+}
+
+// EnsureRunStarted 确保 RunStarted 事件已发送（幂等）。
+// AG-UI 协议要求：Run 开始时必须发送 RUN_STARTED 事件。
 func (s *BaseState) EnsureRunStarted() []aguievents.Event {
 	if s.runStarted {
 		return nil
@@ -45,60 +63,10 @@ func (s *BaseState) EnsureRunStarted() []aguievents.Event {
 	return []aguievents.Event{aguievents.NewRunStartedEvent(s.threadID, s.runID)}
 }
 
-func (s *BaseState) StartTextMessage() []aguievents.Event {
-	if s.textStarted {
-		return nil
-	}
-	s.textStarted = true
-	if s.messageID == "" {
-		s.messageID = uuid.NewString()
-	}
-	return []aguievents.Event{aguievents.NewTextMessageStartEvent(s.messageID, aguievents.WithRole("assistant"))}
-}
-
-func (s *BaseState) EndTextMessage() []aguievents.Event {
-	if !s.textStarted {
-		return nil
-	}
-	s.textStarted = false
-	return []aguievents.Event{aguievents.NewTextMessageEndEvent(s.messageID)}
-}
-
-func (s *BaseState) StartReasoning() []aguievents.Event {
-	if s.reasoningStarted {
-		return nil
-	}
-	s.reasoningStarted = true
-	return []aguievents.Event{aguievents.NewReasoningStartEvent(s.messageID)}
-}
-
-func (s *BaseState) StartReasoningMessage() []aguievents.Event {
-	if s.reasoningMsgStarted {
-		return nil
-	}
-	s.reasoningMsgStarted = true
-	if s.reasoningMessageID == "" {
-		s.reasoningMessageID = uuid.NewString()
-	}
-	return []aguievents.Event{aguievents.NewReasoningMessageStartEvent(s.reasoningMessageID, "reasoning")}
-}
-
-func (s *BaseState) EndReasoningMessage() []aguievents.Event {
-	if !s.reasoningMsgStarted {
-		return nil
-	}
-	s.reasoningMsgStarted = false
-	return []aguievents.Event{aguievents.NewReasoningMessageEndEvent(s.reasoningMessageID)}
-}
-
-func (s *BaseState) EndReasoning() []aguievents.Event {
-	if !s.reasoningStarted {
-		return nil
-	}
-	s.reasoningStarted = false
-	return []aguievents.Event{aguievents.NewReasoningEndEvent(s.messageID)}
-}
-
+// FinishBase 生成基础结束事件，确保所有活跃的消息状态被正确关闭。
+// 调用顺序：RUN_STARTED → EndAll → RUN_FINISHED
+//
+// AG-UI 协议要求：所有活跃的消息必须在进行 RUN_FINISHED 之前正确关闭。
 func (s *BaseState) FinishBase() []aguievents.Event {
 	if s.runFinished {
 		return nil
@@ -106,13 +74,12 @@ func (s *BaseState) FinishBase() []aguievents.Event {
 	s.runFinished = true
 	var events []aguievents.Event
 	events = append(events, s.EnsureRunStarted()...)
-	events = append(events, s.EndReasoningMessage()...)
-	events = append(events, s.EndReasoning()...)
-	events = append(events, s.EndTextMessage()...)
+	events = append(events, s.EndAll()...)
 	events = append(events, aguievents.NewRunFinishedEvent(s.threadID, s.runID))
 	return events
 }
 
+// EventsToJSONChannel 将事件流转换为 JSON 字符串流，用于 SSE 等传输场景。
 func EventsToJSONChannel(ctx context.Context, in <-chan aguievents.Event) <-chan string {
 	out := make(chan string, 1024)
 	go func() {
@@ -133,8 +100,4 @@ func EventsToJSONChannel(ctx context.Context, in <-chan aguievents.Event) <-chan
 		}
 	}()
 	return out
-}
-
-func RemoveReasoningContent(content string) string {
-	return content
 }

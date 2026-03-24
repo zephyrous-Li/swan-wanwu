@@ -5,7 +5,6 @@ import (
 	"encoding/json"
 
 	aguievents "github.com/ag-ui-protocol/ag-ui/sdks/community/go/pkg/core/events"
-	"github.com/google/uuid"
 	"github.com/sst/opencode-sdk-go"
 
 	"github.com/UnicomAI/wanwu/pkg/log"
@@ -34,14 +33,28 @@ type opencodeErrorPart struct {
 	} `json:"error"`
 }
 
+// OpencodeTranslator 将 opencode JSON 事件流转换为 AG-UI 事件。
+// 用于 wga-sandbox 输出转换。
+//
+// opencode 事件类型映射：
+//   - "text" -> TEXT_MESSAGE_CONTENT
+//   - "reasoning" -> REASONING_MESSAGE_CONTENT
+//   - "tool_use" -> TOOL_CALL_START/ARGS/END/RESULT
+//   - "error" -> TEXT_MESSAGE_CONTENT（带 [error] 前缀）
+//
+// AG-UI 协议要求：
+//   - ToolCall 使用 parentMessageId 关联到当前文本消息
+//   - ToolResult 使用新的 messageId
+//   - Reasoning 在 TextMessage 之前发送，使用独立的消息流
 type OpencodeTranslator struct {
 	BaseState
 	activeToolCalls map[string]bool
 }
 
-func NewOpencodeTranslator(runID, threadID string) *OpencodeTranslator {
+// NewOpencodeTranslator 创建 opencode 转换器。
+func NewOpencodeTranslator(threadID, runID string) *OpencodeTranslator {
 	return &OpencodeTranslator{
-		BaseState:       NewBaseState(runID, threadID),
+		BaseState:       NewBaseState(threadID, runID),
 		activeToolCalls: make(map[string]bool),
 	}
 }
@@ -90,7 +103,7 @@ func (t *OpencodeTranslator) translate(_ context.Context, line string) []aguieve
 	}
 
 	if t.MessageID() == "" {
-		t.SetMessageID(uuid.NewString())
+		t.SetMessageID(aguievents.GenerateMessageID())
 	}
 
 	var events []aguievents.Event
@@ -179,12 +192,9 @@ func (t *OpencodeTranslator) translateToolUse(partData json.RawMessage) []aguiev
 
 	var events []aguievents.Event
 	events = append(events, t.EnsureRunStarted()...)
-	events = append(events, t.EndReasoningMessage()...)
-	events = append(events, t.EndReasoning()...)
 
-	if t.MessageID() == "" {
-		t.SetMessageID(uuid.NewString())
-	}
+	parentMsgID := t.MessageID()
+	events = append(events, t.EndAll()...)
 
 	toolCallID := part.CallID
 	if toolCallID == "" {
@@ -194,7 +204,7 @@ func (t *OpencodeTranslator) translateToolUse(partData json.RawMessage) []aguiev
 	switch part.State.Status {
 	case opencode.ToolPartStateStatusPending, opencode.ToolPartStateStatusRunning:
 		if !t.activeToolCalls[toolCallID] {
-			events = append(events, aguievents.NewToolCallStartEvent(toolCallID, part.Tool, aguievents.WithParentMessageID(t.MessageID())))
+			events = append(events, aguievents.NewToolCallStartEvent(toolCallID, part.Tool, aguievents.WithParentMessageID(parentMsgID)))
 			t.activeToolCalls[toolCallID] = true
 			if input := t.getToolInput(part.State); input != "" {
 				events = append(events, aguievents.NewToolCallArgsEvent(toolCallID, input))
@@ -203,7 +213,7 @@ func (t *OpencodeTranslator) translateToolUse(partData json.RawMessage) []aguiev
 
 	case opencode.ToolPartStateStatusCompleted:
 		if !t.activeToolCalls[toolCallID] {
-			events = append(events, aguievents.NewToolCallStartEvent(toolCallID, part.Tool, aguievents.WithParentMessageID(t.MessageID())))
+			events = append(events, aguievents.NewToolCallStartEvent(toolCallID, part.Tool, aguievents.WithParentMessageID(parentMsgID)))
 			if input := t.getToolInput(part.State); input != "" {
 				events = append(events, aguievents.NewToolCallArgsEvent(toolCallID, input))
 			}
@@ -212,18 +222,18 @@ func (t *OpencodeTranslator) translateToolUse(partData json.RawMessage) []aguiev
 			events = append(events, aguievents.NewToolCallEndEvent(toolCallID))
 			delete(t.activeToolCalls, toolCallID)
 		}
-		resultMessageID := uuid.NewString()
+		resultMessageID := aguievents.GenerateMessageID()
 		events = append(events, aguievents.NewToolCallResultEvent(resultMessageID, toolCallID, part.State.Output))
 
 	case opencode.ToolPartStateStatusError:
 		if !t.activeToolCalls[toolCallID] {
-			events = append(events, aguievents.NewToolCallStartEvent(toolCallID, part.Tool, aguievents.WithParentMessageID(t.MessageID())))
+			events = append(events, aguievents.NewToolCallStartEvent(toolCallID, part.Tool, aguievents.WithParentMessageID(parentMsgID)))
 			events = append(events, aguievents.NewToolCallEndEvent(toolCallID))
 		} else {
 			events = append(events, aguievents.NewToolCallEndEvent(toolCallID))
 			delete(t.activeToolCalls, toolCallID)
 		}
-		resultMessageID := uuid.NewString()
+		resultMessageID := aguievents.GenerateMessageID()
 		events = append(events, aguievents.NewToolCallResultEvent(resultMessageID, toolCallID, part.State.Error))
 	}
 
