@@ -55,7 +55,12 @@ export default {
       _subConversionsMap: null, // 子会话存储 Map
       _subConversionProcessors: null, // 子会话处理器 Map
       responseFiles: [], // 用于存储 SSE 返回的附件文件列表
-      _isInReasoning: false, // 是否处于思考过程中
+
+      // ---- 推理内容（reasoning_content）流处理相关 ----
+      _isInReasoning: false, // 客户端侧：推理打字动画是否仍在进行中
+      _reasoningSSEDone: false, // 服务端侧：SSE 是否已停止推送 reasoning_content
+      _pendingOutputQueue: [], // 正文缓冲队列：推理动画完毕前暂存所有正文帧
+      _reasoningPrint: null, // 推理专用打字机实例（Print）
     };
   },
   created() {
@@ -269,6 +274,133 @@ export default {
         rest,
       });
     },
+
+    /**
+     * 初始化推理内容流处理器
+     * 创建独立的 reasoningProcessor 和 _reasoningPrint，并初始化缓冲状态
+     * @param {Object} options
+     * @param {number} options.lastIndex - 当前会话索引
+     * @param {Object} options.md - markdown-it 实例
+     * @param {Function} options.parseSub - 引用解析函数
+     * @param {Function} options.convertLatexSyntax - LaTeX 转换函数
+     * @returns {StreamProcessor} 推理专用流处理器实例
+     */
+    _initReasoningStream({ lastIndex, md, parseSub, convertLatexSyntax }) {
+      // 初始化状态标志位
+      this._isInReasoning = false;
+      this._reasoningSSEDone = false;
+      this._pendingOutputQueue = [];
+
+      // 推理专用 md 包装器：渲染前去除每行行首空格
+      // 防止 markdown-it 将行首缩进误判为代码块（Indented Code Block）
+      const reasoningMd = {
+        render: text =>
+          md.render(
+            text
+              .split('\n')
+              .map(line => line.trimStart())
+              .join('\n'),
+          ),
+        utils: md.utils,
+      };
+
+      const reasoningProcessor = new StreamProcessor({
+        lastIndex,
+        md: reasoningMd,
+        parseSub,
+        convertLatexSyntax,
+      });
+
+      // 思考打字机：onPrintEnd 在队列暂时为空时就会触发（可能多次）
+      // 只有服务端也确认完成推理推送后，这次清空才是真正结束
+      this._reasoningPrint = new Print({
+        onPrintEnd: () => {
+          if (this._reasoningSSEDone) {
+            this._flushPendingOutput();
+          }
+        },
+      });
+
+      return reasoningProcessor;
+    },
+
+    /**
+     * 清空正文缓冲队列，将所有暂存的正文内容送入正文打字机
+     * 由 _reasoningPrint.onPrintEnd 或检测到打字机空载时主动调用
+     */
+    _flushPendingOutput() {
+      this._isInReasoning = false;
+      if (this._pendingOutputQueue && this._pendingOutputQueue.length) {
+        this._pendingOutputQueue.forEach(item => {
+          this._print.print(item.sentence, item.commonData, item.cb);
+        });
+        this._pendingOutputQueue = [];
+      }
+    },
+
+    /**
+     * 对每个 SSE 消息帧进行推理/正文路由分发
+     * 根据 _isInReasoning 状态决定正文数据走直通路径还是缓冲队列
+     * @param {Object} options
+     * @param {string} options.reasoning - 当前帧的推理内容
+     * @param {string} options.output - 当前帧的正文内容
+     * @param {number} options.finish - 当前帧的完成状态
+     * @param {Object} options.commonData - 当前帧的公共数据
+     * @param {Function} options.doRenderReasoning - 推理内容打字机回调
+     * @param {Function} options.doRenderMain - 正文内容打字机回调
+     */
+    _dispatchReasoningOrOutput({
+      reasoning,
+      output,
+      finish,
+      commonData,
+      doRenderReasoning,
+      doRenderMain,
+    }) {
+      // 推理帧：首次出现时激活缓冲路径
+      if (reasoning) {
+        if (!this._isInReasoning) {
+          this._isInReasoning = true;
+        }
+        this._reasoningPrint.print(
+          { response: reasoning, finish },
+          commonData,
+          doRenderReasoning,
+        );
+      }
+
+      // 正文帧（含 finish 结束帧）
+      if (output || (!reasoning && (finish === 1 || finish === 2))) {
+        const mainSentence = { response: output || '', finish };
+
+        // 首次收到 output，服务端侧推理结束
+        if (output && !this._reasoningSSEDone) {
+          this._reasoningSSEDone = true;
+          // 情况B：打字机恰好已为空（全部打完但 onPrintEnd 已被忽略过），主动触发清空
+          if (
+            this._isInReasoning &&
+            this._reasoningPrint.sIndex >=
+              this._reasoningPrint.sentenceArr.length &&
+            this._reasoningPrint.printStatus === 0
+          ) {
+            this._flushPendingOutput();
+          }
+        }
+
+        if (this._isInReasoning) {
+          // 思考动画还未完毕：正文进缓冲等待
+          this._pendingOutputQueue.push({
+            sentence: mainSentence,
+            commonData,
+            cb: doRenderMain,
+          });
+        } else {
+          // 无思考内容或思考已完毕：直通送入正文打字机
+          this._print.print(mainSentence, commonData, doRenderMain);
+        }
+      }
+    },
+
     doragSend() {
       this.stopBtShow = true;
       this.isStoped = false;
@@ -308,21 +440,10 @@ export default {
         parseSub,
         convertLatexSyntax,
       });
-      // 思考内容渲染器：自定义 md 包装器，在 render 前去除每行行首空格
-      // 防止 markdown-it 将行首4个以上空格识别为代码块（Indented Code Block）
-      const reasoningMd = {
-        render: text =>
-          md.render(
-            text
-              .split('\n')
-              .map(line => line.trimStart())
-              .join('\n'),
-          ),
-        utils: md.utils,
-      };
-      const reasoningProcessor = new StreamProcessor({
+      // 初始化推理流（reasoningProcessor 及相关缓冲状态由 _initReasoningStream 统一管理）
+      const reasoningProcessor = this._initReasoningStream({
         lastIndex,
-        md: reasoningMd,
+        md,
         parseSub,
         convertLatexSyntax,
       });
@@ -330,28 +451,6 @@ export default {
       this._print = new Print({
         onPrintEnd: () => {
           this.onMainPrintEnd && this.onMainPrintEnd();
-        },
-      });
-
-      // 正文缓冲队列：在思考内容打字完毕前，所有正文内容首先入此队列
-      this._pendingOutputQueue = [];
-      // SSE 服务端层面：标记服务端是否已经完成所有推理内容的推送
-      this._reasoningSSEDone = false;
-
-      // 思考打字机：完毕时将缓冲内容批量送入正文打字机
-      this._reasoningPrint = new Print({
-        onPrintEnd: () => {
-          // onPrintEnd 在队列暂时为空时就会触发，可能多次触发
-          // 只有服务端也确认完成了推理推送（_reasoningSSEDone），这次队列清空才是真正结束
-          if (this._reasoningSSEDone) {
-            this._isInReasoning = false;
-            if (this._pendingOutputQueue && this._pendingOutputQueue.length) {
-              this._pendingOutputQueue.forEach(item => {
-                this._print.print(item.sentence, item.commonData, item.cb);
-              });
-              this._pendingOutputQueue = [];
-            }
-          }
         },
       });
       let history_list = sessionCom.getSessionData();
@@ -466,75 +565,16 @@ export default {
                   }
                 };
 
-                if (reasoning) {
-                  // 首次收到 reasoning ，激活缓冲路径
-                  if (!this._isInReasoning) {
-                    this._isInReasoning = true;
-                  }
-                  this._reasoningPrint.print(
-                    {
-                      response: reasoning,
-                      finish: data.finish,
-                    },
-                    commonData,
-                    (worldObj, search_list) =>
-                      doRender(worldObj, search_list, 'reasoning'),
-                  );
-                }
-
-                if (
-                  output ||
-                  (!reasoning && (data.finish === 1 || data.finish === 2))
-                ) {
-                  const mainSentence = {
-                    response: output || '',
-                    finish: data.finish,
-                  };
-                  const mainCb = (worldObj, search_list) =>
-                    doRender(worldObj, search_list, 'main');
-
-                  // 首次收到 output，说明服务端推理已完成，设置 SSE 层标志位
-                  if (output && !this._reasoningSSEDone) {
-                    this._reasoningSSEDone = true;
-                    // 如果此时思考打字机队列恰好已为空（全部打字完毕），需要主动触发清空逻辑
-                    // 因为此清空和 onPrintEnd 互为补充：
-                    //   - onPrintEnd 先于 _reasoningSSEDone ：被忽略过，现在需要主动触发
-                    //   - onPrintEnd 后于 _reasoningSSEDone ：将由 onPrintEnd 正常处理
-                    if (
-                      this._isInReasoning &&
-                      this._reasoningPrint.sIndex >=
-                        this._reasoningPrint.sentenceArr.length &&
-                      this._reasoningPrint.printStatus === 0
-                    ) {
-                      this._isInReasoning = false;
-                      if (
-                        this._pendingOutputQueue &&
-                        this._pendingOutputQueue.length
-                      ) {
-                        this._pendingOutputQueue.forEach(pendingItem => {
-                          this._print.print(
-                            pendingItem.sentence,
-                            pendingItem.commonData,
-                            pendingItem.cb,
-                          );
-                        });
-                        this._pendingOutputQueue = [];
-                      }
-                    }
-                  }
-
-                  if (this._isInReasoning) {
-                    // 思考动画还未完毕：将正文入缓冲队列
-                    this._pendingOutputQueue.push({
-                      sentence: mainSentence,
-                      commonData,
-                      cb: mainCb,
-                    });
-                  } else {
-                    // 无思考内容或思考已完毕：直通送入正文打字机
-                    this._print.print(mainSentence, commonData, mainCb);
-                  }
-                }
+                this._dispatchReasoningOrOutput({
+                  reasoning,
+                  output,
+                  finish: data.finish,
+                  commonData,
+                  doRenderReasoning: (worldObj, search_list) =>
+                    doRender(worldObj, search_list, 'reasoning'),
+                  doRenderMain: (worldObj, search_list) =>
+                    doRender(worldObj, search_list, 'main'),
+                });
               } else if (data.code === 7 || data.code === -1) {
                 this.setStoreSessionStatus(-1);
                 sessionCom.replaceLastData(lastIndex, {
