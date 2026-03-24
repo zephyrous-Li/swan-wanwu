@@ -1,5 +1,5 @@
 <template>
-  <div class="mcp-content-box customize">
+  <div class="mcp-content-box customize" style="padding-top: 10px">
     <div class="mcp-content">
       <div class="card-search card-search-cust">
         <div style="width: 100%">
@@ -165,9 +165,6 @@ export default {
 };
 </script>
 <style lang="scss">
-.mcp-content-box {
-  padding-top: 10px;
-}
 .mcp-content-box .noData {
   width: 100%;
   text-align: center;

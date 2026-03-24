@@ -158,6 +158,7 @@ export default {
 }
 
 .white {
+  font-weight: bold;
   color: $color;
   border-bottom: 2.5px solid $color !important;
 }
@@ -243,6 +244,7 @@ export default {
     &.is-active {
       background-color: $color-opacity !important;
       border-radius: 16px;
+      font-weight: bold;
     }
   }
   .el-tabs__header {

@@ -1,5 +1,5 @@
 <template>
-  <div class="page-wrapper mcp-management" style="padding: 20px">
+  <div class="page-wrapper mcp-management">
     <div class="common_bg">
       <!--<div class="page-title">
         <img class="page-title-img" src="@/assets/imgs/tool.svg" alt="" />

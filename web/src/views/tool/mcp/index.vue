@@ -2,7 +2,7 @@
   <div class="mcp-management">
     <div class="common_bg">
       <!-- tabs -->
-      <div class="tabs tabs-px">
+      <div class="tabs tabs-x-top">
         <div :class="['tab', { active: tabActive === 0 }]" @click="tabClick(0)">
           {{ $t('common.button.import') }}MCP
         </div>
