@@ -170,9 +170,6 @@ export default {
   height: 50px;
   object-fit: cover;
 }
-.mcp-content-box {
-  padding-top: 10px;
-}
 .mcp-content-box .noData {
   width: 100%;
   text-align: center;

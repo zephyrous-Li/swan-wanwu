@@ -1,5 +1,5 @@
 <template>
-  <div class="page-wrapper mcp-management">
+  <div class="page-wrapper mcp-management" style="padding: 20px">
     <div class="common_bg">
       <!--<div class="page-title">
         <img class="page-title-img" src="@/assets/imgs/tool.svg" alt="" />
@@ -62,6 +62,7 @@ export default {
 };
 </script>
 <style lang="scss">
+@import '@/style/tabs.scss';
 .mcp-management {
   height: calc(100% - 50px);
 
@@ -83,34 +84,12 @@ export default {
     }
   }
 
-  .mcp-tabs {
-    margin: 0 20px;
-    padding-top: 20px;
-
-    .mcp-tab {
-      display: inline-block;
-      vertical-align: middle;
-      width: 160px;
-      height: 40px;
-      border-bottom: 1px solid #333;
-      line-height: 40px;
-      text-align: center;
-      cursor: pointer;
-    }
-
-    .active {
-      background: #333;
-      color: #fff;
-      font-weight: bold;
-    }
-  }
-
   .mcp-content-box {
     height: calc(100% - 145px);
   }
 
   .mcp-content {
-    padding: 0 20px;
+    padding: 0 10px;
     width: 100%;
     height: 100%;
   }

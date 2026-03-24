@@ -18,7 +18,10 @@
         @submit.native.prevent
       >
         <!-- tabs -->
-        <div class="tabs" v-if="!isEdit && category === KNOWLEDGE">
+        <div
+          class="tabs tabs-x-bottom"
+          v-if="!isEdit && category === KNOWLEDGE"
+        >
           <div
             :class="['tab', { active: tabActive === INTERNAL }]"
             @click="tabClick(INTERNAL)"

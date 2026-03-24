@@ -2,17 +2,11 @@
   <div class="mcp-management">
     <div class="common_bg">
       <!-- tabs -->
-      <div class="mcp-tabs">
-        <div
-          :class="['mcp-tab', { active: tabActive === 0 }]"
-          @click="tabClick(0)"
-        >
+      <div class="tabs tabs-px">
+        <div :class="['tab', { active: tabActive === 0 }]" @click="tabClick(0)">
           {{ $t('menu.app.builtIn') }}
         </div>
-        <div
-          :class="['mcp-tab', { active: tabActive === 1 }]"
-          @click="tabClick(1)"
-        >
+        <div :class="['tab', { active: tabActive === 1 }]" @click="tabClick(1)">
           {{ $t('menu.app.custom') }}
         </div>
       </div>

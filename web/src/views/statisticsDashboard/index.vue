@@ -1,6 +1,6 @@
 <template>
-  <div class="page-wrapper" style="padding-top: 20px">
-    <div class="tabs" style="margin-top: 0">
+  <div class="page-wrapper">
+    <div class="tabs tabs-spacing">
       <div :class="['tab', { active: tabActive === 0 }]" @click="tabClick(0)">
         {{ $t('statisticsDashboard.model') }}
       </div>

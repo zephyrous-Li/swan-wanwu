@@ -5,17 +5,11 @@
       <span class="page-title-name">{{ $t('knowledgeManage.knowledge') }}</span>
     </div>-->
     <div style="padding: 20px">
-      <div class="knowledge-tabs">
-        <div
-          :class="['knowledge-tab', { active: category === 0 }]"
-          @click="tabClick(0)"
-        >
+      <div class="tabs" style="padding-bottom: 20px">
+        <div :class="['tab', { active: category === 0 }]" @click="tabClick(0)">
           {{ $t('menu.knowledge') }}
         </div>
-        <div
-          :class="['knowledge-tab', { active: category === 1 }]"
-          @click="tabClick(1)"
-        >
+        <div :class="['tab', { active: category === 1 }]" @click="tabClick(1)">
           {{ $t('knowledgeManage.qaDatabase.title') }}
         </div>
       </div>
@@ -230,6 +224,7 @@ export default {
 };
 </script>
 <style lang="scss" scoped>
+@import '@/style/tabs.scss';
 .search-box {
   display: flex;
   justify-content: space-between;
@@ -238,27 +233,6 @@ export default {
 ::v-deep {
   .el-loading-mask {
     background: none !important;
-  }
-}
-
-.active {
-  background: #333;
-  color: #fff;
-  font-weight: bold;
-}
-
-.knowledge-tabs {
-  margin-bottom: 20px;
-
-  .knowledge-tab {
-    display: inline-block;
-    vertical-align: middle;
-    width: 160px;
-    height: 40px;
-    border-bottom: 1px solid #333;
-    line-height: 40px;
-    text-align: center;
-    cursor: pointer;
   }
 }
 </style>

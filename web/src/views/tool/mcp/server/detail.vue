@@ -29,16 +29,16 @@
     <div class="mcp-main">
       <div class="info">
         <!-- tabs -->
-        <div class="mcp-tabs">
+        <div class="tabs">
           <div
-            :class="['mcp-tab', { active: tabActive === 0 }]"
+            :class="['tab', { active: tabActive === 0 }]"
             @click="tabActive = 0"
           >
             SSE URL及工具
           </div>
           <div style="display: inline-block">
             <div
-              :class="['mcp-tab', { active: tabActive === 1 }]"
+              :class="['tab', { active: tabActive === 1 }]"
               @click="tabActive = 1"
             >
               Streamable HTTP
@@ -369,6 +369,7 @@ export default {
 };
 </script>
 <style lang="scss">
+@import '@/style/tabs.scss';
 .mcp-detail {
   padding: 20px;
   overflow: auto;
@@ -431,25 +432,6 @@ export default {
     .info {
       width: 100%;
       margin-right: 20px;
-
-      .mcp-tabs {
-        margin: 20px 0 0 0;
-        .mcp-tab {
-          display: inline-block;
-          vertical-align: middle;
-          width: 160px;
-          height: 40px;
-          border-bottom: 1px solid #333;
-          line-height: 40px;
-          text-align: center;
-          cursor: pointer;
-        }
-        .active {
-          background: #333;
-          color: #fff;
-          font-weight: bold;
-        }
-      }
 
       .tool {
         .tool-item {

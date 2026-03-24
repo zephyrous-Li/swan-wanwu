@@ -25,9 +25,9 @@
     <div class="mcp-main">
       <div class="left-info">
         <!-- tabs -->
-        <div class="mcp-tabs">
+        <div class="tabs">
           <div
-            :class="['mcp-tab', { active: tabActive === 0 }]"
+            :class="['tab', { active: tabActive === 0 }]"
             @click="tabClick(0)"
           >
             {{ $t('tool.builtIn.count', { count: detail.actionSum || 0 }) }}
@@ -231,7 +231,8 @@ export default {
 };
 </script>
 <style lang="scss">
-@import '@/style/markdown';
+@import '@/style/markdown.scss';
+@import '@/style/tabs.scss';
 .markdown-body {
   font-family: 'Microsoft YaHei', Arial, sans-serif;
 }
@@ -287,24 +288,6 @@ export default {
     .left-info {
       width: calc(100% - 420px);
       margin-right: 20px;
-      .mcp-tabs {
-        margin: 20px 0 0 0;
-        .mcp-tab {
-          display: inline-block;
-          vertical-align: middle;
-          width: 160px;
-          height: 40px;
-          border-bottom: 1px solid #333;
-          line-height: 40px;
-          text-align: center;
-          cursor: pointer;
-        }
-        .active {
-          background: #333;
-          color: #fff;
-          font-weight: bold;
-        }
-      }
       .overview {
         .overview-item {
           display: flex;
