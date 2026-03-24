@@ -22,7 +22,7 @@
           @handleSearch="handleSearch"
         />
       </div>
-      <div>
+      <div class="explore-tab-pane">
         <el-tabs v-model="activeName" @tab-click="handleClick">
           <el-tab-pane
             v-for="item in appList"
@@ -146,6 +146,7 @@ export default {
 };
 </script>
 <style lang="scss" scoped>
+@import '@/style/tabs.scss';
 ::v-deep {
   .el-tabs__content {
     overflow: unset;
@@ -157,8 +158,8 @@ export default {
 }
 
 .white {
-  background: #fff;
   color: $color;
+  border-bottom: 2.5px solid $color !important;
 }
 
 .appList:hover {
@@ -199,9 +200,8 @@ export default {
   .header-top {
     display: flex;
     justify-content: space-between;
-    padding: 15px 0;
+    padding: 15px 0 6px 0;
     box-sizing: border-box;
-    border-bottom: 1px solid #eaeaea;
 
     .tagList:nth-child(1) {
       margin-left: 0 !important;
@@ -213,11 +213,13 @@ export default {
 
       .tagList {
         margin: 10px;
-        padding: 10px;
-        border-radius: 6px;
+        padding: 0 3px;
+        height: 36px;
+        line-height: 36px;
         cursor: pointer;
         display: flex;
         align-items: center;
+        border-bottom: 2.5px solid rgba(255, 255, 255, 0);
 
         .h-icon {
           margin-right: 5px;
@@ -225,6 +227,26 @@ export default {
         }
       }
     }
+  }
+}
+.explore-tab-pane ::v-deep {
+  .el-tabs__nav-wrap::after,
+  .el-tabs__active-bar {
+    background-color: rgba(255, 255, 255, 0) !important;
+  }
+  .el-tabs__item {
+    font-size: 13px;
+    height: 32px;
+    line-height: 32px;
+    padding: 0 10px !important;
+    margin-right: 6px;
+    &.is-active {
+      background-color: $color-opacity !important;
+      border-radius: 16px;
+    }
+  }
+  .el-tabs__header {
+    margin: 0 !important;
   }
 }
 </style>
