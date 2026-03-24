@@ -28,6 +28,7 @@ func (p *PromptVariables) AssemblePromptVariables(ctx context.Context, reqContex
 	req := reqContext.AgentChatReq
 	variables = make(map[string]any)
 
+	variables[prompt.PlaceholderOfAgentSystemPrompt] = req.AgentBaseParams.Instruction
 	variables[prompt.PlaceholderOfTime] = time.Now().Format("Monday 2006/01/02 15:04:05 -07")
 	variables[prompt.PlaceholderOfAgentName] = req.AgentBaseParams.Name
 

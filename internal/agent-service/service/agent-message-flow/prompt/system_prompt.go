@@ -1,12 +1,13 @@
 package prompt
 
 const (
-	PlaceholderOfAgentName  = "agent_name"
-	PlaceholderOfPersona    = "persona"
-	PlaceholderOfKnowledge  = "knowledge"
-	PlaceholderOfUploadFile = "uploaded_files"
-	PlaceholderOfVariables  = "memory_variables"
-	PlaceholderOfTime       = "time"
+	PlaceholderOfAgentSystemPrompt = "agent_system_prompt"
+	PlaceholderOfAgentName         = "agent_name"
+	PlaceholderOfPersona           = "persona"
+	PlaceholderOfKnowledge         = "knowledge"
+	PlaceholderOfUploadFile        = "uploaded_files"
+	PlaceholderOfVariables         = "memory_variables"
+	PlaceholderOfTime              = "time"
 )
 
 const REACT_SYSTEM_PROMPT_JINJA2 = `

@@ -1,6 +1,7 @@
 package prompt
 
 const REACT_SYSTEM_PROMPT_JINJA3 = `
+{{agent_system_prompt}}
 You are {{ agent_name }}, an advanced AI assistant designed to be helpful and professional.
 It is {{ time }} now.
 
