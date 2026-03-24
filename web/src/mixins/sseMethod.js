@@ -996,6 +996,14 @@ export default {
       };
       this.$refs['session-com'].pushHistory(params);
       let endStr = '';
+      // 初始化推理流处理器
+      const reasoningProcessor = this._initReasoningStream({
+        lastIndex,
+        md,
+        parseSub,
+        convertLatexSyntax,
+      });
+
       this._print = new Print({
         onPrintEnd: () => {
           // this.setStoreSessionStatus(-1)
@@ -1042,19 +1050,17 @@ export default {
               } catch (error) {
                 return; // 如果解析失败，直接返回，不处理这条消息
               }
-              if (
-                Array.isArray(data.choices) &&
-                data.choices[0] &&
-                data.choices[0].delta
-              ) {
-                data.response = data.choices[0].delta.content;
-                data.finish =
-                  data.choices[0].finish_reason === 'stop' ||
-                  data.choices[0].delta.content === 'stop';
-              } else {
-                data.response = '';
-                data.finish = true;
-              }
+
+              const choices = data.choices && data.choices[0];
+              const delta = (choices && choices.delta) || {};
+              const reasoning = delta.reasoning_content || '';
+              const output = delta.content || '';
+              // 对齐原逻辑的兜底：如果没有 choices 或符合 stop 条件，标识为结束
+              const isFinish =
+                !choices ||
+                choices.finish_reason === 'stop' ||
+                delta.content === 'stop';
+
               this.setStoreSessionStatus(0);
               this.sseResponse = data;
               //待替换的数据，需要前端组装
@@ -1086,40 +1092,67 @@ export default {
                 };
                 this.$refs['session-com'].replaceLastData(lastIndex, fillData);
               } else {
-                //finish 0：进行中  1：关闭   2:敏感词关闭
-                this._print.print(
-                  {
-                    response: data.response,
-                    finish: data.finish,
-                  },
+                // 定义推理内容渲染逻辑
+                const doRenderReasoning = worldObj => {
+                  this.setStoreSessionStatus(0);
+                  reasoningProcessor.append(worldObj.world);
+                  const reasoningRenderResult =
+                    reasoningProcessor.getRenderResult();
+                  let fillData = {
+                    ...commonData,
+                    activeReasoning: reasoningRenderResult.activeResponse || '',
+                    stableReasoningChunks:
+                      reasoningRenderResult.stableChunks || [],
+                    finish: 0,
+                  };
+                  this.$refs['session-com'].replaceLastData(
+                    lastIndex,
+                    fillData,
+                  );
+                };
+
+                // 定义正文渲染逻辑（保持原有非分片拼接特性）
+                const doRenderMain = (worldObj, search_list) => {
+                  this.setStoreSessionStatus(0);
+                  const reasoningRenderResult =
+                    reasoningProcessor.getRenderResult();
+                  endStr += worldObj.world;
+                  endStr = convertLatexSyntax(endStr);
+                  endStr = parseSub(endStr, lastIndex);
+                  let fillData = {
+                    ...commonData,
+                    activeReasoning: reasoningRenderResult.activeResponse || '',
+                    stableReasoningChunks:
+                      reasoningRenderResult.stableChunks || [],
+                    response: md.render(endStr),
+                    oriResponse: endStr,
+                    finish: worldObj.finish ? 1 : 0,
+                    searchList:
+                      search_list && search_list.length
+                        ? search_list.map(n => ({
+                            ...n,
+                            snippet: n.snippet ? md.render(n.snippet) : '',
+                          }))
+                        : [],
+                  };
+                  this.$refs['session-com'].replaceLastData(
+                    lastIndex,
+                    fillData,
+                  );
+                  if (worldObj.isEnd && worldObj.finish) {
+                    this.setStoreSessionStatus(-1);
+                  }
+                };
+
+                // 分发处理：如果是推理内容，或者需要缓冲的正文
+                this._dispatchReasoningOrOutput({
+                  reasoning,
+                  output,
+                  finish: isFinish ? 1 : 0,
                   commonData,
-                  (worldObj, search_list) => {
-                    this.setStoreSessionStatus(0);
-                    endStr += worldObj.world;
-                    endStr = convertLatexSyntax(endStr);
-                    endStr = parseSub(endStr, lastIndex);
-                    let fillData = {
-                      ...commonData,
-                      response: md.render(endStr),
-                      oriResponse: endStr,
-                      finish: worldObj.finish,
-                      searchList:
-                        search_list && search_list.length
-                          ? search_list.map(n => ({
-                              ...n,
-                              snippet: n.snippet ? md.render(n.snippet) : '',
-                            }))
-                          : [],
-                    };
-                    this.$refs['session-com'].replaceLastData(
-                      lastIndex,
-                      fillData,
-                    );
-                    if (worldObj.isEnd && worldObj.finish) {
-                      this.setStoreSessionStatus(-1);
-                    }
-                  },
-                );
+                  doRenderReasoning,
+                  doRenderMain,
+                });
               }
             }
           },
