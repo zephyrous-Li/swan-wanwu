@@ -60,7 +60,7 @@
           <p class="docInfo_size">
             {{ $t('knowledgeManage.fileSize') }}：{{
               fileList[0]['size'] > 1024
-                ? (fileList[0]['size'] / (1024 * 1024)).toFixed(5) + ' MB'
+                ? (fileList[0]['size'] / (1024 * 1024)).toFixed(2) + ' MB'
                 : fileList[0]['size'] + ' bytes'
             }}
           </p>
