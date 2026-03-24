@@ -1804,6 +1804,7 @@ export default {
     appSelect: '应用筛选',
     appType: '应用类型',
     appList: '应用列表',
+    appLineName: '应用调用次数统计表',
     appCallCountTotal: '调用总次数',
     appCallCount: '调用次数',
     appCallFailure: '调用失败次数',

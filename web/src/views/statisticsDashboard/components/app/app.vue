@@ -110,7 +110,9 @@
                 echartContent.callTrend ? echartContent.callTrend.lines : []
               "
               :name="
-                echartContent.callTrend ? echartContent.callTrend.tableName : ''
+                echartContent.callTrend
+                  ? echartContent.callTrend.tableName
+                  : $t('statisticsDashboard.appLineName')
               "
               v-loading="loading"
             ></UserEchart>

@@ -186,26 +186,9 @@ export default {
 <style lang="scss" scoped>
 .table-wrap {
   padding: 0 12px;
-}
-.table-box {
-  .table-header {
-    font-size: 16px;
-    font-weight: bold;
-    color: #555;
-  }
   .add-bt {
     margin: 0 0 16px;
     float: right;
-    img {
-      width: 16px;
-      margin-right: 5px;
-      display: inline-block;
-      vertical-align: middle;
-    }
-    span {
-      display: inline-block;
-      vertical-align: middle;
-    }
   }
 }
 </style>
