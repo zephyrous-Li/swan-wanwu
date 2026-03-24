@@ -1650,6 +1650,10 @@
                     "description": "温度(开关)",
                     "type": "boolean"
                 },
+                "thinkingEnable": {
+                    "description": "思考过程(开关)",
+                    "type": "boolean"
+                },
                 "topP": {
                     "description": "Top P",
                     "type": "number"
@@ -2607,6 +2611,22 @@
                 "maxTokens": {
                     "description": "模型回答最大tokens",
                     "type": "integer"
+                },
+                "thinkingSupport": {
+                    "description": "深度思考是否支持",
+                    "type": "string",
+                    "enum": [
+                        "noSupport",
+                        "support"
+                    ]
+                },
+                "visionSupport": {
+                    "description": "视觉支持",
+                    "type": "string",
+                    "enum": [
+                        "noSupport",
+                        "support"
+                    ]
                 }
             }
         },
@@ -2657,6 +2677,14 @@
                 "maxTokens": {
                     "description": "模型回答最大tokens",
                     "type": "integer"
+                },
+                "thinkingSupport": {
+                    "description": "深度思考是否支持",
+                    "type": "string",
+                    "enum": [
+                        "noSupport",
+                        "support"
+                    ]
                 },
                 "visionSupport": {
                     "description": "视觉支持",
@@ -2715,6 +2743,14 @@
                 "maxTokens": {
                     "description": "模型回答最大tokens",
                     "type": "integer"
+                },
+                "thinkingSupport": {
+                    "description": "深度思考是否支持",
+                    "type": "string",
+                    "enum": [
+                        "noSupport",
+                        "support"
+                    ]
                 },
                 "visionSupport": {
                     "description": "视觉支持",
@@ -2787,6 +2823,14 @@
                     "description": "模型回答最大tokens",
                     "type": "integer"
                 },
+                "thinkingSupport": {
+                    "description": "深度思考是否支持",
+                    "type": "string",
+                    "enum": [
+                        "noSupport",
+                        "support"
+                    ]
+                },
                 "visionSupport": {
                     "description": "视觉支持",
                     "type": "string",
@@ -2844,6 +2888,14 @@
                 "maxTokens": {
                     "description": "模型回答最大tokens",
                     "type": "integer"
+                },
+                "thinkingSupport": {
+                    "description": "深度思考是否支持",
+                    "type": "string",
+                    "enum": [
+                        "noSupport",
+                        "support"
+                    ]
                 },
                 "visionSupport": {
                     "description": "视觉支持",
@@ -2920,6 +2972,14 @@
                     "description": "模型回答最大tokens",
                     "type": "integer"
                 },
+                "thinkingSupport": {
+                    "description": "深度思考是否支持",
+                    "type": "string",
+                    "enum": [
+                        "noSupport",
+                        "support"
+                    ]
+                },
                 "visionSupport": {
                     "description": "视觉支持",
                     "type": "string",
@@ -2994,6 +3054,14 @@
                 "maxTokens": {
                     "description": "模型回答最大tokens",
                     "type": "integer"
+                },
+                "thinkingSupport": {
+                    "description": "深度思考是否支持",
+                    "type": "string",
+                    "enum": [
+                        "noSupport",
+                        "support"
+                    ]
                 },
                 "visionSupport": {
                     "description": "视觉支持",
@@ -3082,6 +3150,14 @@
                 "maxTokens": {
                     "description": "模型回答最大tokens",
                     "type": "integer"
+                },
+                "thinkingSupport": {
+                    "description": "深度思考是否支持",
+                    "type": "string",
+                    "enum": [
+                        "noSupport",
+                        "support"
+                    ]
                 },
                 "visionSupport": {
                     "description": "视觉支持",
@@ -3522,6 +3598,10 @@
                 },
                 "custom_model_info": {
                     "$ref": "#/definitions/request.CustomModelInfo"
+                },
+                "enable_thinking": {
+                    "description": "是否打开思考过程",
+                    "type": "boolean"
                 },
                 "enable_vision": {
                     "description": "召回结果是否包含多模态文件",

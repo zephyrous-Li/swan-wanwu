@@ -2,6 +2,10 @@ basePath: /v1
 definitions:
   config.WorkflowModelParam:
     properties:
+      api_mode:
+        type: integer
+      custom_flag:
+        type: boolean
       default_val:
         $ref: '#/definitions/config.WorkflowModelParamDefaultVal'
       desc:
@@ -14,6 +18,10 @@ definitions:
         type: string
       name:
         type: string
+      options:
+        items:
+          $ref: '#/definitions/config.WorkflowModelParamOption'
+        type: array
       param_class:
         $ref: '#/definitions/config.WorkflowModelParamClass'
       precision:
@@ -37,6 +45,13 @@ definitions:
       default_val:
         type: string
       precise:
+        type: string
+    type: object
+  config.WorkflowModelParamOption:
+    properties:
+      label:
+        type: string
+      value:
         type: string
     type: object
   model_service.ModelExperienceDialog:
@@ -251,6 +266,9 @@ definitions:
       temperatureEnable:
         description: 温度(开关)
         type: boolean
+      thinkingEnable:
+        description: 思考过程(开关)
+        type: boolean
       topP:
         description: Top P
         type: number
@@ -286,6 +304,18 @@ definitions:
       maxTokens:
         description: 模型回答最大tokens
         type: integer
+      thinkingSupport:
+        description: 深度思考是否支持
+        enum:
+        - noSupport
+        - support
+        type: string
+      visionSupport:
+        description: 视觉支持
+        enum:
+        - noSupport
+        - support
+        type: string
     type: object
   mp_huoshan.Embedding:
     properties:
@@ -322,6 +352,12 @@ definitions:
       maxTokens:
         description: 模型回答最大tokens
         type: integer
+      thinkingSupport:
+        description: 深度思考是否支持
+        enum:
+        - noSupport
+        - support
+        type: string
       visionSupport:
         description: 视觉支持
         enum:
@@ -364,6 +400,12 @@ definitions:
       maxTokens:
         description: 模型回答最大tokens
         type: integer
+      thinkingSupport:
+        description: 深度思考是否支持
+        enum:
+        - noSupport
+        - support
+        type: string
       visionSupport:
         description: 视觉支持
         enum:
@@ -415,6 +457,12 @@ definitions:
       maxTokens:
         description: 模型回答最大tokens
         type: integer
+      thinkingSupport:
+        description: 深度思考是否支持
+        enum:
+        - noSupport
+        - support
+        type: string
       visionSupport:
         description: 视觉支持
         enum:
@@ -457,6 +505,12 @@ definitions:
       maxTokens:
         description: 模型回答最大tokens
         type: integer
+      thinkingSupport:
+        description: 深度思考是否支持
+        enum:
+        - noSupport
+        - support
+        type: string
       visionSupport:
         description: 视觉支持
         enum:
@@ -511,6 +565,12 @@ definitions:
       maxTokens:
         description: 模型回答最大tokens
         type: integer
+      thinkingSupport:
+        description: 深度思考是否支持
+        enum:
+        - noSupport
+        - support
+        type: string
       visionSupport:
         description: 视觉支持
         enum:
@@ -565,6 +625,12 @@ definitions:
       maxTokens:
         description: 模型回答最大tokens
         type: integer
+      thinkingSupport:
+        description: 深度思考是否支持
+        enum:
+        - noSupport
+        - support
+        type: string
       visionSupport:
         description: 视觉支持
         enum:
@@ -628,6 +694,12 @@ definitions:
       maxTokens:
         description: 模型回答最大tokens
         type: integer
+      thinkingSupport:
+        description: 深度思考是否支持
+        enum:
+        - noSupport
+        - support
+        type: string
       visionSupport:
         description: 视觉支持
         enum:
@@ -1625,6 +1697,8 @@ definitions:
         items:
           $ref: '#/definitions/request.ConversionStreamFile'
         type: array
+      isCompare:
+        type: boolean
       prompt:
         type: string
       systemPrompt:
@@ -3131,6 +3205,9 @@ definitions:
         type: number
       temperatureEnable:
         description: 温度(开关)
+        type: boolean
+      thinkingEnable:
+        description: 思考过程(开关)
         type: boolean
       topP:
         description: Top P
@@ -4967,6 +5044,8 @@ definitions:
       agentIcon:
         type: string
       chatflowIcon:
+        type: string
+      modelIcon:
         type: string
       promptIcon:
         type: string
@@ -6851,6 +6930,17 @@ definitions:
         description: 追问配置开关
         type: boolean
     type: object
+  response.RecommendModel:
+    properties:
+      displayName:
+        type: string
+      model:
+        type: string
+      tags:
+        items:
+          $ref: '#/definitions/response.TagItem'
+        type: array
+    type: object
   response.RerankInfo:
     properties:
       fileUrl:
@@ -7149,6 +7239,11 @@ definitions:
         type: integer
       timeCost:
         description: 耗时
+        type: string
+    type: object
+  response.TagItem:
+    properties:
+      text:
         type: string
     type: object
   response.ToolAction4Workflow:
@@ -13681,6 +13776,7 @@ paths:
       description: 获取模型体验对话记录列表
       parameters:
       - description: 模型体验对话ID
+        format: int32
         in: query
         name: modelExperienceId
         required: true
@@ -13811,6 +13907,44 @@ paths:
       security:
       - JWT: []
       summary: 导入模型列表
+      tags:
+      - model
+  /model/recommend:
+    get:
+      consumes:
+      - application/json
+      description: 根据供应商和模型类型获取推荐的模型ID列表
+      parameters:
+      - description: 模型供应商
+        in: query
+        name: provider
+        required: true
+        type: string
+      - description: 模型类型
+        in: query
+        name: modelType
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/response.Response'
+            - properties:
+                data:
+                  allOf:
+                  - $ref: '#/definitions/response.ListResult'
+                  - properties:
+                      list:
+                        $ref: '#/definitions/response.RecommendModel'
+                    type: object
+              type: object
+      security:
+      - JWT: []
+      summary: 获取推荐模型列表
       tags:
       - model
   /model/select/asr:

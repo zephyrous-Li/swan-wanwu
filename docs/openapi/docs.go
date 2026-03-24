@@ -1551,6 +1551,22 @@ const docTemplate = `{
                 "maxTokens": {
                     "description": "模型回答最大tokens",
                     "type": "integer"
+                },
+                "thinkingSupport": {
+                    "description": "深度思考是否支持",
+                    "type": "string",
+                    "enum": [
+                        "noSupport",
+                        "support"
+                    ]
+                },
+                "visionSupport": {
+                    "description": "视觉支持",
+                    "type": "string",
+                    "enum": [
+                        "noSupport",
+                        "support"
+                    ]
                 }
             }
         },
@@ -1601,6 +1617,14 @@ const docTemplate = `{
                 "maxTokens": {
                     "description": "模型回答最大tokens",
                     "type": "integer"
+                },
+                "thinkingSupport": {
+                    "description": "深度思考是否支持",
+                    "type": "string",
+                    "enum": [
+                        "noSupport",
+                        "support"
+                    ]
                 },
                 "visionSupport": {
                     "description": "视觉支持",
@@ -1659,6 +1683,14 @@ const docTemplate = `{
                 "maxTokens": {
                     "description": "模型回答最大tokens",
                     "type": "integer"
+                },
+                "thinkingSupport": {
+                    "description": "深度思考是否支持",
+                    "type": "string",
+                    "enum": [
+                        "noSupport",
+                        "support"
+                    ]
                 },
                 "visionSupport": {
                     "description": "视觉支持",
@@ -1731,6 +1763,14 @@ const docTemplate = `{
                     "description": "模型回答最大tokens",
                     "type": "integer"
                 },
+                "thinkingSupport": {
+                    "description": "深度思考是否支持",
+                    "type": "string",
+                    "enum": [
+                        "noSupport",
+                        "support"
+                    ]
+                },
                 "visionSupport": {
                     "description": "视觉支持",
                     "type": "string",
@@ -1788,6 +1828,14 @@ const docTemplate = `{
                 "maxTokens": {
                     "description": "模型回答最大tokens",
                     "type": "integer"
+                },
+                "thinkingSupport": {
+                    "description": "深度思考是否支持",
+                    "type": "string",
+                    "enum": [
+                        "noSupport",
+                        "support"
+                    ]
                 },
                 "visionSupport": {
                     "description": "视觉支持",
@@ -1864,6 +1912,14 @@ const docTemplate = `{
                     "description": "模型回答最大tokens",
                     "type": "integer"
                 },
+                "thinkingSupport": {
+                    "description": "深度思考是否支持",
+                    "type": "string",
+                    "enum": [
+                        "noSupport",
+                        "support"
+                    ]
+                },
                 "visionSupport": {
                     "description": "视觉支持",
                     "type": "string",
@@ -1938,6 +1994,14 @@ const docTemplate = `{
                 "maxTokens": {
                     "description": "模型回答最大tokens",
                     "type": "integer"
+                },
+                "thinkingSupport": {
+                    "description": "深度思考是否支持",
+                    "type": "string",
+                    "enum": [
+                        "noSupport",
+                        "support"
+                    ]
                 },
                 "visionSupport": {
                     "description": "视觉支持",
@@ -2026,6 +2090,14 @@ const docTemplate = `{
                 "maxTokens": {
                     "description": "模型回答最大tokens",
                     "type": "integer"
+                },
+                "thinkingSupport": {
+                    "description": "深度思考是否支持",
+                    "type": "string",
+                    "enum": [
+                        "noSupport",
+                        "support"
+                    ]
                 },
                 "visionSupport": {
                     "description": "视觉支持",

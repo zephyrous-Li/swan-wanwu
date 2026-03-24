@@ -623,6 +623,10 @@ const docTemplate = `{
                     "description": "温度(开关)",
                     "type": "boolean"
                 },
+                "thinkingEnable": {
+                    "description": "思考过程(开关)",
+                    "type": "boolean"
+                },
                 "topP": {
                     "description": "Top P",
                     "type": "number"

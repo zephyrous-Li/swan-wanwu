@@ -1542,6 +1542,22 @@
                 "maxTokens": {
                     "description": "模型回答最大tokens",
                     "type": "integer"
+                },
+                "thinkingSupport": {
+                    "description": "深度思考是否支持",
+                    "type": "string",
+                    "enum": [
+                        "noSupport",
+                        "support"
+                    ]
+                },
+                "visionSupport": {
+                    "description": "视觉支持",
+                    "type": "string",
+                    "enum": [
+                        "noSupport",
+                        "support"
+                    ]
                 }
             }
         },
@@ -1592,6 +1608,14 @@
                 "maxTokens": {
                     "description": "模型回答最大tokens",
                     "type": "integer"
+                },
+                "thinkingSupport": {
+                    "description": "深度思考是否支持",
+                    "type": "string",
+                    "enum": [
+                        "noSupport",
+                        "support"
+                    ]
                 },
                 "visionSupport": {
                     "description": "视觉支持",
@@ -1650,6 +1674,14 @@
                 "maxTokens": {
                     "description": "模型回答最大tokens",
                     "type": "integer"
+                },
+                "thinkingSupport": {
+                    "description": "深度思考是否支持",
+                    "type": "string",
+                    "enum": [
+                        "noSupport",
+                        "support"
+                    ]
                 },
                 "visionSupport": {
                     "description": "视觉支持",
@@ -1722,6 +1754,14 @@
                     "description": "模型回答最大tokens",
                     "type": "integer"
                 },
+                "thinkingSupport": {
+                    "description": "深度思考是否支持",
+                    "type": "string",
+                    "enum": [
+                        "noSupport",
+                        "support"
+                    ]
+                },
                 "visionSupport": {
                     "description": "视觉支持",
                     "type": "string",
@@ -1779,6 +1819,14 @@
                 "maxTokens": {
                     "description": "模型回答最大tokens",
                     "type": "integer"
+                },
+                "thinkingSupport": {
+                    "description": "深度思考是否支持",
+                    "type": "string",
+                    "enum": [
+                        "noSupport",
+                        "support"
+                    ]
                 },
                 "visionSupport": {
                     "description": "视觉支持",
@@ -1855,6 +1903,14 @@
                     "description": "模型回答最大tokens",
                     "type": "integer"
                 },
+                "thinkingSupport": {
+                    "description": "深度思考是否支持",
+                    "type": "string",
+                    "enum": [
+                        "noSupport",
+                        "support"
+                    ]
+                },
                 "visionSupport": {
                     "description": "视觉支持",
                     "type": "string",
@@ -1929,6 +1985,14 @@
                 "maxTokens": {
                     "description": "模型回答最大tokens",
                     "type": "integer"
+                },
+                "thinkingSupport": {
+                    "description": "深度思考是否支持",
+                    "type": "string",
+                    "enum": [
+                        "noSupport",
+                        "support"
+                    ]
                 },
                 "visionSupport": {
                     "description": "视觉支持",
@@ -2017,6 +2081,14 @@
                 "maxTokens": {
                     "description": "模型回答最大tokens",
                     "type": "integer"
+                },
+                "thinkingSupport": {
+                    "description": "深度思考是否支持",
+                    "type": "string",
+                    "enum": [
+                        "noSupport",
+                        "support"
+                    ]
                 },
                 "visionSupport": {
                     "description": "视觉支持",
