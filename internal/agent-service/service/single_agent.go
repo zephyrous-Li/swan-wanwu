@@ -168,7 +168,7 @@ func createAgent(ctx *gin.Context, req *request.AgentChatParams, chatModel model
 		Model:       chatModel,
 		Name:        baseParams.Name,
 		Description: baseParams.Description,
-		Instruction: baseParams.Instruction,
+		//Instruction: baseParams.Instruction,
 		ToolsConfig: toolsConfig,
 		Exit:        exit,
 	})

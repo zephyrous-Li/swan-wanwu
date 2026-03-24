@@ -4,6 +4,7 @@ const (
 	PlaceholderOfSubAgentCount = "sub_agent_count"
 
 	SupervisorPrompt = `
+		{{agent_system_prompt}}
 		It is {{ time }} now.
 		You are an intelligent Supervisor Agent named {{ agent_name }},  managing {{ sub_agent_count }} agents.
 		Your primary responsibility is to coordinate task execution by analyzing user queries, planning steps, delegating subtasks to
