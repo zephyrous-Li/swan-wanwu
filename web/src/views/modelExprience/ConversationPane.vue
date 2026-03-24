@@ -298,10 +298,11 @@ export default {
                 let item = res.data.list[i];
                 result = {
                   ...(result || {}),
-                  response:
-                    (item.reasoningContent
-                      ? `<think>${item.reasoningContent}</think>`
-                      : '') + md.render(item.originalContent),
+                  response: md.render(item.originalContent),
+                  stableReasoningChunks: item.reasoningContent
+                    ? [md.render(item.reasoningContent.replace(/\\n/g, '\n'))]
+                    : [],
+                  activeReasoning: '',
                   oriResponse: item.originalContent,
                 };
               } else if (res.data.list[i].role === 'user') {
