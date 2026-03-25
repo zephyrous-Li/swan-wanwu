@@ -440,7 +440,12 @@
           </div>
           <!--出处-->
           <div
-            v-if="n.searchList && n.searchList.length && n.finish === 1"
+            v-if="
+              n.searchList &&
+              n.searchList.length &&
+              n.finish === 1 &&
+              chatType !== 'agent'
+            "
             class="search-list"
           >
             <h2
@@ -501,7 +506,7 @@
                   </span>
                   <!-- <span @click="goPreview($event,m)" class="search-doc">查看全文</span> -->
                 </div>
-                <el-collapse-transition v-if="chatType !== 'agent'">
+                <el-collapse-transition>
                   <div v-show="m.collapse ? true : false" class="snippet">
                     <p v-html="m.snippet"></p>
                   </div>
@@ -776,16 +781,12 @@ export default {
     this.setupScrollListener();
     smoothscroll.polyfill();
     document.addEventListener('click', this.handleCitationClick);
-    document.addEventListener('click', this.handleCitationBtnClick);
     window.addEventListener('resize', this.handleWindowResize);
     this.updateAllFileScrollStates();
   },
   beforeDestroy() {
     if (this.handleCitationClick) {
       document.removeEventListener('click', this.handleCitationClick);
-    }
-    if (this.handleCitationBtnClick) {
-      document.removeEventListener('click', this.handleCitationBtnClick);
     }
     const container = document.getElementById(this.scrollContainerId);
     if (container) {
@@ -822,21 +823,6 @@ export default {
     },
     handleRecommendedQuestion(m) {
       this.$emit('handleRecommendedQuestion', m.question);
-    },
-    handleCitationBtnClick(e) {
-      const target = e.target;
-      if (target.classList.contains('citation-tips-content-icon')) {
-        const index = target.dataset.index;
-        const citation = Number(target.dataset.citation);
-        const historyItem = this.session_data.history[index];
-        if (historyItem && historyItem.searchList) {
-          const searchItem = historyItem.searchList[citation - 1];
-          if (searchItem) {
-            const j = historyItem.searchList.indexOf(searchItem);
-            this.collapseClick(historyItem, searchItem, j);
-          }
-        }
-      }
     },
     updateAllFileScrollStates() {
       this.session_data.history.forEach((item, index) => {
@@ -912,22 +898,38 @@ export default {
       return this.imgConfig.map(t => t.toLowerCase()).includes(type);
     },
     handleCitationClick(e) {
-      const target = e.target.closest('.citation');
-      const subConversionItem = target
-        ? target.closest('.sub-conversion-item')
-        : null;
+      const target = e.target;
 
-      if (subConversionItem && target.dataset.pid) {
+      // 处理引用气泡内部图标点击 (兼容代码，实际不触发)
+      if (target.classList.contains('citation-tips-content-icon')) {
+        const index = target.dataset.index;
+        const citation = Number(target.dataset.citation);
+        const historyItem = this.session_data.history[index];
+        if (historyItem && historyItem.searchList) {
+          const searchItem = historyItem.searchList[citation - 1];
+          if (searchItem) {
+            const j = historyItem.searchList.indexOf(searchItem);
+            this.collapseClick(historyItem, searchItem, j);
+          }
+        }
+        e.stopPropagation();
+        return;
+      }
+
+      // 处理引用标签点击
+      const citationTarget = target.closest('.citation');
+      if (!citationTarget) return;
+
+      const subConversionItem = citationTarget.closest('.sub-conversion-item');
+
+      if (subConversionItem && citationTarget.dataset.pid) {
         // 子会话引用点击处理
-        const pid = target.dataset.pid;
-        // 父会话在 history 中的索引
-        const parentsIndex = Number(target.dataset.parentsIndex);
-        // 引用tag
-        const citationIndex = Number(target.textContent);
+        const pid = citationTarget.dataset.pid;
+        const parentsIndex = Number(citationTarget.dataset.parentsIndex);
+        const citationIndex = Number(citationTarget.textContent);
         const historyItem = this.session_data.history[parentsIndex];
 
         if (historyItem && historyItem.subConversions) {
-          // 在对应的 history 项中找到该子会话实例
           const subConversion = historyItem.subConversions.find(
             a => a.id === pid,
           );
@@ -940,7 +942,6 @@ export default {
             const searchItem = subConversion.searchList[citationIndex - 1];
             this.collapseClick(subConversion, searchItem, citationIndex - 1);
 
-            // 视图滚动：在当前子会话容器范围内寻找对应的引用详情项
             this.$nextTick(() => {
               const targetSearchItem = subConversionItem.querySelector(
                 `.search-list-item[data-citation-index="${citationIndex}"]`,
@@ -959,6 +960,47 @@ export default {
         }
       }
 
+      // Agent 主会话引用（无 data-pid，来自顶层回答）跳转到对应的知识库子会话
+
+      if (this.chatType === 'agent' && !citationTarget.dataset.pid) {
+        const index = Number(citationTarget.textContent);
+        const parentsIndex = Number(citationTarget.dataset.parentsIndex);
+        const historyItem = this.session_data.history[parentsIndex];
+
+        if (historyItem && historyItem.subConversions) {
+          const knowledgeSub = historyItem.subConversions.find(
+            a =>
+              a.conversationType ===
+              AGENT_MESSAGE_CONFIG.MAIN_KNOWLEDGE.CONVERSATION_TYPE,
+          );
+
+          if (knowledgeSub) {
+            this.$set(knowledgeSub, 'isOpen', true);
+            this.$nextTick(() => {
+              const container = document.querySelector(
+                `.sub-conversion-item[data-pid="${knowledgeSub.id}"]`,
+              );
+              if (container) {
+                const targetSearchItem = container.querySelector(
+                  `.knowledge-item[data-index="${index - 1}"]`,
+                );
+                if (targetSearchItem) {
+                  targetSearchItem.scrollIntoView({
+                    behavior: 'smooth',
+                    block: 'center',
+                  });
+                }
+              }
+            });
+            e.stopPropagation();
+            return;
+          }
+        }
+      }
+
+      if (this.chatType === 'agent') return; // 如果是Agent模式，不再走下方通用逻辑
+
+      // 通用引用点击处理
       this.$handleCitationClick(e, {
         sessionStatus: this.sessionStatus,
         sessionData: this.session_data,
