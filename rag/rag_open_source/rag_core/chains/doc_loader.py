@@ -122,28 +122,56 @@ def docx_to_markdown(docx_path):
         markdown.append("| " + " | ".join(headers) + " |")
         markdown.append("| " + " | ".join(["---"] * total_cols) + " |")
 
+        # 收集所有行，用于后续去重
+        all_rows = []
         for row in table.rows[1:]:
             row_cells = _parse_row(row, total_cols)
-            markdown.append("| " + " | ".join(row_cells) + " |")
+            all_rows.append(row_cells)
+
+        # 对完全相同的行进行去重
+        seen_rows = []
+        for row_cells in all_rows:
+            row_str = "| " + " | ".join(row_cells) + " |"
+            if row_str not in seen_rows:
+                seen_rows.append(row_str)
+                markdown.append(row_str)
         return "\n".join(markdown)
 
     def _parse_row(row, total_cols):
         # Initialize a row, all of which are empty by default
         row_cells = [""] * total_cols
+        processed_cell_ids = set()  # 用于跟踪已经处理过的单元格对象
         col_index = 0
+
         for cell in row.cells:
-            # make sure the col_index is not out of range
+            # 使用 id() 来唯一标识每个单元格对象，因为 python-docx 对合并单元格会返回同一个对象
+            cell_id = id(cell)
+
+            # 跳过已经处理过的单元格对象
+            if cell_id in processed_cell_ids:
+                continue
+
+            processed_cell_ids.add(cell_id)
+
+            # 找到下一个空列的位置
             while col_index < total_cols and row_cells[col_index] != "":
                 col_index += 1
+
             # if col_index is out of range the loop is jumped
             if col_index >= total_cols:
                 break
+
             cell_content = _parse_cell(cell).strip()
             cell_colspan = cell.grid_span or 1
+            cell_colspan = min(cell_colspan, total_cols - col_index)  # 确保不超过总列数
+
+            # 填充单元格内容到相应列
             for i in range(cell_colspan):
                 if col_index + i < total_cols:
                     row_cells[col_index + i] = cell_content if i == 0 else ""
+
             col_index += cell_colspan
+
         return row_cells
 
     def _parse_cell(cell):
