@@ -49,7 +49,44 @@
           </div>
         </el-form-item>
         <el-form-item :label="$t('modelAccess.table.model')" prop="model">
+          <el-select
+            v-if="!isEdit"
+            v-model="modelId"
+            :placeholder="$t('common.select.placeholder')"
+            style="width: 100%"
+            @change="handleModelChange"
+          >
+            <el-option
+              v-for="item in modelIdList"
+              v-if="item.displayName"
+              :key="item.model"
+              :label="item.displayName"
+              :value="item.model"
+            >
+              <div class="model-option-content">
+                <div class="model-option-content-left">
+                  <span class="model-name">
+                    {{ item.displayName }}
+                  </span>
+                </div>
+
+                <div
+                  class="model-select-tags"
+                  v-if="item.tags && item.tags.length > 0"
+                >
+                  <span
+                    v-for="(tag, tagIdx) in item.tags"
+                    :key="tagIdx"
+                    class="model-select-tag"
+                  >
+                    {{ tag.text }}
+                  </span>
+                </div>
+              </div>
+            </el-option>
+          </el-select>
           <el-input
+            v-if="modelId === 'custom' || isEdit"
             :disabled="isEdit"
             v-model="createForm.model"
             :placeholder="$t('common.input.placeholder')"
@@ -353,7 +390,7 @@
   </div>
 </template>
 <script>
-import { addModel, editModel } from '@/api/modelAccess';
+import { addModel, editModel, fetchModelIdList } from '@/api/modelAccess';
 import { uploadAvatar } from '@/api/user';
 import { avatarSrc, getModelDefaultIcon } from '@/utils/util';
 import {
@@ -376,6 +413,7 @@ import {
   QIANFAN,
   HUOSHAN,
   INFINI,
+  DEFAULT_MODEL_ITEM,
   SUPPORT_FILE_TYPE_OBJ,
   IMAGE,
   VIDEO,
@@ -425,6 +463,8 @@ export default {
         MULTIMODAL_EMBEDDING,
         ASR,
       ],
+      modelIdList: [DEFAULT_MODEL_ITEM],
+      modelId: '',
       createForm: {
         model: '',
         displayName: '',
@@ -549,6 +589,7 @@ export default {
         this.$refs.createForm && this.$refs.createForm.clearValidate();
         if (!this.isEdit) {
           this.setDefaultInferUrl();
+          this.getModelIdList();
         }
       },
       immediate: false,
@@ -557,6 +598,7 @@ export default {
       handler(newVal) {
         if (!this.isEdit && newVal) {
           this.setDefaultInferUrl();
+          this.getModelIdList();
         }
       },
       immediate: false,
@@ -598,6 +640,18 @@ export default {
     },
     showMaxAudioLimit() {
       return this.createForm.modelType === ASR;
+    },
+    getModelIdList() {
+      fetchModelIdList({
+        provider: this.provider.key,
+        modelType: this.createForm.modelType,
+      }).then(res => {
+        const list = res.data ? res.data.list || [] : [];
+        this.modelIdList = [...list, DEFAULT_MODEL_ITEM];
+      });
+    },
+    handleModelChange(modelId) {
+      this.createForm.model = modelId !== 'custom' ? modelId : '';
     },
     uploadAvatar(file, key) {
       const formData = new FormData();
@@ -656,6 +710,7 @@ export default {
     },
     handleClose() {
       this.dialogVisible = false;
+      this.modelId = '';
       this.formatValue({
         modelType: LLM,
         functionCalling: DEFAULT_CALLING,
@@ -757,6 +812,7 @@ export default {
 };
 </script>
 <style lang="scss" scoped>
+@import '@/style/modelSelect.scss';
 .createForm {
   padding: 0 45px 0 20px;
   .avatar-uploader {

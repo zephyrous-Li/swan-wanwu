@@ -101,3 +101,12 @@ export const selectASRList = () => {
     method: 'get',
   });
 };
+
+// 获取模型ID列表
+export const fetchModelIdList = params => {
+  return service({
+    url: `${USER_API}/model/recommend`,
+    method: 'get',
+    params,
+  });
+};

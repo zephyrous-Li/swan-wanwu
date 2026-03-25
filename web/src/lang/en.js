@@ -518,6 +518,7 @@ export default {
     all: '全部',
     public: '公有模型',
     private: '我的模型',
+    custom: '自定义',
     type: {
       yuanjing: '联通元景',
       qwen: '通义千问',

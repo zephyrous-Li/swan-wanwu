@@ -536,6 +536,7 @@ export default {
     private: '我的模型',
     publicWarning:
       '您所选的模型为公有模型，若模型所有者下线该模型，将导致应用不可用，请谨慎选择。',
+    custom: '自定义',
     type: {
       yuanjing: '联通元景',
       qwen: '通义千问',
