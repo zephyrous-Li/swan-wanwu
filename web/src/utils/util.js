@@ -321,6 +321,8 @@ export const formatAmount = (
   returnType = 'string',
   preserveRange = false,
 ) => {
+  if (!num) return 0;
+
   const units = i18n.t('statisticsEcharts.units');
   const isHasDecimal = num.toString().includes('.');
   let formatNum = num;

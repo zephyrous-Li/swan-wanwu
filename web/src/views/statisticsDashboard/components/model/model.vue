@@ -21,7 +21,7 @@
         <el-select
           v-model="modelParams.models"
           :placeholder="$t('statisticsDashboard.model')"
-          class="no-border-select"
+          class="no-border-select scroll-select"
           style="margin-left: 15px; width: 600px"
           clearable
           multiple

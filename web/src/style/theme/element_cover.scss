@@ -400,6 +400,16 @@
   }
 }
 
+.scroll-select {
+  .el-input__inner {
+    max-height: 100px !important;
+  }
+  .el-select__tags {
+    max-height: 100px !important;
+    overflow-y: auto;
+  }
+}
+
 .list-item {
   .el-checkbox {
     margin-right: 0 !important;

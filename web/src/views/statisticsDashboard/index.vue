@@ -18,16 +18,21 @@
     <div v-if="tabActive === STATISTIC.MODEL">
       <Model />
     </div>
+
+    <div v-if="tabActive === STATISTIC.API">
+      <API />
+    </div>
   </div>
 </template>
 
 <script>
 import Model from './components/model/model.vue';
 import App from './components/app/app.vue';
+import API from './components/api/api.vue';
 import { STATISTIC } from './constants';
 
 export default {
-  components: { Model, App },
+  components: { Model, App, API },
   data() {
     return {
       STATISTIC,
@@ -41,6 +46,10 @@ export default {
         {
           name: this.$t('statisticsDashboard.model'),
           type: STATISTIC.MODEL,
+        },
+        {
+          name: 'API',
+          type: STATISTIC.API,
         },
       ],
     };
