@@ -8,6 +8,7 @@ const (
 	PlaceholderOfUploadFile        = "uploaded_files"
 	PlaceholderOfVariables         = "memory_variables"
 	PlaceholderOfTime              = "time"
+	PlaceholderOfInstruction       = "instruction"
 )
 
 const REACT_SYSTEM_PROMPT_JINJA2 = `

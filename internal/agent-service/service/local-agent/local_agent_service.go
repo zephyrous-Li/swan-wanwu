@@ -29,15 +29,18 @@ func CreateChatModel(ctx context.Context, agentChatInfo *service_model.AgentChat
 	modelInfo := agentChatInfo.ModelInfo
 	modelConfig := modelInfo.Config
 	params := req.ModelParams
-	enableThinking := req.ModelParams.EnableThinking
-	var extraFields map[string]any
-	if enableThinking != nil {
-		var thinking = false
-		if *enableThinking == 1 {
-			thinking = true
-		}
-		extraFields = map[string]any{"enable_thinking": thinking}
-	}
+
+	// 临时禁用 enable_thinking 参数进行测试
+	// enableThinking := req.ModelParams.EnableThinking
+	// var extraFields map[string]any
+	// if enableThinking != nil {
+	// 	var thinking = false
+	// 	if *enableThinking == 1 {
+	// 		thinking = true
+	// 	}
+	// 	extraFields = map[string]any{"enable_thinking": thinking}
+	// }
+
 	return openai.NewChatModel(ctx, &openai.ChatModelConfig{
 		APIKey:           modelConfig.ApiKey,
 		BaseURL:          modelConfig.EndpointUrl,
@@ -46,6 +49,6 @@ func CreateChatModel(ctx context.Context, agentChatInfo *service_model.AgentChat
 		TopP:             params.TopP,
 		FrequencyPenalty: params.FrequencyPenalty,
 		PresencePenalty:  params.PresencePenalty,
-		ExtraFields:      extraFields,
+		// ExtraFields:      extraFields, // 临时禁用
 	})
 }

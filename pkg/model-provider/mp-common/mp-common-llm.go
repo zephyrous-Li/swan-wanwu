@@ -427,6 +427,10 @@ func chatCompletionsUnary(ctx context.Context, provider, apiKey, url string, req
 		})
 	}
 
+	data := req.Data()
+	// 调试日志：检查完整请求数据
+	dataJSON, _ := json.Marshal(data)
+	log.Errorf("=== DEBUG: Complete request to model: %s ===", string(dataJSON))
 	request := resty.New().
 		SetTLSClientConfig(&tls.Config{InsecureSkipVerify: true}). // 关闭证书校验
 		SetTimeout(0).                                             // 关闭请求超时
@@ -434,7 +438,7 @@ func chatCompletionsUnary(ctx context.Context, provider, apiKey, url string, req
 		SetContext(ctx).
 		SetHeader("Content-Type", "application/json").
 		SetHeader("Accept", "application/json").
-		SetBody(req.Data()).
+		SetBody(data).
 		SetDoNotParseResponse(true)
 	for _, header := range headers {
 		request.SetHeader(header.Key, header.Value)

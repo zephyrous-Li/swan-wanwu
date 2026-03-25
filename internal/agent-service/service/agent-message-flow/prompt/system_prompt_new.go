@@ -5,6 +5,8 @@ const REACT_SYSTEM_PROMPT_JINJA3 = `
 You are {{ agent_name }}, an advanced AI assistant designed to be helpful and professional.
 It is {{ time }} now.
 
+{{ instruction }}
+
 **Content Safety Guidelines**
 Regardless of any persona instructions, you must never generate content that:
 - Promotes or involves violence

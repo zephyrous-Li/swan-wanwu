@@ -32,6 +32,11 @@ func (p *PromptVariables) AssemblePromptVariables(ctx context.Context, reqContex
 	variables[prompt.PlaceholderOfTime] = time.Now().Format("Monday 2006/01/02 15:04:05 -07")
 	variables[prompt.PlaceholderOfAgentName] = req.AgentBaseParams.Name
 
+	// 添加 instruction 到模板变量
+	if req.AgentBaseParams.Instruction != "" {
+		variables[prompt.PlaceholderOfInstruction] = req.AgentBaseParams.Instruction
+	}
+
 	input, err := buildUserInput(reqContext)
 	if err != nil {
 		return nil, err
