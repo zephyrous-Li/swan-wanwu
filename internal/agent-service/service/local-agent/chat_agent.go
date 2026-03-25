@@ -7,6 +7,7 @@ import (
 	"github.com/UnicomAI/wanwu/internal/agent-service/pkg/config"
 	agent_message_flow "github.com/UnicomAI/wanwu/internal/agent-service/service/agent-message-flow"
 	service_model "github.com/UnicomAI/wanwu/internal/agent-service/service/service-model"
+	"github.com/UnicomAI/wanwu/pkg/log"
 	"github.com/cloudwego/eino/adk"
 	"github.com/cloudwego/eino/components/model"
 	"github.com/cloudwego/eino/compose"
@@ -38,7 +39,20 @@ func (a *ChatAgent) BuildAgentInput(ctx context.Context, req *request.AgentChatP
 	if err != nil {
 		return nil, err
 	}
+	// 调试：检查消息内容
+	log.Errorf("=== DEBUG: createMessages count: %d ===", len(createMessages))
+	for i, msg := range createMessages {
+		log.Errorf("=== DEBUG: createMessages[%d] role: %s ===", i, msg.Role)
+	}
+	log.Errorf("=== DEBUG: messages to append count: %d ===", len(messages))
+	for i, msg := range messages {
+		log.Errorf("=== DEBUG: messages[%d] role: %s ===", i, msg.Role)
+	}
 	createMessages = append(createMessages, messages...)
+	log.Errorf("=== DEBUG: final createMessages count: %d ===", len(createMessages))
+	for i, msg := range createMessages {
+		log.Errorf("=== DEBUG: final createMessages[%d] role: %s ===", i, msg.Role)
+	}
 	//3.知识库信息记录
 	if a.ChatContext != nil {
 		a.ChatContext.KnowledgeHitData = agentChatContext.KnowledgeHitData

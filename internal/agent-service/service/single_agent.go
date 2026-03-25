@@ -168,7 +168,7 @@ func createAgent(ctx *gin.Context, req *request.AgentChatParams, chatModel model
 		Model:       chatModel,
 		Name:        baseParams.Name,
 		Description: baseParams.Description,
-		Instruction: baseParams.Instruction,
+		Instruction: "", // 设置为空，避免 eino 框架自动添加 system message（instruction 已通过 Jinja2 模板传递）
 		ToolsConfig: toolsConfig,
 		Exit:        exit,
 	})
