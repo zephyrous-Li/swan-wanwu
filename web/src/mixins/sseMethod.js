@@ -291,22 +291,9 @@ export default {
       this._reasoningSSEDone = false;
       this._pendingOutputQueue = [];
 
-      // 推理专用 md 包装器：渲染前去除每行行首空格
-      // 防止 markdown-it 将行首缩进误判为代码块（Indented Code Block）
-      const reasoningMd = {
-        render: text =>
-          md.render(
-            text
-              .split('\n')
-              .map(line => line.trimStart())
-              .join('\n'),
-          ),
-        utils: md.utils,
-      };
-
       const reasoningProcessor = new StreamProcessor({
         lastIndex,
-        md: reasoningMd,
+        md: md,
         parseSub,
         convertLatexSyntax,
       });
