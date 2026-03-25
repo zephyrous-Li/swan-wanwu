@@ -294,9 +294,12 @@ export default {
     }
   }
 
-  .sub-conversion-content-wrapper {
+  ::v-deep .sub-conversion-content-wrapper {
     padding: 10px 12px;
     background: #edeef5;
+    img {
+      max-width: 80%;
+    }
   }
 
   .sub-conversion-content {
