@@ -1,0 +1,173 @@
+recommend_models:
+  - provider: "HuoShan"
+    llm:
+      - model: "doubao-seed-2-0-pro-260215"
+        display_name: "doubao-seed-2-0-pro-260215"
+        tags: ["图文问答","深度思考开关","工具调用"]
+      - model: "doubao-seed-2-0-lite-260215"
+        display_name: "doubao-seed-2-0-lite-260215"
+        tags: ["图文问答","深度思考开关","工具调用"]
+      - model: "doubao-seed-2-0-mini-260215"
+        display_name: "doubao-seed-2-0-mini-260215"
+        tags: ["图文问答","深度思考开关","工具调用"]
+      - model: "doubao-seed-2-0-code-preview-260215"
+        display_name: "doubao-seed-2-0-code-preview-260215"
+        tags: ["图文问答","深度思考开关","工具调用"]
+      - model: "doubao-seed-1-8-251228"
+        display_name: "doubao-seed-1-8-251228"
+        tags: ["图文问答","深度思考开关","工具调用"]
+      - model: "glm-4-7-251222"
+        display_name: "glm-4-7-251222"
+        tags: ["图文问答","深度思考开关","工具调用"]
+      - model: "doubao-seed-code-preview-251028"
+        display_name: "doubao-seed-code-preview-251028"
+        tags: ["图文问答","深度思考开关","工具调用"]
+      - model: "doubao-seed-1-6-lite-251015"
+        display_name: "doubao-seed-1-6-lite-251015"
+        tags: ["图文问答","深度思考开关","工具调用"]
+      - model: "doubao-seed-1-6-flash-250828"
+        display_name: "doubao-seed-1-6-flash-250828"
+        tags: ["图文问答","深度思考开关","工具调用"]
+      - model: "doubao-seed-1-6-vision-250815"
+        display_name: "doubao-seed-1-6-vision-250815"
+        tags: ["图文问答","深度思考开关","工具调用"]
+    embedding:
+      - model: "doubao-embedding-large-text-250515"
+        display_name: "doubao-embedding-large-text-250515"
+
+  - provider: "YuanJing"
+    llm:
+      - model: "minimax-m2.5"
+        display_name: "minimax-m2.5"
+        tags: ["工具调用"]
+      - model: "qwen2.5-72b-instruct"
+        display_name: "qwen2.5-72b-instruct"
+        tags: ["工具调用"]
+      - model: "glm-5"
+        display_name: "glm-5"
+        tags: ["深度思考开关","工具调用"]
+      - model: "glm-4.7"
+        display_name: "glm-4.7"
+        tags: ["深度思考开关","工具调用"]
+      - model: "YuanjingVL"
+        display_name: "YuanjingVL"
+        tags: ["图文问答"]
+    rerank:
+      - model: "qwen3-reranker-0.6b"
+        display_name: "qwen3-reranker-0.6b"
+      - model: "qwen3-reranker-4b"
+        display_name: "qwen3-reranker-4b"
+    multimodal-rerank:
+      - model: "qwen3-vl-reranker-2b"
+        display_name: "qwen3-vl-reranker-2b"
+      - model: "qwen3-vl-reranker-8b"
+        display_name: "qwen3-vl-reranker-8b"
+    embedding:
+      - model: "qwen3-embed-0.6b"
+        display_name: "qwen3-embed-0.6b"
+    multimodal-embedding:
+      - model: "qwen3-vl-embedding-2b"
+        display_name: "qwen3-vl-embedding-2b"
+      - model: "qwen3-vl-embedding-8b"
+        display_name: "qwen3-vl-embedding-8b"
+    gui:
+      - model: "gui_agent_v1"
+        display_name: "gui_agent_v1"
+
+  - provider: "Qwen"
+    llm:
+      - model: "qwen3-max"
+        display_name: "qwen3-max"
+        tags: ["深度思考开关","工具调用"]
+      - model: "qwen3.5-plus"
+        display_name: "qwen3.5-plus"
+        tags: ["图文问答","深度思考开关","工具调用"]
+      - model: "qwen3-vl-plus"
+        display_name: "qwen3-vl-plus"
+        tags: ["图文问答","深度思考开关","工具调用"]
+      - model: "qwen3.5-flash"
+        display_name: "qwen3.5-flash"
+        tags: ["深度思考开关","工具调用"]
+    rerank:
+      - model: "gte-rerank-v2"
+        display_name: "gte-rerank-v2"
+    embedding:
+      - model: "text-embedding-v4"
+        display_name: "text-embedding-v4"
+    sync-asr:
+      - model: "qwen3-asr-flash"
+        display_name: "qwen3-asr-flash"
+
+  - provider: "Infini"
+    llm:
+      - model: "kimi-k2.5"
+        display_name: "kimi-k2.5"
+        tags: ["图文问答","深度思考开关","工具调用"]
+      - model: "glm-4.5v"
+        display_name: "glm-4.5v"
+        tags: ["图文问答","深度思考开关"]
+      - model: "glm-5"
+        display_name: "glm-5"
+        tags: ["深度思考开关","工具调用"]
+      - model: "deepseek-v3.2"
+        display_name: "deepseek-v3.2"
+        tags: ["深度思考开关","工具调用"]
+    rerank:
+      - model: "bge-reranker-v2-m3"
+        display_name: "bge-reranker-v2-m3"
+    embedding:
+      - model: "jina-embeddings-v2-base-code"
+        display_name: "jina-embeddings-v2-base-code"
+      - model: "jina-embeddings-v2-base-zh"
+        display_name: "jina-embeddings-v2-base-zh"
+      - model: "bge-m3"
+        display_name: "BAAI/bge-m3"
+
+  - provider: "QianFan"
+    llm:
+      - model: "ernie-5.0"
+        display_name: "ERNIE 5.0"
+        tags: ["图文问答","深度思考开关", "工具调用"]
+      - model: "ernie-4.5-turbo-vl-preview"
+        display_name: "ERNIE 4.5 Turbo VL"
+        tags: ["图文问答","深度思考开关"]
+      - model: "ernie-x1.1"
+        display_name: "ERNIE X1.1"
+        tags: ["深度思考开关", "工具调用"]
+    rerank:
+      - model: "bce-reranker-base"
+        display_name: "bce-reranker-base"
+    embedding:
+      - model: "embedding-v1"
+        display_name: "embedding-v1"
+
+  - provider: "DeepSeek"
+    llm:
+      - model: "deepseek-chat"
+        display_name: "DeepSeek Chat"
+        tags: ["深度思考开关", "工具调用"]
+      - model: "deepseek-reasoner"
+        display_name: "DeepSeek Reasoner"
+        tags: ["深度思考开关", "工具调用"]
+
+  - provider: "Jina"
+    rerank:
+      - model: "jina-reranker-v2-base-multilingual"
+        display_name: "jina-reranker-v2-base-multilingual"
+      - model: "jina-reranker-v3"
+        display_name: "jina-reranker-v3"
+    multi-rerank:
+      - model: "jina-reranker-m0"
+        display_name: "jina-reranker-m0"
+    embedding:
+      - model: "jina-embeddings-v3"
+        display_name: "jina-embeddings-v3"
+      - model: "jina-embeddings-v5-text-small"
+        display_name: "jina-embeddings-v5-text-small"
+    multimodal-embedding:
+      - model: "jina-embeddings-v4"
+        display_name: "jina-embeddings-v4"
+      - model: "jina-clip-v2"
+        display_name: "jina-clip-v2"
+  - provider: "Ollama"
+  - provider: "OpenAI-API-compatible"

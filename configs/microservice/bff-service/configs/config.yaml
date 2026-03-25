@@ -223,6 +223,7 @@ model:
   png_test_file_path: "configs/microservice/bff-service/static/model/test.png"
   pdf_test_file_path: "configs/microservice/bff-service/static/model/test.pdf"
   asr_test_file_path: "configs/microservice/bff-service/static/model/test.wav"
+  recommend_model_config_path: "configs/microservice/bff-service/static/model/recommend_models.yaml"
 
 mcp:
   host: mcp-service:9898

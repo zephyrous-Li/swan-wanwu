@@ -53,3 +53,12 @@ type ModelStatusRequest struct {
 func (o *ModelStatusRequest) Check() error {
 	return nil
 }
+
+type RecommendModelsRequest struct {
+	Provider  string `json:"provider" form:"provider" validate:"required"`   // 模型供应商
+	ModelType string `json:"modelType" form:"modelType" validate:"required"` // 模型类型
+}
+
+func (o *RecommendModelsRequest) Check() error {
+	return nil
+}
