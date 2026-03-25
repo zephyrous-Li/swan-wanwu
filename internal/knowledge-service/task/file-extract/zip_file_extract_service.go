@@ -10,6 +10,7 @@ import (
 	"path/filepath"
 
 	"github.com/UnicomAI/wanwu/pkg/log"
+	"github.com/UnicomAI/wanwu/pkg/util"
 	"golang.org/x/text/encoding/simplifiedchinese"
 	"golang.org/x/text/transform"
 )
@@ -48,8 +49,16 @@ func (t ZipFileExtractServiceService) ExtractFile(ctx context.Context, localFile
 		} else {
 			decodeFileName = f.Name
 		}
-		// 构建完整的文件路径
-		destFilePath := filepath.Join(destDir, decodeFileName)
+		if err := util.ValidateFileName(decodeFileName); err != nil {
+			log.Warnf("skip unsafe file in zip: %s, error: %v", decodeFileName, err)
+			continue
+		}
+		safe, safePath, err := util.IsSafePath(destDir, decodeFileName)
+		if !safe {
+			log.Warnf("skip unsafe path in zip: %s, error: %v", decodeFileName, err)
+			continue
+		}
+		destFilePath := safePath
 		// 检查是否为目录
 		if f.FileInfo().IsDir() {
 			// 创建目录
@@ -60,13 +69,11 @@ func (t ZipFileExtractServiceService) ExtractFile(ctx context.Context, localFile
 		}
 		log.Infof("ExtractFile file path %s", destFilePath)
 		// 我们需要确保所有的文件夹都已经创建好
-		err = os.MkdirAll(filepath.Dir(destFilePath), f.Mode())
-		if err != nil {
+		if err := os.MkdirAll(filepath.Dir(destFilePath), f.Mode()); err != nil {
 			return "", err
 		}
 		//写入文件
-		err = writeUnzipFile(f, destFilePath)
-		if err != nil {
+		if err := writeUnzipFile(f, destFilePath); err != nil {
 			return "", err
 		}
 	}

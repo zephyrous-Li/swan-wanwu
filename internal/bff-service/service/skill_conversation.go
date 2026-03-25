@@ -223,6 +223,9 @@ func SkillConversationChat(ctx *gin.Context, userId, orgId string, req request.S
 			return grpc_util.ErrorStatus(errs.Code_BFFGeneral, fmt.Sprintf("create workspace directory err: %v", err))
 		}
 		for _, fileInfo := range req.FileInfo {
+			if err := util.ValidateFileName(fileInfo.FileName); err != nil {
+				return grpc_util.ErrorStatus(errs.Code_BFFGeneral, fmt.Sprintf("invalid file name: %v", err))
+			}
 			localPath := filepath.Join(workspaceDir, fileInfo.FileName)
 			data, err := minio_util.DownloadFileDirect(ctx.Request.Context(), fileInfo.FileUrl)
 			if err != nil {

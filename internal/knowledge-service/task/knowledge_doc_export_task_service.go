@@ -212,7 +212,18 @@ func exportDocFiles(ctx context.Context, knowledge *model.KnowledgeBase, exportP
 		}
 		totalCount = int64(len(docInfos))
 	}
-	exportZipFilePath := exportLocalDir + knowledge.Name + time.Now().Format("20060102150405") + ".zip"
+	safeName := knowledge.Name
+	if err := util.ValidateFileName(safeName); err != nil {
+		log.Errorf("validate knowledge.Name error: %v", err)
+		return 0, 0, "", 0, err
+	}
+	exportZipFilePath := exportLocalDir + safeName + time.Now().Format("20060102150405") + ".zip"
+	if safe, safePath, err := util.IsSafePath(exportLocalDir, safeName+time.Now().Format("20060102150405")+".zip"); !safe {
+		log.Errorf("unsafe export path: %v", err)
+		return 0, 0, "", 0, err
+	} else {
+		exportZipFilePath = exportLocalDir + safePath
+	}
 	err = os.MkdirAll(filepath.Dir(exportZipFilePath), 0755)
 	if err != nil {
 		log.Infof("Error create directory: %v", err)
@@ -238,6 +249,10 @@ func exportDocFiles(ctx context.Context, knowledge *model.KnowledgeBase, exportP
 		}
 	}()
 	for _, docInfo := range docInfos {
+		if err := util.ValidateFileName(docInfo.Name); err != nil {
+			log.Errorf("validate docInfo.Name error: %v", err)
+			continue
+		}
 		exportFilePath := exportLocalDir + "/" + docInfo.Name
 		err = processExportFileDoc(ctx, docInfo.FilePath, exportFilePath, zipWriter)
 		if err != nil {

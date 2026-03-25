@@ -14,6 +14,7 @@ import (
 	"github.com/UnicomAI/wanwu/internal/knowledge-service/pkg/util"
 	"github.com/UnicomAI/wanwu/pkg/log"
 	minio_client "github.com/UnicomAI/wanwu/pkg/minio"
+	wanwuutil "github.com/UnicomAI/wanwu/pkg/util"
 	"github.com/minio/minio-go/v7"
 )
 
@@ -144,6 +145,17 @@ func DownloadFileToLocal(ctx context.Context, minioFilePath string, localPath st
 	if err != nil {
 		log.Errorf("DownloadFileToLocal error %s", err)
 		return err
+	}
+	if err := wanwuutil.ValidateFileName(localPath); err != nil {
+		log.Errorf("DownloadFileToLocal validate localPath error %s", err)
+		return err
+	}
+	baseDir := filepath.Dir(localPath)
+	if safe, safePath, err := wanwuutil.IsSafePath(baseDir, localPath); !safe {
+		log.Errorf("DownloadFileToLocal unsafe path error %s", err)
+		return err
+	} else {
+		localPath = safePath
 	}
 	if err := os.MkdirAll(filepath.Dir(localPath), 0755); err != nil {
 		return err

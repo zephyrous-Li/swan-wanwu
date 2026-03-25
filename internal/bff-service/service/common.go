@@ -124,6 +124,10 @@ func CacheAvatar(ctx *gin.Context, avatarObjectPath string, isResize bool) reque
 	}
 	bucketName := parts[0]
 	objectName := parts[1]
+	if err := util.ValidateFileName(objectName); err != nil {
+		log.Errorf("cache avatar %v err: invalid object name %v", avatarObjectPath, err)
+		return avatar
+	}
 	filePath := filepath.Join(avatarCacheLocalDir, objectName)
 
 	_, err := os.Stat(filePath)

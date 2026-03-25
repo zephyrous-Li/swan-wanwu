@@ -235,8 +235,10 @@ func oauthValidateReqApp(clientID, clientSecret, redirectUri string, appInfo *ia
 	if clientSecret != "" && appInfo.ClientSecret != clientSecret {
 		return grpc_util.ErrorStatusWithKey(err_code.Code_BFFGeneral, "bff_oauth_secret")
 	}
-	if redirectUri != "" && redirectUri != appInfo.RedirectUri {
-		return grpc_util.ErrorStatusWithKey(err_code.Code_BFFGeneral, "bff_oauth_redirect_uri")
+	if redirectUri != "" {
+		if redirectUri != appInfo.RedirectUri {
+			return grpc_util.ErrorStatusWithKey(err_code.Code_BFFGeneral, "bff_oauth_redirect_uri")
+		}
 	}
 	return nil
 }

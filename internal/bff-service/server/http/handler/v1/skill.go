@@ -55,8 +55,19 @@ func GetAgentSkillDetail(ctx *gin.Context) {
 //	@Success		200		{object}	response.Response
 //	@Router			/agent/skill/download [get]
 func DownloadAgentSkill(ctx *gin.Context) {
-	fileName := fmt.Sprintf("%s.zip", ctx.Query("skillId"))
-	resp, err := service.DownloadAgentSkill(ctx, ctx.Query("skillId"))
+	skillId := ctx.Query("skillId")
+	if skillId == "" {
+		gin_util.Response(ctx, nil, fmt.Errorf("skillId is required"))
+		return
+	}
+	for _, c := range []byte(skillId) {
+		if (c < 'a' || c > 'z') && (c < 'A' || c > 'Z') && (c < '0' || c > '9') && c != '-' && c != '_' {
+			gin_util.Response(ctx, nil, fmt.Errorf("invalid skillId"))
+			return
+		}
+	}
+	fileName := fmt.Sprintf("%s.zip", skillId)
+	resp, err := service.DownloadAgentSkill(ctx, skillId)
 	if err != nil {
 		gin_util.Response(ctx, nil, err)
 		return
