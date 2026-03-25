@@ -334,3 +334,97 @@ func getModelAllTags(modelInfo *model_service.ModelInfo) ([]mp_common.Tag, error
 
 	return allModelTags, nil
 }
+
+func GetRecommendModels(_ *gin.Context, req *request.RecommendModelsRequest) (*response.ListResult, error) {
+	recommendModels := config.Cfg().RecommendModels
+
+	var matchedProvider *config.RecommendModelsByProvider
+	for i := range recommendModels {
+		if recommendModels[i].Provider == req.Provider {
+			matchedProvider = &recommendModels[i]
+			break
+		}
+	}
+
+	if matchedProvider == nil {
+		return nil, grpc_util.ErrorStatus(err_code.Code_BFFInvalidArg, fmt.Sprintf("provider %s not found in config", req.Provider))
+	}
+
+	validModelTypes := []string{
+		mp.ModelTypeLLM,
+		mp.ModelTypeTextEmbedding,
+		mp.ModelTypeMultiEmbedding,
+		mp.ModelTypeTextRerank,
+		mp.ModelTypeMultiRerank,
+		mp.ModelTypeOcr,
+		mp.ModelTypeGui,
+		mp.ModelTypePdfParser,
+		mp.ModelTypeSyncAsr,
+	}
+	validModelType := false
+	for _, t := range validModelTypes {
+		if req.ModelType == t {
+			validModelType = true
+			break
+		}
+	}
+	if !validModelType {
+		return nil, grpc_util.ErrorStatus(err_code.Code_BFFInvalidArg, fmt.Sprintf("model type %s not found in config", req.ModelType))
+	}
+
+	var models []response.RecommendModel
+	if req.ModelType == mp.ModelTypeLLM {
+		models = convertRecommendModelsLLM(matchedProvider.Llm)
+	} else {
+		models = getModelsByType(*matchedProvider, req.ModelType)
+	}
+
+	return &response.ListResult{
+		List:  models,
+		Total: int64(len(models)),
+	}, nil
+}
+
+func getModelsByType(p config.RecommendModelsByProvider, modelType string) []response.RecommendModel {
+	modelMap := map[string][]config.RecommendModelItem{
+		mp.ModelTypeTextEmbedding:  p.Embedding,
+		mp.ModelTypeMultiEmbedding: p.MultiEmbedding,
+		mp.ModelTypeTextRerank:     p.Rerank,
+		mp.ModelTypeMultiRerank:    p.MultiRerank,
+		mp.ModelTypeOcr:            p.Ocr,
+		mp.ModelTypeGui:            p.Gui,
+		mp.ModelTypePdfParser:      p.PdfParser,
+		mp.ModelTypeSyncAsr:        p.SyncAsr,
+	}
+	if items, ok := modelMap[modelType]; ok {
+		return convertRecommendModels(items)
+	}
+	return nil
+}
+
+func convertRecommendModels(items []config.RecommendModelItem) []response.RecommendModel {
+	result := make([]response.RecommendModel, 0, len(items))
+	for _, item := range items {
+		result = append(result, response.RecommendModel{
+			Model:       item.Model,
+			DisplayName: item.DisplayName,
+		})
+	}
+	return result
+}
+
+func convertRecommendModelsLLM(items []config.RecommendModelItemLLM) []response.RecommendModel {
+	result := make([]response.RecommendModel, 0, len(items))
+	for _, item := range items {
+		tags := make([]response.ModelTagItem, 0, len(item.Tags))
+		for _, t := range item.Tags {
+			tags = append(tags, response.ModelTagItem{Text: t})
+		}
+		result = append(result, response.RecommendModel{
+			Model:       item.Model,
+			DisplayName: item.DisplayName,
+			Tags:        tags,
+		})
+	}
+	return result
+}

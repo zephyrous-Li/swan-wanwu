@@ -28,3 +28,13 @@ type ModelInfo struct {
 	AllowEdit    bool                    `json:"allowEdit"`    // 是否允许前端编辑（true: 允许编辑，false: 隐藏编辑按钮）
 	ImportSource string                  `json:"importSource"` // 模型导入来源(builtin=平台内置,external=外部URL)
 }
+
+type ModelTagItem struct {
+	Text string `json:"text"`
+}
+
+type RecommendModel struct {
+	Model       string         `json:"model"`
+	DisplayName string         `json:"displayName"`
+	Tags        []ModelTagItem `json:"tags"`
+}

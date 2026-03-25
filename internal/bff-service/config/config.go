@@ -52,6 +52,7 @@ type Config struct {
 	DifyKnowledgeConfig DifyKnowledgeConfig   `json:"dify-knowledge" mapstructure:"dify-knowledge"`
 	Workflow            WorkflowServiceConfig `json:"workflow" mapstructure:"workflow"`
 	WgaSandbox          WgaSandboxConfig      `json:"wga-sandbox" mapstructure:"wga-sandbox"`
+	RecommendModels     RecommendModelConfig  `json:"recommend_models" mapstructure:"recommend_models"`
 }
 
 type ServerConfig struct {
@@ -64,11 +65,38 @@ type ServerConfig struct {
 }
 
 type ServiceModelConfig struct {
-	Host            string `json:"host" mapstructure:"host"`
-	PngTestFilePath string `json:"png_test_file_path" mapstructure:"png_test_file_path"`
-	PdfTestFilePath string `json:"pdf_test_file_path" mapstructure:"pdf_test_file_path"`
-	AsrTestFilePath string `json:"asr_test_file_path" mapstructure:"asr_test_file_path"`
+	Host                     string `json:"host" mapstructure:"host"`
+	PngTestFilePath          string `json:"png_test_file_path" mapstructure:"png_test_file_path"`
+	PdfTestFilePath          string `json:"pdf_test_file_path" mapstructure:"pdf_test_file_path"`
+	AsrTestFilePath          string `json:"asr_test_file_path" mapstructure:"asr_test_file_path"`
+	RecommendModelConfigPath string `json:"recommend_model_config_path" mapstructure:"recommend_model_config_path"`
 }
+
+type RecommendModelItemLLM struct {
+	Model       string   `mapstructure:"model" json:"model"`
+	DisplayName string   `mapstructure:"display_name" json:"displayName"`
+	Tags        []string `mapstructure:"tags" json:"tags"`
+}
+
+type RecommendModelItem struct {
+	Model       string `mapstructure:"model" json:"model"`
+	DisplayName string `mapstructure:"display_name" json:"displayName"`
+}
+
+type RecommendModelsByProvider struct {
+	Provider       string                  `mapstructure:"provider" json:"provider"`
+	Llm            []RecommendModelItemLLM `mapstructure:"llm" json:"llm"`
+	Embedding      []RecommendModelItem    `mapstructure:"embedding" json:"embedding"`
+	MultiEmbedding []RecommendModelItem    `mapstructure:"multimodal-embedding" json:"multimodal-embedding"`
+	Rerank         []RecommendModelItem    `mapstructure:"rerank" json:"rerank"`
+	MultiRerank    []RecommendModelItem    `mapstructure:"multimodal-rerank" json:"multimodal-rerank"`
+	Ocr            []RecommendModelItem    `mapstructure:"ocr" json:"ocr"`
+	Gui            []RecommendModelItem    `mapstructure:"gui" json:"gui"`
+	PdfParser      []RecommendModelItem    `mapstructure:"pdf-parser" json:"pdf-parser"`
+	SyncAsr        []RecommendModelItem    `mapstructure:"sync-asr" json:"sync-asr"`
+}
+
+type RecommendModelConfig []RecommendModelsByProvider
 
 type LogConfig struct {
 	Std   bool         `json:"std" mapstructure:"std"`
@@ -351,6 +379,13 @@ func LoadConfig(in string) error {
 	skillCreatorIn := _c.SkillCreatorPath.ConfigPath
 	if err := util.LoadConfig(skillCreatorIn, _c); err != nil {
 		return fmt.Errorf("load skill-creator config err: %v", err)
+	}
+	// 加载推荐模型配置
+	recommendModelPath := _c.Model.RecommendModelConfigPath
+	if recommendModelPath != "" {
+		if err := util.LoadConfig(recommendModelPath, _c); err != nil {
+			return fmt.Errorf("load recommend model config err: %v", err)
+		}
 	}
 	return nil
 }
