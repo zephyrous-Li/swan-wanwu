@@ -114,7 +114,11 @@
               {{ formatAmount(scope.row.nonStreamCount) }}
             </template>
           </el-table-column>
-          <el-table-column align="left" :label="$t('common.table.operation')">
+          <el-table-column
+            width="50"
+            align="left"
+            :label="$t('common.table.operation')"
+          >
             <template slot-scope="scope">
               <el-button type="text" @click="showDetail(scope.row)">
                 {{ $t('common.table.detail') }}
@@ -180,7 +184,11 @@
               {{ formatAmount(scope.row.nonStreamCosts) }}
             </template>
           </el-table-column>
-          <el-table-column align="left" :label="$t('common.table.operation')">
+          <el-table-column
+            width="50"
+            align="left"
+            :label="$t('common.table.operation')"
+          >
             <template slot-scope="scope">
               <el-button type="text" @click="showDetail(scope.row)">
                 {{ $t('common.table.detail') }}
