@@ -2,46 +2,48 @@
   <div class="statistics_common list-common statistics_client_wrapper">
     <div>
       <div style="padding: 5px 24px">
-        <label>{{ $t('statisticsDashboard.appSelect') }}:</label>
+        <label>{{ $t('statisticsDashboard.apiSelect') }}:</label>
         <el-select
-          v-model="appParams.appType"
-          :placeholder="$t('statisticsDashboard.appType')"
-          class="no-border-select"
-          style="margin-left: 15px"
+          v-model="apiParams.apiKeyIds"
+          :placeholder="$t('statisticsDashboard.apiName')"
+          class="no-border-select scroll-select"
+          style="margin-left: 15px; width: 400px"
+          multiple
+          filterable
           clearable
-          @change="fetchApps()"
         >
           <el-option
-            v-for="key in Object.keys(appTypeObj)"
-            :key="key"
-            :label="appTypeObj[key]"
-            :value="key"
+            v-for="item in apiNameList"
+            :key="item.keyId"
+            :label="item.name"
+            :value="item.keyId"
           />
         </el-select>
         <el-select
-          v-model="appParams.apps"
-          :placeholder="$t('statisticsDashboard.app')"
+          v-model="apiParams.methodPaths"
+          :placeholder="$t('statisticsDashboard.apiPath')"
           class="no-border-select scroll-select"
-          style="margin-left: 15px; width: 600px"
+          style="margin-left: 15px; width: 500px"
           clearable
           multiple
           filterable
         >
           <el-option
-            v-for="item in appList"
-            :key="item.appId"
-            :label="item.name"
-            :value="item.appId"
+            v-for="item in apiRoutesList"
+            :key="`${item.method}-${item.path}`"
+            :label="`${item.method} ${item.path}`"
+            :value="`${item.method}-${item.path}`"
           >
             <div class="model-option-content">
               <div class="model-option-content-left">
-                <img
-                  v-if="item?.avatar.path"
-                  class="model-img"
-                  :src="convertIcon(item?.avatar.path)"
-                />
+                <span
+                  class="model-name"
+                  :style="`color: ${colorsObj[item.method] || colorsObj['DEFAULT']}`"
+                >
+                  {{ item.method }}
+                </span>
                 <span class="model-name">
-                  {{ item.name }}
+                  {{ item.path }}
                 </span>
               </div>
             </div>
@@ -107,12 +109,12 @@
           <div class="data_echart" style="width: 100%">
             <UserEchart
               :content="
-                echartContent.callTrend ? echartContent.callTrend.lines : []
+                echartContent.apiCalls ? echartContent.apiCalls.lines : []
               "
               :name="
-                echartContent.callTrend
-                  ? echartContent.callTrend.tableName
-                  : $t('statisticsDashboard.appLineName')
+                echartContent.apiCalls
+                  ? echartContent.apiCalls.tableName
+                  : $t('statisticsDashboard.apiLineName')
               "
               v-loading="loading"
             ></UserEchart>
@@ -120,13 +122,10 @@
         </div>
         <div class="dataOverview">
           <span class="title">
-            {{ $t('statisticsDashboard.appList') }}
+            {{ $t('statisticsDashboard.apiList') }}
           </span>
           <div style="margin-top: -20px">
-            <AppList
-              :params="formatParams({ ...params, ...appParams })"
-              ref="appList"
-            />
+            <ApiList :params="{ ...params, ...apiParams }" ref="apiList" />
           </div>
         </div>
       </div>
@@ -137,21 +136,32 @@
 <script>
 import Search from '@/components/searchDate.vue';
 import UserEchart from '@/components/echart/userEchart.vue';
-import AppList from './appList.vue';
-import { avatarSrc, formatAmount } from '@/utils/util.js';
-import { getAppData, getAppSelect } from '@/api/statisticsDashboard';
-import { AppType } from '@/utils/commonSet';
+import ApiList from './apiList.vue';
+import { formatAmount } from '@/utils/util.js';
+import {
+  getApiData,
+  getApiRoutes,
+  getApiSelect,
+} from '@/api/statisticsDashboard';
 
 export default {
   components: {
     UserEchart,
     Search,
-    AppList,
+    ApiList,
   },
   data() {
     return {
-      appTypeObj: AppType,
-      appList: [],
+      apiNameList: [],
+      apiRoutesList: [],
+      colorsObj: {
+        GET: '#5CB87A',
+        POST: '#E6A23C',
+        PATCH: '#A039D3',
+        DELETE: '#F56C6C',
+        PUT: '#409EFF',
+        DEFAULT: '#909399',
+      },
       loading: false,
       content: {}, // 存储返回的总揽数据
       echartContent: {}, // 存储返回的echart数据
@@ -209,9 +219,9 @@ export default {
       searchTime: {
         time: [],
       },
-      appParams: {
-        appType: '',
-        apps: [],
+      apiParams: {
+        apiKeyIds: [],
+        methodPaths: [],
       },
     };
   },
@@ -223,36 +233,30 @@ export default {
       };
     },
   },
+  mounted() {
+    this.fetchApiNameList();
+    this.fetchApiRoutes();
+  },
   methods: {
     formatAmount,
-    formatParams(params) {
-      return {
-        ...params,
-        apps: params.apps ? params.apps.toString() : '',
-      };
+    async fetchApiNameList() {
+      const res = await getApiSelect();
+      this.apiNameList = res.data ? res.data.list || [] : [];
     },
-    async fetchApps() {
-      if (!this.appParams.appType) {
-        this.appList = [];
-        this.appParams.apps = [];
-        return;
-      }
-
-      const res = await getAppSelect({ appType: this.appParams.appType });
-      this.appList = res.data ? res.data.list || [] : [];
+    async fetchApiRoutes() {
+      const res = await getApiRoutes();
+      this.apiRoutesList = res.data ? res.data.list || [] : [];
     },
     handleSetTime(val) {
-      if (!this.appParams.appType) return;
-
       this.loading = true;
       this.searchTime = val;
 
-      const params = this.formatParams({
+      const params = {
         startDate: val.time[0],
         endDate: val.time[1],
-        ...this.appParams,
-      });
-      getAppData(params)
+        ...this.apiParams,
+      };
+      getApiData(params)
         .then(res => {
           const { overview, trend } = res.data || {};
           this.content = overview || {};
@@ -268,10 +272,7 @@ export default {
         .finally(() => {
           this.loading = false;
         });
-      this.$refs.appList.getTableData(params);
-    },
-    convertIcon(iconPath) {
-      return iconPath ? avatarSrc(iconPath) : '';
+      this.$refs.apiList.getTableData(params);
     },
   },
 };
