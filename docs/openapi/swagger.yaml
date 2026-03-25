@@ -117,6 +117,18 @@ definitions:
       maxTokens:
         description: 模型回答最大tokens
         type: integer
+      thinkingSupport:
+        description: 深度思考是否支持
+        enum:
+        - noSupport
+        - support
+        type: string
+      visionSupport:
+        description: 视觉支持
+        enum:
+        - noSupport
+        - support
+        type: string
     type: object
   mp_huoshan.Embedding:
     properties:
@@ -153,6 +165,12 @@ definitions:
       maxTokens:
         description: 模型回答最大tokens
         type: integer
+      thinkingSupport:
+        description: 深度思考是否支持
+        enum:
+        - noSupport
+        - support
+        type: string
       visionSupport:
         description: 视觉支持
         enum:
@@ -195,6 +213,12 @@ definitions:
       maxTokens:
         description: 模型回答最大tokens
         type: integer
+      thinkingSupport:
+        description: 深度思考是否支持
+        enum:
+        - noSupport
+        - support
+        type: string
       visionSupport:
         description: 视觉支持
         enum:
@@ -246,6 +270,12 @@ definitions:
       maxTokens:
         description: 模型回答最大tokens
         type: integer
+      thinkingSupport:
+        description: 深度思考是否支持
+        enum:
+        - noSupport
+        - support
+        type: string
       visionSupport:
         description: 视觉支持
         enum:
@@ -288,6 +318,12 @@ definitions:
       maxTokens:
         description: 模型回答最大tokens
         type: integer
+      thinkingSupport:
+        description: 深度思考是否支持
+        enum:
+        - noSupport
+        - support
+        type: string
       visionSupport:
         description: 视觉支持
         enum:
@@ -342,6 +378,12 @@ definitions:
       maxTokens:
         description: 模型回答最大tokens
         type: integer
+      thinkingSupport:
+        description: 深度思考是否支持
+        enum:
+        - noSupport
+        - support
+        type: string
       visionSupport:
         description: 视觉支持
         enum:
@@ -396,6 +438,12 @@ definitions:
       maxTokens:
         description: 模型回答最大tokens
         type: integer
+      thinkingSupport:
+        description: 深度思考是否支持
+        enum:
+        - noSupport
+        - support
+        type: string
       visionSupport:
         description: 视觉支持
         enum:
@@ -459,6 +507,12 @@ definitions:
       maxTokens:
         description: 模型回答最大tokens
         type: integer
+      thinkingSupport:
+        description: 深度思考是否支持
+        enum:
+        - noSupport
+        - support
+        type: string
       visionSupport:
         description: 视觉支持
         enum:

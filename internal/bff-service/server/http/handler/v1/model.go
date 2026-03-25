@@ -302,3 +302,24 @@ func ListText2ImageModels(ctx *gin.Context) {
 	})
 	gin_util.Response(ctx, resp, err)
 }
+
+// RecommendModels
+//
+//	@Tags			model
+//	@Summary		获取推荐模型列表
+//	@Description	根据供应商和模型类型获取推荐的模型ID列表
+//	@Security		JWT
+//	@Accept			json
+//	@Produce		json
+//	@Param			provider	query		string	true	"模型供应商"
+//	@Param			modelType	query		string	true	"模型类型"
+//	@Success		200			{object}	response.Response{data=response.ListResult{list=response.RecommendModel}}
+//	@Router			/model/recommend [get]
+func RecommendModels(ctx *gin.Context) {
+	var req request.RecommendModelsRequest
+	if !gin_util.BindQuery(ctx, &req) {
+		return
+	}
+	resp, err := service.GetRecommendModels(ctx, &req)
+	gin_util.Response(ctx, resp, err)
+}

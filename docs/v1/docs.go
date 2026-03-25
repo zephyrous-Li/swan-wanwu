@@ -10350,6 +10350,7 @@ const docTemplate = `{
                 "parameters": [
                     {
                         "type": "integer",
+                        "format": "int32",
                         "description": "模型体验对话ID",
                         "name": "modelExperienceId",
                         "in": "query",
@@ -10562,6 +10563,74 @@ const docTemplate = `{
                                                     "properties": {
                                                         "list": {
                                                             "$ref": "#/definitions/response.ModelInfo"
+                                                        }
+                                                    }
+                                                }
+                                            ]
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    }
+                }
+            }
+        },
+        "/model/recommend": {
+            "get": {
+                "security": [
+                    {
+                        "JWT": []
+                    }
+                ],
+                "description": "根据供应商和模型类型获取推荐的模型ID列表",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "model"
+                ],
+                "summary": "获取推荐模型列表",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "模型供应商",
+                        "name": "provider",
+                        "in": "query",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "模型类型",
+                        "name": "modelType",
+                        "in": "query",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/response.Response"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "allOf": [
+                                                {
+                                                    "$ref": "#/definitions/response.ListResult"
+                                                },
+                                                {
+                                                    "type": "object",
+                                                    "properties": {
+                                                        "list": {
+                                                            "$ref": "#/definitions/response.RecommendModel"
                                                         }
                                                     }
                                                 }
@@ -15178,6 +15247,12 @@ const docTemplate = `{
         "config.WorkflowModelParam": {
             "type": "object",
             "properties": {
+                "api_mode": {
+                    "type": "integer"
+                },
+                "custom_flag": {
+                    "type": "boolean"
+                },
                 "default_val": {
                     "$ref": "#/definitions/config.WorkflowModelParamDefaultVal"
                 },
@@ -15195,6 +15270,12 @@ const docTemplate = `{
                 },
                 "name": {
                     "type": "string"
+                },
+                "options": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/config.WorkflowModelParamOption"
+                    }
                 },
                 "param_class": {
                     "$ref": "#/definitions/config.WorkflowModelParamClass"
@@ -15231,6 +15312,17 @@ const docTemplate = `{
                     "type": "string"
                 },
                 "precise": {
+                    "type": "string"
+                }
+            }
+        },
+        "config.WorkflowModelParamOption": {
+            "type": "object",
+            "properties": {
+                "label": {
+                    "type": "string"
+                },
+                "value": {
                     "type": "string"
                 }
             }
@@ -15577,6 +15669,10 @@ const docTemplate = `{
                     "description": "温度(开关)",
                     "type": "boolean"
                 },
+                "thinkingEnable": {
+                    "description": "思考过程(开关)",
+                    "type": "boolean"
+                },
                 "topP": {
                     "description": "Top P",
                     "type": "number"
@@ -15625,6 +15721,22 @@ const docTemplate = `{
                 "maxTokens": {
                     "description": "模型回答最大tokens",
                     "type": "integer"
+                },
+                "thinkingSupport": {
+                    "description": "深度思考是否支持",
+                    "type": "string",
+                    "enum": [
+                        "noSupport",
+                        "support"
+                    ]
+                },
+                "visionSupport": {
+                    "description": "视觉支持",
+                    "type": "string",
+                    "enum": [
+                        "noSupport",
+                        "support"
+                    ]
                 }
             }
         },
@@ -15675,6 +15787,14 @@ const docTemplate = `{
                 "maxTokens": {
                     "description": "模型回答最大tokens",
                     "type": "integer"
+                },
+                "thinkingSupport": {
+                    "description": "深度思考是否支持",
+                    "type": "string",
+                    "enum": [
+                        "noSupport",
+                        "support"
+                    ]
                 },
                 "visionSupport": {
                     "description": "视觉支持",
@@ -15733,6 +15853,14 @@ const docTemplate = `{
                 "maxTokens": {
                     "description": "模型回答最大tokens",
                     "type": "integer"
+                },
+                "thinkingSupport": {
+                    "description": "深度思考是否支持",
+                    "type": "string",
+                    "enum": [
+                        "noSupport",
+                        "support"
+                    ]
                 },
                 "visionSupport": {
                     "description": "视觉支持",
@@ -15805,6 +15933,14 @@ const docTemplate = `{
                     "description": "模型回答最大tokens",
                     "type": "integer"
                 },
+                "thinkingSupport": {
+                    "description": "深度思考是否支持",
+                    "type": "string",
+                    "enum": [
+                        "noSupport",
+                        "support"
+                    ]
+                },
                 "visionSupport": {
                     "description": "视觉支持",
                     "type": "string",
@@ -15862,6 +15998,14 @@ const docTemplate = `{
                 "maxTokens": {
                     "description": "模型回答最大tokens",
                     "type": "integer"
+                },
+                "thinkingSupport": {
+                    "description": "深度思考是否支持",
+                    "type": "string",
+                    "enum": [
+                        "noSupport",
+                        "support"
+                    ]
                 },
                 "visionSupport": {
                     "description": "视觉支持",
@@ -15938,6 +16082,14 @@ const docTemplate = `{
                     "description": "模型回答最大tokens",
                     "type": "integer"
                 },
+                "thinkingSupport": {
+                    "description": "深度思考是否支持",
+                    "type": "string",
+                    "enum": [
+                        "noSupport",
+                        "support"
+                    ]
+                },
                 "visionSupport": {
                     "description": "视觉支持",
                     "type": "string",
@@ -16012,6 +16164,14 @@ const docTemplate = `{
                 "maxTokens": {
                     "description": "模型回答最大tokens",
                     "type": "integer"
+                },
+                "thinkingSupport": {
+                    "description": "深度思考是否支持",
+                    "type": "string",
+                    "enum": [
+                        "noSupport",
+                        "support"
+                    ]
                 },
                 "visionSupport": {
                     "description": "视觉支持",
@@ -16100,6 +16260,14 @@ const docTemplate = `{
                 "maxTokens": {
                     "description": "模型回答最大tokens",
                     "type": "integer"
+                },
+                "thinkingSupport": {
+                    "description": "深度思考是否支持",
+                    "type": "string",
+                    "enum": [
+                        "noSupport",
+                        "support"
+                    ]
                 },
                 "visionSupport": {
                     "description": "视觉支持",
@@ -17570,6 +17738,9 @@ const docTemplate = `{
                     "items": {
                         "$ref": "#/definitions/request.ConversionStreamFile"
                     }
+                },
+                "isCompare": {
+                    "type": "boolean"
                 },
                 "prompt": {
                     "type": "string"
@@ -19771,6 +19942,10 @@ const docTemplate = `{
                 },
                 "temperatureEnable": {
                     "description": "温度(开关)",
+                    "type": "boolean"
+                },
+                "thinkingEnable": {
+                    "description": "思考过程(开关)",
                     "type": "boolean"
                 },
                 "topP": {
@@ -22491,6 +22666,9 @@ const docTemplate = `{
                     "type": "string"
                 },
                 "chatflowIcon": {
+                    "type": "string"
+                },
+                "modelIcon": {
                     "type": "string"
                 },
                 "promptIcon": {
@@ -25323,6 +25501,23 @@ const docTemplate = `{
                 }
             }
         },
+        "response.RecommendModel": {
+            "type": "object",
+            "properties": {
+                "displayName": {
+                    "type": "string"
+                },
+                "model": {
+                    "type": "string"
+                },
+                "tags": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/response.TagItem"
+                    }
+                }
+            }
+        },
         "response.RerankInfo": {
             "type": "object",
             "properties": {
@@ -25759,6 +25954,14 @@ const docTemplate = `{
                 },
                 "timeCost": {
                     "description": "耗时",
+                    "type": "string"
+                }
+            }
+        },
+        "response.TagItem": {
+            "type": "object",
+            "properties": {
+                "text": {
                     "type": "string"
                 }
             }

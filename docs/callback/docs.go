@@ -1659,6 +1659,10 @@ const docTemplate = `{
                     "description": "温度(开关)",
                     "type": "boolean"
                 },
+                "thinkingEnable": {
+                    "description": "思考过程(开关)",
+                    "type": "boolean"
+                },
                 "topP": {
                     "description": "Top P",
                     "type": "number"
@@ -2616,6 +2620,22 @@ const docTemplate = `{
                 "maxTokens": {
                     "description": "模型回答最大tokens",
                     "type": "integer"
+                },
+                "thinkingSupport": {
+                    "description": "深度思考是否支持",
+                    "type": "string",
+                    "enum": [
+                        "noSupport",
+                        "support"
+                    ]
+                },
+                "visionSupport": {
+                    "description": "视觉支持",
+                    "type": "string",
+                    "enum": [
+                        "noSupport",
+                        "support"
+                    ]
                 }
             }
         },
@@ -2666,6 +2686,14 @@ const docTemplate = `{
                 "maxTokens": {
                     "description": "模型回答最大tokens",
                     "type": "integer"
+                },
+                "thinkingSupport": {
+                    "description": "深度思考是否支持",
+                    "type": "string",
+                    "enum": [
+                        "noSupport",
+                        "support"
+                    ]
                 },
                 "visionSupport": {
                     "description": "视觉支持",
@@ -2724,6 +2752,14 @@ const docTemplate = `{
                 "maxTokens": {
                     "description": "模型回答最大tokens",
                     "type": "integer"
+                },
+                "thinkingSupport": {
+                    "description": "深度思考是否支持",
+                    "type": "string",
+                    "enum": [
+                        "noSupport",
+                        "support"
+                    ]
                 },
                 "visionSupport": {
                     "description": "视觉支持",
@@ -2796,6 +2832,14 @@ const docTemplate = `{
                     "description": "模型回答最大tokens",
                     "type": "integer"
                 },
+                "thinkingSupport": {
+                    "description": "深度思考是否支持",
+                    "type": "string",
+                    "enum": [
+                        "noSupport",
+                        "support"
+                    ]
+                },
                 "visionSupport": {
                     "description": "视觉支持",
                     "type": "string",
@@ -2853,6 +2897,14 @@ const docTemplate = `{
                 "maxTokens": {
                     "description": "模型回答最大tokens",
                     "type": "integer"
+                },
+                "thinkingSupport": {
+                    "description": "深度思考是否支持",
+                    "type": "string",
+                    "enum": [
+                        "noSupport",
+                        "support"
+                    ]
                 },
                 "visionSupport": {
                     "description": "视觉支持",
@@ -2929,6 +2981,14 @@ const docTemplate = `{
                     "description": "模型回答最大tokens",
                     "type": "integer"
                 },
+                "thinkingSupport": {
+                    "description": "深度思考是否支持",
+                    "type": "string",
+                    "enum": [
+                        "noSupport",
+                        "support"
+                    ]
+                },
                 "visionSupport": {
                     "description": "视觉支持",
                     "type": "string",
@@ -3003,6 +3063,14 @@ const docTemplate = `{
                 "maxTokens": {
                     "description": "模型回答最大tokens",
                     "type": "integer"
+                },
+                "thinkingSupport": {
+                    "description": "深度思考是否支持",
+                    "type": "string",
+                    "enum": [
+                        "noSupport",
+                        "support"
+                    ]
                 },
                 "visionSupport": {
                     "description": "视觉支持",
@@ -3091,6 +3159,14 @@ const docTemplate = `{
                 "maxTokens": {
                     "description": "模型回答最大tokens",
                     "type": "integer"
+                },
+                "thinkingSupport": {
+                    "description": "深度思考是否支持",
+                    "type": "string",
+                    "enum": [
+                        "noSupport",
+                        "support"
+                    ]
                 },
                 "visionSupport": {
                     "description": "视觉支持",
@@ -3531,6 +3607,10 @@ const docTemplate = `{
                 },
                 "custom_model_info": {
                     "$ref": "#/definitions/request.CustomModelInfo"
+                },
+                "enable_thinking": {
+                    "description": "是否打开思考过程",
+                    "type": "boolean"
                 },
                 "enable_vision": {
                     "description": "召回结果是否包含多模态文件",
