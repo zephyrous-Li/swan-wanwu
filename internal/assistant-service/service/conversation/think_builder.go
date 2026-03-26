@@ -26,6 +26,9 @@ func (*Think) Build(conversationResp *ConversationResp, conversation, searchResu
 		resp.EventType = ThinkingEventType
 		conversationResp.ConversationEventMap[eventData.Id] = resp
 	}
+	if resp.SearchList == nil && len(searchResult) > 0 {
+		resp.SearchList = &searchResult
+	}
 	//终态存储
 	if len(conversation) > 0 {
 		//保存对话
