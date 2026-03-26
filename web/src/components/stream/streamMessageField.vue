@@ -996,9 +996,8 @@ export default {
             return;
           }
         }
+        return;
       }
-
-      if (this.chatType === 'agent') return; // 如果是Agent模式，不再走下方通用逻辑
 
       // 通用引用点击处理
       this.$handleCitationClick(e, {
@@ -1182,8 +1181,6 @@ export default {
      * @param {number} index - 当前条目在 searchList 中的索引
      */
     collapseClick(sourceContainer, searchItem, index) {
-      if (this.chatType === 'agent') return;
-
       this.$set(sourceContainer.searchList, index, {
         ...searchItem,
         collapse: !searchItem.collapse,

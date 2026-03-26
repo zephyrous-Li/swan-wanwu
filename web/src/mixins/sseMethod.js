@@ -794,7 +794,7 @@ export default {
                 // 更新消息序列
                 let sequence =
                   sessionCom.getSessionData()['history'][lastIndex]
-                    .messageSequence || [];
+                    ?.messageSequence || [];
                 if (data.order !== undefined && data.order !== null) {
                   let currentSubItem = sequence.find(
                     item => item.type === 'sub' && item.id === id,
@@ -866,7 +866,7 @@ export default {
                     // 更新消息序列
                     let sequence =
                       sessionCom.getSessionData()['history'][lastIndex]
-                        .messageSequence || [];
+                        ?.messageSequence || [];
 
                     if (data.order !== undefined && data.order !== null) {
                       let currentMainItem = sequence.find(
@@ -1569,7 +1569,7 @@ export default {
                 // 更新消息序列
                 let sequence =
                   sessionCom.getSessionData()['history'][lastIndex]
-                    .messageSequence || [];
+                    ?.messageSequence || [];
                 if (data.order !== undefined && data.order !== null) {
                   let currentSubItem = sequence.find(
                     item =>
@@ -1645,7 +1645,7 @@ export default {
                     // 更新消息序列
                     let sequence =
                       sessionCom.getSessionData()['history'][lastIndex]
-                        .messageSequence || [];
+                        ?.messageSequence || [];
 
                     if (data.order !== undefined && data.order !== null) {
                       let currentMainItem = sequence.find(
