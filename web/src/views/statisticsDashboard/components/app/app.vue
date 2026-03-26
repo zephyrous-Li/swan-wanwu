@@ -173,7 +173,7 @@ export default {
           unit: this.$t('statisticsDashboard.frequency'),
         },
         {
-          name: this.$t('statisticsDashboard.avgStreamCosts'),
+          name: this.$t('statisticsDashboard.avgFirstCosts'),
           value: 0,
           des: this.$t('statistics.percentage'),
           key: 'avgStreamCosts',
