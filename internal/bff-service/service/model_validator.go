@@ -650,8 +650,23 @@ func validateThinking(iLLM mp.ILLM, model string, stream *bool, enableThinking b
 	}
 
 	if enableThinking {
-		if len(openAIRespThinking.Choices) == 0 || openAIRespThinking.Choices[0].Message == nil ||
-			openAIRespThinking.Choices[0].Message.ReasoningContent == nil || *openAIRespThinking.Choices[0].Message.ReasoningContent == "" {
+		// 检查是否支持thinking功能
+		hasThinking := false
+		if openAIRespThinking.Choices != nil && len(openAIRespThinking.Choices) > 0 && openAIRespThinking.Choices[0].Message != nil {
+			msg := openAIRespThinking.Choices[0].Message
+			// 检查ReasoningContent字段
+			if msg.ReasoningContent != nil && *msg.ReasoningContent != "" {
+				hasThinking = true
+			} else {
+				// 检查content是否包含thinking相关的内容（兼容Qwen等模型的"Thinking Process"格式）
+				content := strings.ToLower(msg.Content)
+				if strings.Contains(content, "thinking") || strings.Contains(content, "思考") ||
+					strings.Contains(content, "thought process") || strings.Contains(content, "reasoning") {
+					hasThinking = true
+				}
+			}
+		}
+		if !hasThinking {
 			return fmt.Errorf("model does not support thinking functionality when enable_thinking=true")
 		}
 	} else {
