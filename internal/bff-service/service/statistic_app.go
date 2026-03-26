@@ -98,7 +98,7 @@ func GetAppStatisticList(ctx *gin.Context, userId, orgId, startDate, endDate str
 		items = append(items, response.AppStatisticItem{
 			AppId:             item.AppId,
 			AppType:           item.AppType,
-			AppName:           ret[item.AppId],
+			AppName:           getAppDisplayName(ret, item.AppId),
 			OrgName:           orgNameMap[item.OrgId],
 			CallCount:         item.CallCount,
 			CallFailure:       item.CallFailure,
@@ -127,7 +127,7 @@ func ExportAppStatisticList(ctx *gin.Context, userId, orgId, startDate, endDate 
 
 func writeAppListExcel(items []response.AppStatisticItem) (*excelize.File, error) {
 	sheet := "应用统计列表"
-	title := []any{"应用名称", "应用类型", "组织", "调用次数", "调用失败次数", "失败率", "流式调用次数", "非流式调用次数", "平均流式耗时", "平均非流式耗时"}
+	title := []any{"应用名称", "应用类型", "组织", "调用次数", "调用失败次数", "失败率", "流式调用次数", "非流式调用次数", "平均首响应耗时", "平均非流式耗时"}
 	var rows [][]any
 	for _, item := range items {
 		rows = append(rows, []any{
@@ -315,4 +315,11 @@ func GetAppListSelect(ctx *gin.Context, userId, orgId, appType string) (*respons
 		List:  items,
 		Total: int64(len(items)),
 	}, nil
+}
+
+func getAppDisplayName(displayNameMap map[string]string, appId string) string {
+	if displayName, ok := displayNameMap[appId]; ok {
+		return displayName
+	}
+	return "该应用已被删除"
 }
