@@ -340,6 +340,7 @@ export default {
       white-space: nowrap;
       margin-bottom: 2px;
       transform: scale(0.8);
+      top: 0;
     }
   }
 
