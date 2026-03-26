@@ -52,12 +52,6 @@ type ModelStatistic struct {
 	Trend    ModelStatisticTrend    `json:"trend"`
 }
 
-// ModelStatisticOverviewItem 模型统计概览项
-type ModelStatisticOverviewItem struct {
-	Value            float32 `json:"value"`
-	PeriodOverperiod float32 `json:"periodOverperiod"`
-}
-
 type ModelStatisticList struct {
 	Items []ModelStatisticItem
 	Total int32
@@ -79,18 +73,54 @@ type ModelStatisticItem struct {
 }
 
 type ModelStatisticOverview struct {
-	CallCount            ModelStatisticOverviewItem `json:"callCount"`
-	CallFailure          ModelStatisticOverviewItem `json:"callFailure"`
-	TotalTokens          ModelStatisticOverviewItem `json:"totalTokens"`
-	CompletionTokens     ModelStatisticOverviewItem `json:"completionTokens"`
-	PromptTokens         ModelStatisticOverviewItem `json:"promptTokens"`
-	AvgCosts             ModelStatisticOverviewItem `json:"avgCosts"`
-	AvgFirstTokenLatency ModelStatisticOverviewItem `json:"avgFirstTokenLatency"`
+	CallCount            StatisticOverviewItem `json:"callCount"`
+	CallFailure          StatisticOverviewItem `json:"callFailure"`
+	TotalTokens          StatisticOverviewItem `json:"totalTokens"`
+	CompletionTokens     StatisticOverviewItem `json:"completionTokens"`
+	PromptTokens         StatisticOverviewItem `json:"promptTokens"`
+	AvgCosts             StatisticOverviewItem `json:"avgCosts"`
+	AvgFirstTokenLatency StatisticOverviewItem `json:"avgFirstTokenLatency"`
 }
 
 type ModelStatisticTrend struct {
 	ModelCalls  StatisticChart `json:"modelCalls"`
 	TokensUsage StatisticChart `json:"tokensUsage"`
+}
+
+type AppStatistic struct {
+	Overview AppStatisticOverview `json:"overview"`
+	Trend    AppStatisticTrend    `json:"trend"`
+}
+
+type AppStatisticList struct {
+	Items []AppStatisticItem
+	Total int32
+}
+
+type AppStatisticItem struct {
+	AppId             string
+	AppType           string
+	OrgId             string
+	CallCount         int32
+	CallFailure       int32
+	FailureRate       float32
+	StreamCount       int32
+	NonStreamCount    int32
+	AvgStreamCosts    float32
+	AvgNonStreamCosts float32
+}
+
+type AppStatisticOverview struct {
+	CallCount         StatisticOverviewItem `json:"callCount"`
+	CallFailure       StatisticOverviewItem `json:"callFailure"`
+	StreamCount       StatisticOverviewItem `json:"streamCount"`
+	NonStreamCount    StatisticOverviewItem `json:"nonStreamCount"`
+	AvgStreamCosts    StatisticOverviewItem `json:"avgStreamCosts"`
+	AvgNonStreamCosts StatisticOverviewItem `json:"avgNonStreamCosts"`
+}
+
+type AppStatisticTrend struct {
+	CallTrend StatisticChart `json:"callTrend"`
 }
 
 type StatisticChart struct {
@@ -126,6 +156,7 @@ func NewClient(db *gorm.DB) (*Client, error) {
 		model.SensitiveWordVocabulary{},
 		model.ChatflowApplcation{},
 		model.ModelRecord{},
+		model.AppRecord{},
 	); err != nil {
 		return nil, err
 	}

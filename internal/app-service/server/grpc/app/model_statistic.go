@@ -55,10 +55,10 @@ func convertModelStatisticOverview(overview orm.ModelStatisticOverview) *app_ser
 	}
 }
 
-func convertModelStatisticOverviewItem(item orm.ModelStatisticOverviewItem) *app_service.ModelStatisticOverviewItem {
+func convertModelStatisticOverviewItem(item orm.StatisticOverviewItem) *app_service.ModelStatisticOverviewItem {
 	return &app_service.ModelStatisticOverviewItem{
 		Value:            item.Value,
-		PeriodOverPeriod: item.PeriodOverperiod,
+		PeriodOverPeriod: item.PeriodOverPeriod,
 	}
 }
 

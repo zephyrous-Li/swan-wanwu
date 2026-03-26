@@ -317,8 +317,15 @@ func WorkflowConvert(ctx *gin.Context, orgId, workflowId, flowMode string) error
 	return err
 }
 
-func PublishedWorkflowRun(ctx *gin.Context, orgId string, req request.WorkflowRunReq) (*response.CozeNodeResult, error) {
+func PublishedWorkflowRun(ctx *gin.Context, userId, orgId string, req request.WorkflowRunReq) (result *response.CozeNodeResult, err error) {
 	// Step 1: 触发异步执行（使用web的test_run接口），获取executeId
+	startTime := time.Now()
+	isSuccess := false
+	defer func() {
+		costs := time.Since(startTime).Milliseconds()
+		RecordAppStatistic(ctx.Request.Context(), userId, orgId, req.WorkflowID, constant.AppTypeWorkflow, isSuccess, false, 0, int64(costs), constant.AppStatisticSourceWeb)
+	}()
+
 	url, _ := net_url.JoinPath(config.Cfg().Workflow.Endpoint, config.Cfg().Workflow.WorkflowRunLatestVersionUri)
 	testRunRet := &response.CozeWorkflowTestRunResponse{}
 	resp, err := resty.New().
@@ -356,7 +363,7 @@ func PublishedWorkflowRun(ctx *gin.Context, orgId string, req request.WorkflowRu
 	pollCtx, cancel := context.WithTimeout(ctx.Request.Context(), 30*time.Minute)
 	defer cancel()
 
-	ticker := time.NewTicker(3 * time.Second) // 每3秒轮询一次
+	ticker := time.NewTicker(3 * time.Second)
 	defer ticker.Stop()
 
 	for {
@@ -408,6 +415,7 @@ func PublishedWorkflowRun(ctx *gin.Context, orgId string, req request.WorkflowRu
 			case 2: // Success
 				for _, nodeResult := range data.NodeResults {
 					if nodeResult.NodeType == "End" && nodeResult.NodeId == "900001" {
+						isSuccess = true
 						return nodeResult, nil
 					}
 				}

@@ -54,6 +54,9 @@ service AppService {
   rpc GetModelStatistic(GetModelStatisticReq) returns (ModelStatistic) {}
   rpc RecordModelStatistic(RecordModelStatisticReq) returns (google.protobuf.Empty) {}
   rpc GetModelStatisticList(GetModelStatisticListReq) returns (GetModelStatisticListResp) {}
+  rpc GetAppStatistic(GetAppStatisticReq) returns (AppStatistic) {}
+  rpc RecordAppStatistic(RecordAppStatisticReq) returns (google.protobuf.Empty) {}
+  rpc GetAppStatisticList(GetAppStatisticListReq) returns (GetAppStatisticListResp) {}
 }
 
 // 创建API Key请求
@@ -430,4 +433,74 @@ message ModelStatisticItem {
   int64 totalTokens = 10;
   float avgCosts = 11;
   float avgFirstTokenLatency = 12;
+}
+
+// --- app statistic ---
+
+message GetAppStatisticReq {
+  string userId = 1;
+  string orgId = 2;
+  string startDate = 3;
+  string endDate = 4;
+  repeated string appIds = 5;
+  string appType = 6;
+}
+
+message AppStatistic {
+  AppStatisticOverview overview = 1;
+  AppStatisticTrend trend = 2;
+}
+
+message AppStatisticOverview {
+  ModelStatisticOverviewItem callCount = 1;
+  ModelStatisticOverviewItem callFailure = 2;
+  ModelStatisticOverviewItem streamCount = 3;
+  ModelStatisticOverviewItem nonStreamCount = 4;
+  ModelStatisticOverviewItem avgStreamCosts = 5;
+  ModelStatisticOverviewItem avgNonStreamCosts = 6;
+}
+
+message AppStatisticTrend {
+  common.StatisticChart callTrend = 1;
+}
+
+message RecordAppStatisticReq {
+  string userId = 1;
+  string orgId = 2;
+  string appId = 3;
+  string appType = 4;
+  bool isSuccess = 5;
+  bool isStream = 6;
+  int64 streamCosts = 7;
+  int64 nonStreamCosts = 8;
+  string source = 9;
+}
+
+message GetAppStatisticListReq {
+  string userId = 1;
+  string orgId = 2;
+  string startDate = 3;
+  string endDate = 4;
+  repeated string appIds = 5;
+  string appType = 6;
+  int32 pageNo = 7;
+  int32 pageSize = 8;
+}
+
+message GetAppStatisticListResp {
+  repeated AppStatisticItem items = 1;
+  int32 total = 2;
+}
+
+message AppStatisticItem {
+  string appId = 1;
+  string appType = 2;
+  string orgId = 3;
+  int32 callCount = 4;
+  int32 callFailure = 5;
+  float failureRate = 6;
+  float avgStreamCosts = 7;
+  float avgNonStreamCosts = 8;
+  int32 streamCount = 9;       // 流式调用次数
+  int32 nonStreamCount = 10;   // 非流式调用次数
 }

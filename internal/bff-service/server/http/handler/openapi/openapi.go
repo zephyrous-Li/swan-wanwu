@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"net/http"
 	"strings"
+	"time"
 
 	"github.com/UnicomAI/wanwu/internal/bff-service/model/request"
 	"github.com/UnicomAI/wanwu/internal/bff-service/model/response"
@@ -83,12 +84,13 @@ func ChatAgent(ctx *gin.Context) {
 			ConversationId: req.ConversationID,
 			Prompt:         req.Query,
 			FileInfo:       []request.ConversionStreamFile{},
-		}, true); err != nil {
+		}, true, constant.AppStatisticSourceOpenAPI); err != nil {
 			gin_util.Response(ctx, nil, err)
 		}
 		return
 	}
 	// 非流式
+	startTime := time.Now()
 	chatCh, err := service.CallAssistantConversationStream(ctx, userID, orgID, request.ConversionStreamRequest{
 		AssistantId:    appID,
 		ConversationId: req.ConversationID,
@@ -96,6 +98,7 @@ func ChatAgent(ctx *gin.Context) {
 		FileInfo:       []request.ConversionStreamFile{},
 	}, true)
 	if err != nil {
+		service.RecordAppStatistic(ctx.Request.Context(), userID, orgID, appID, constant.AppTypeAgent, false, false, 0, 0, constant.AppStatisticSourceOpenAPI)
 		gin_util.Response(ctx, nil, err)
 		return
 	}
@@ -115,6 +118,8 @@ func ChatAgent(ctx *gin.Context) {
 		output += curr.Response
 	}
 	resp.Response = output
+	costs := time.Since(startTime).Milliseconds()
+	service.RecordAppStatistic(ctx.Request.Context(), userID, orgID, appID, constant.AppTypeAgent, true, false, 0, int64(costs), constant.AppStatisticSourceOpenAPI)
 	b, _ := json.Marshal(resp)
 	status := http.StatusOK
 	ctx.Set(gin_util.STATUS, status)
@@ -143,14 +148,16 @@ func ChatRag(ctx *gin.Context) {
 
 	// 流式
 	if req.Stream {
-		if err := service.ChatRagStream(ctx, userID, orgID, request.ChatRagRequest{RagID: req.UUID, Question: req.Query, History: req.History}, true); err != nil {
+		if err := service.ChatRagStream(ctx, userID, orgID, request.ChatRagRequest{RagID: req.UUID, Question: req.Query, History: req.History}, true, constant.AppStatisticSourceOpenAPI); err != nil {
 			gin_util.Response(ctx, nil, err)
 		}
 		return
 	}
 	// 非流式
+	startTime := time.Now()
 	chatCh, err := service.CallRagChatStream(ctx, userID, orgID, request.ChatRagRequest{RagID: req.UUID, Question: req.Query, History: req.History}, true)
 	if err != nil {
+		service.RecordAppStatistic(ctx.Request.Context(), userID, orgID, req.UUID, constant.AppTypeRag, false, false, 0, 0, constant.AppStatisticSourceOpenAPI)
 		gin_util.Response(ctx, nil, err)
 		return
 	}
@@ -169,6 +176,8 @@ func ChatRag(ctx *gin.Context) {
 		output += curr.Data.Output
 	}
 	resp.Data.Output = output
+	costs := time.Since(startTime).Milliseconds()
+	service.RecordAppStatistic(ctx.Request.Context(), userID, orgID, req.UUID, constant.AppTypeRag, true, false, 0, int64(costs), constant.AppStatisticSourceOpenAPI)
 	b, _ := json.Marshal(resp)
 	status := http.StatusOK
 	ctx.Set(gin_util.STATUS, status)

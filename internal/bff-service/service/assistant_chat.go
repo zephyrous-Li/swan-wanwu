@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"io"
 	"strings"
+	"time"
 
 	assistant_service "github.com/UnicomAI/wanwu/api/proto/assistant-service"
 	err_code "github.com/UnicomAI/wanwu/api/proto/err-code"
@@ -25,15 +26,30 @@ const (
 	agentEventFailStatus = 4 //事件失败
 )
 
-func AssistantConversionStream(ctx *gin.Context, userId, orgId string, req request.ConversionStreamRequest, needLatestPublished bool) error {
+type agentChatStreamParams struct {
+	startTime         time.Time
+	firstTokenLatency int64
+	hasRecorded       bool
+	hasErr            bool
+}
+
+func AssistantConversionStream(ctx *gin.Context, userId, orgId string, req request.ConversionStreamRequest, needLatestPublished bool, source string) (err error) {
 	// 1. CallAssistantConversationStream
+	streamParams := &agentChatStreamParams{startTime: time.Now()}
+	defer func() {
+		if source != constant.AppStatisticSourceDraft {
+			RecordAppStatistic(ctx.Request.Context(), userId, orgId, req.AssistantId, constant.AppTypeAgent, !streamParams.hasErr, true, streamParams.firstTokenLatency, 0, source)
+		}
+	}()
+
 	chatCh, err := CallAssistantConversationStream(ctx, userId, orgId, req, needLatestPublished)
 	if err != nil {
+		streamParams.hasErr = true
 		return err
 	}
 	// 2. 流式返回结果
 	_ = sse_util.NewSSEWriter(ctx, fmt.Sprintf("[Agent] %v conversation %v user %v org %v recv", req.AssistantId, req.ConversationId, userId, orgId), sse_util.DONE_MSG).
-		WriteStream(chatCh, nil, buildAgentChatRespLineProcessor(), nil)
+		WriteStream(chatCh, streamParams, buildAgentChatRespLineProcessor(), nil)
 	return nil
 }
 
@@ -271,7 +287,16 @@ func transFileInfo(fileInfo []request.ConversionStreamFile) []*assistant_service
 // buildAgentChatRespLineProcessor 构造agent对话结果行处理器
 func buildAgentChatRespLineProcessor() func(sse_util.SSEWriterClient[string], string, interface{}) (string, bool, error) {
 	return func(c sse_util.SSEWriterClient[string], lineText string, params interface{}) (string, bool, error) {
+		if p, ok := params.(*agentChatStreamParams); ok {
+			if !p.hasRecorded {
+				p.firstTokenLatency = time.Since(p.startTime).Milliseconds()
+				p.hasRecorded = true
+			}
+		}
 		if strings.HasPrefix(lineText, "error:") {
+			if p, ok := params.(*agentChatStreamParams); ok {
+				p.hasErr = true
+			}
 			errorText := fmt.Sprintf("data: {\"code\": -1, \"message\": \"%s\"}\n\n", strings.TrimPrefix(lineText, "error:"))
 			return errorText, false, nil
 		}

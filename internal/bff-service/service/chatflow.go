@@ -9,6 +9,7 @@ import (
 	"io"
 	"net/url"
 	"strconv"
+	"time"
 
 	app_service "github.com/UnicomAI/wanwu/api/proto/app-service"
 	errs "github.com/UnicomAI/wanwu/api/proto/err-code"
@@ -122,19 +123,28 @@ func GetConversationMessageList(ctx *gin.Context, userId, orgId, appId, conversa
 	}, nil
 }
 
-func ChatflowChat(ctx *gin.Context, userId, orgId, workflowId, conversationId, message string, parameters map[string]any) error {
+func ChatflowChat(ctx *gin.Context, userId, orgId, workflowId, conversationId, message string, parameters map[string]any) (err error) {
+	startTime := time.Now()
+	var firstTokenLatency int64
+	var firstTokenRecorded bool
+	var hasErr bool
+	defer func() {
+		RecordAppStatistic(ctx.Request.Context(), userId, orgId, workflowId, constant.AppTypeChatflow, !hasErr, true, firstTokenLatency, 0, constant.AppStatisticSourceOpenAPI)
+	}()
+
 	url, _ := url.JoinPath(config.Cfg().Workflow.Endpoint, config.Cfg().Workflow.ChatflowRunByOpenapiUri)
 	p, err := json.Marshal(parameters)
 	if err != nil {
+		hasErr = true
 		return grpc_util.ErrorStatusWithKey(errs.Code_BFFGeneral, "bff_chatflow_chat", err.Error())
 	}
 	cvInfo, err := app.GetConversationByID(ctx, &app_service.GetConversationByIDReq{
 		ConversionId: conversationId,
 	})
 	if err != nil {
+		hasErr = true
 		return err
 	}
-	// 创建 HTTP 请求
 	resp, err := resty.New().
 		R().
 		SetContext(ctx).
@@ -169,9 +179,11 @@ func ChatflowChat(ctx *gin.Context, userId, orgId, workflowId, conversationId, m
 		Post(url)
 
 	if err != nil {
+		hasErr = true
 		return grpc_util.ErrorStatusWithKey(errs.Code_BFFGeneral, "bff_chatflow_chat", err.Error())
 	}
 	if resp.StatusCode() >= 300 {
+		hasErr = true
 		b, err := io.ReadAll(resp.RawResponse.Body)
 		if err != nil {
 			return grpc_util.ErrorStatusWithKey(errs.Code_BFFGeneral, "bff_chatflow_chat", fmt.Sprintf("[%v] %v", resp.StatusCode(), err))
@@ -180,7 +192,6 @@ func ChatflowChat(ctx *gin.Context, userId, orgId, workflowId, conversationId, m
 	}
 	defer func() { _ = resp.RawBody().Close() }()
 
-	// 设置 SSE 响应头
 	ctx.Writer.Header().Set("Content-Type", "text/event-stream; charset=utf-8")
 	ctx.Writer.Header().Set("Cache-Control", "no-cache")
 	ctx.Writer.Header().Set("Connection", "keep-alive")
@@ -191,12 +202,17 @@ func ChatflowChat(ctx *gin.Context, userId, orgId, workflowId, conversationId, m
 
 	// 设置适当的缓冲区大小以避免扫描错误
 	const (
-		initialBufferSize = 64 * 1024        // 64KB
-		maxBufferSize     = 10 * 1024 * 1024 // 10MB
+		initialBufferSize = 64 * 1024
+		maxBufferSize     = 10 * 1024 * 1024
 	)
 	scan.Buffer(make([]byte, initialBufferSize), maxBufferSize)
 
 	for scan.Scan() {
+		// 记录首 token 时延
+		if !firstTokenRecorded {
+			firstTokenLatency = time.Since(startTime).Milliseconds()
+			firstTokenRecorded = true
+		}
 		// 写入数据到响应体（添加双换行符符合SSE格式）
 		if _, err := ctx.Writer.Write([]byte(scan.Text() + "\n")); err != nil {
 			log.Errorf("chatflow id [%v]chat conversationId [%v]: failed to write to client: %v", workflowId, conversationId, err)
@@ -211,8 +227,10 @@ func ChatflowChat(ctx *gin.Context, userId, orgId, workflowId, conversationId, m
 		if errors.Is(err, context.Canceled) {
 			log.Debugf("chatflow id [%v]chat conversationId [%v]: client disconnected: %v", workflowId, conversationId, err)
 		} else {
+			hasErr = true
 			log.Errorf("chatflow id [%v]chat conversationId [%v]: failed to scan response body: %v", workflowId, conversationId, err)
 		}
+		return nil
 	}
 	return nil
 }

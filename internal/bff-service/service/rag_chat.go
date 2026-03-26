@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"strings"
+	"time"
 
 	err_code "github.com/UnicomAI/wanwu/api/proto/err-code"
 	rag_service "github.com/UnicomAI/wanwu/api/proto/rag-service"
@@ -16,16 +17,30 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
+type ragChatStreamParams struct {
+	startTime         time.Time
+	firstTokenLatency int64
+	hasRecorded       bool
+	hasErr            bool
+}
+
 // ChatRagStream rag私域问答
-func ChatRagStream(ctx *gin.Context, userId, orgId string, req request.ChatRagRequest, needLatestPublished bool) error {
-	// 1.CallRagChatStream
+func ChatRagStream(ctx *gin.Context, userId, orgId string, req request.ChatRagRequest, needLatestPublished bool, source string) (err error) {
+	streamParams := &ragChatStreamParams{startTime: time.Now()}
+	defer func() {
+		if source != constant.AppStatisticSourceDraft {
+			RecordAppStatistic(ctx.Request.Context(), userId, orgId, req.RagID, constant.AppTypeRag, !streamParams.hasErr, true, streamParams.firstTokenLatency, 0, source)
+		}
+	}()
+
 	chatCh, err := CallRagChatStream(ctx, userId, orgId, req, needLatestPublished)
 	if err != nil {
+		streamParams.hasErr = true
 		return err
 	}
 	// 2.流式返回结果
 	_ = sse_util.NewSSEWriter(ctx, fmt.Sprintf("[RAG] %v user %v org %v", req.RagID, userId, orgId), sse_util.DONE_MSG).
-		WriteStream(chatCh, nil, buildRagChatRespLineProcessor(), nil)
+		WriteStream(chatCh, streamParams, buildRagChatRespLineProcessor(), nil)
 	return nil
 }
 
@@ -114,7 +129,16 @@ func buildRagFileInfoList(fileInfoList []request.ConversionStreamFile) []*rag_se
 // buildRagChatRespLineProcessor 构造rag对话结果行处理器
 func buildRagChatRespLineProcessor() func(sse_util.SSEWriterClient[string], string, interface{}) (string, bool, error) {
 	return func(c sse_util.SSEWriterClient[string], lineText string, params interface{}) (string, bool, error) {
+		if p, ok := params.(*ragChatStreamParams); ok {
+			if !p.hasRecorded {
+				p.firstTokenLatency = time.Since(p.startTime).Milliseconds()
+				p.hasRecorded = true
+			}
+		}
 		if strings.HasPrefix(lineText, "error:") {
+			if p, ok := params.(*ragChatStreamParams); ok {
+				p.hasErr = true
+			}
 			errorText := fmt.Sprintf("data: {\"code\": -1, \"message\": \"%s\"}\n\n", strings.TrimPrefix(lineText, "error:"))
 			return errorText, false, nil
 		}

@@ -4,7 +4,6 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"strconv"
 	"strings"
 	"time"
 
@@ -202,7 +201,7 @@ func recordModelStatistic(ctx context.Context, userId, orgId, modelId, model, mo
 
 	deltaJSON, _ := json.Marshal(delta)
 
-	_, err := redis.App().Eval(ctx, luaUpdateModelStats, []string{key, field}, string(deltaJSON), 30*24*3600)
+	_, err := redis.App().Eval(ctx, luaUpdateModelStats, []string{key, field}, string(deltaJSON), redisStatsExpireSeconds)
 	if err != nil {
 		return fmt.Errorf("redis eval err: %v", err)
 	}
@@ -305,7 +304,9 @@ func getModelStatisticList(ctx context.Context, db *gorm.DB, userId, orgId, star
 	countQuery := sqlopt.SQLOptions(opts...).Apply(db).WithContext(ctx).
 		Model(&model.ModelRecord{}).
 		Select("COUNT(DISTINCT model_id)")
-	countQuery.Count(&total)
+	if err := countQuery.Count(&total).Error; err != nil {
+		return nil, 0, fmt.Errorf("count model stat list err: %v", err)
+	}
 	var stats []model.ModelRecord
 	query := sqlopt.SQLOptions(opts...).Apply(db).WithContext(ctx).
 		Select("model_id, ANY_VALUE(model) as model, " +
@@ -324,18 +325,9 @@ func getModelStatisticList(ctx context.Context, db *gorm.DB, userId, orgId, star
 
 	items := make([]ModelStatisticItem, 0, len(stats))
 	for _, stat := range stats {
-		failureRate := float32(0)
-		if stat.CallCount > 0 {
-			failureRate = float32(stat.CallFailure) / float32(stat.CallCount) * 100
-		}
-		avgCosts := float32(0)
-		if stat.NonStreamCount-stat.NonStreamFailure > 0 {
-			avgCosts = float32(stat.Costs) / float32(stat.NonStreamCount-stat.NonStreamFailure)
-		}
-		avgFirstTokenLatency := float32(0)
-		if stat.StreamCount-stat.StreamFailure > 0 {
-			avgFirstTokenLatency = float32(stat.FirstTokenLatency) / float32(stat.StreamCount-stat.StreamFailure)
-		}
+		failureRate := calculateFailureRate(stat.CallFailure, stat.CallCount)
+		avgCosts := calculateAvg(stat.Costs, calculateSuccessCount(stat.NonStreamCount, stat.NonStreamFailure))
+		avgFirstTokenLatency := calculateAvg(stat.FirstTokenLatency, calculateSuccessCount(stat.StreamCount, stat.StreamFailure))
 		items = append(items, ModelStatisticItem{
 			ModelId:              stat.ModelID,
 			Model:                stat.Model,
@@ -372,13 +364,13 @@ func statisticModelStatsOverview(ctx context.Context, db *gorm.DB, userID, orgID
 		return nil, err
 	}
 
-	current.CallCount.PeriodOverperiod = calculatePoP(current.CallCount.Value, previous.CallCount.Value)
-	current.CallFailure.PeriodOverperiod = calculatePoP(current.CallFailure.Value, previous.CallFailure.Value)
-	current.TotalTokens.PeriodOverperiod = calculatePoP(current.TotalTokens.Value, previous.TotalTokens.Value)
-	current.CompletionTokens.PeriodOverperiod = calculatePoP(current.CompletionTokens.Value, previous.CompletionTokens.Value)
-	current.PromptTokens.PeriodOverperiod = calculatePoP(current.PromptTokens.Value, previous.PromptTokens.Value)
-	current.AvgCosts.PeriodOverperiod = calculatePoP(current.AvgCosts.Value, previous.AvgCosts.Value)
-	current.AvgFirstTokenLatency.PeriodOverperiod = calculatePoP(current.AvgFirstTokenLatency.Value, previous.AvgFirstTokenLatency.Value)
+	current.CallCount.PeriodOverPeriod = calculatePoP(current.CallCount.Value, previous.CallCount.Value)
+	current.CallFailure.PeriodOverPeriod = calculatePoP(current.CallFailure.Value, previous.CallFailure.Value)
+	current.TotalTokens.PeriodOverPeriod = calculatePoP(current.TotalTokens.Value, previous.TotalTokens.Value)
+	current.CompletionTokens.PeriodOverPeriod = calculatePoP(current.CompletionTokens.Value, previous.CompletionTokens.Value)
+	current.PromptTokens.PeriodOverPeriod = calculatePoP(current.PromptTokens.Value, previous.PromptTokens.Value)
+	current.AvgCosts.PeriodOverPeriod = calculatePoP(current.AvgCosts.Value, previous.AvgCosts.Value)
+	current.AvgFirstTokenLatency.PeriodOverPeriod = calculatePoP(current.AvgFirstTokenLatency.Value, previous.AvgFirstTokenLatency.Value)
 
 	return current, nil
 }
@@ -409,33 +401,23 @@ func modelStatsByDateRange(ctx context.Context, db *gorm.DB, userID, orgID strin
 		return nil, fmt.Errorf("model stat [%v, %v] err: %v", startDate, endDate, err)
 	}
 
-	avgCosts := float32(0)
-	if stat.NonStreamCount-stat.NonStreamFailure > 0 {
-		avgCosts = float32(stat.Costs) / float32(stat.NonStreamCount-stat.NonStreamFailure)
-	}
-	avgFirstTokenLatency := float32(0)
-	if stat.StreamCount-stat.StreamFailure > 0 {
-		avgFirstTokenLatency = float32(stat.FirstTokenLatency) / float32(stat.StreamCount-stat.StreamFailure)
-	}
+	avgCosts := calculateAvg(stat.Costs, calculateSuccessCount(stat.NonStreamCount, stat.NonStreamFailure))
+	avgFirstTokenLatency := calculateAvg(stat.FirstTokenLatency, calculateSuccessCount(stat.StreamCount, stat.StreamFailure))
 
 	return &ModelStatisticOverview{
-		CallCount:            ModelStatisticOverviewItem{Value: float32(stat.CallCount)},
-		CallFailure:          ModelStatisticOverviewItem{Value: float32(stat.CallFailure)},
-		TotalTokens:          ModelStatisticOverviewItem{Value: float32(stat.TotalTokens)},
-		CompletionTokens:     ModelStatisticOverviewItem{Value: float32(stat.CompletionTokens)},
-		PromptTokens:         ModelStatisticOverviewItem{Value: float32(stat.PromptTokens)},
-		AvgCosts:             ModelStatisticOverviewItem{Value: avgCosts},
-		AvgFirstTokenLatency: ModelStatisticOverviewItem{Value: avgFirstTokenLatency},
+		CallCount:            StatisticOverviewItem{Value: float32(stat.CallCount)},
+		CallFailure:          StatisticOverviewItem{Value: float32(stat.CallFailure)},
+		TotalTokens:          StatisticOverviewItem{Value: float32(stat.TotalTokens)},
+		CompletionTokens:     StatisticOverviewItem{Value: float32(stat.CompletionTokens)},
+		PromptTokens:         StatisticOverviewItem{Value: float32(stat.PromptTokens)},
+		AvgCosts:             StatisticOverviewItem{Value: avgCosts},
+		AvgFirstTokenLatency: StatisticOverviewItem{Value: avgFirstTokenLatency},
 	}, nil
 }
 
 // statisticModelStatsTrend 统计模型趋势数据
 func statisticModelStatsTrend(ctx context.Context, db *gorm.DB, userID, orgID, startDate, endDate string, modelIds []string, modelType string) (*ModelStatisticTrend, error) {
-	startTs, err := util.Date2Time(startDate)
-	if err != nil {
-		return nil, err
-	}
-	endTs, err := util.Date2Time(endDate)
+	dates, err := BuildDateRange(startDate, endDate)
 	if err != nil {
 		return nil, err
 	}
@@ -459,115 +441,38 @@ func statisticModelStatsTrend(ctx context.Context, db *gorm.DB, userID, orgID, s
 		return nil, fmt.Errorf("model stat trend err: %v", err)
 	}
 
-	dateMap := make(map[string]model.ModelRecord)
-	for _, stat := range stats {
-		dateMap[stat.Date] = stat
+	lineNames := []string{
+		"app_statistic_call_count_total",
+		"app_statistic_call_success",
+		"app_statistic_call_failure",
+		"app_statistic_total_tokens",
+		"app_statistic_completion_tokens",
+		"app_statistic_prompt_tokens",
 	}
 
-	var callCountTotalLine, callSuccessLine, callFailureLine []StatisticChartLineItem
-	var totalTokensLine, completionTokensLine, promptTokensLine []StatisticChartLineItem
-
-	for _, date := range util.DateRange(startTs, endTs) {
-		if stat, ok := dateMap[date]; ok {
-			callSuccess := stat.CallCount - stat.CallFailure
-			callCountTotalLine = append(callCountTotalLine, StatisticChartLineItem{
-				Key:   date,
-				Value: float32(stat.CallCount),
-			})
-			callSuccessLine = append(callSuccessLine, StatisticChartLineItem{
-				Key:   date,
-				Value: float32(callSuccess),
-			})
-			callFailureLine = append(callFailureLine, StatisticChartLineItem{
-				Key:   date,
-				Value: float32(stat.CallFailure),
-			})
-			totalTokensLine = append(totalTokensLine, StatisticChartLineItem{
-				Key:   date,
-				Value: float32(stat.TotalTokens),
-			})
-			completionTokensLine = append(completionTokensLine, StatisticChartLineItem{
-				Key:   date,
-				Value: float32(stat.CompletionTokens),
-			})
-			promptTokensLine = append(promptTokensLine, StatisticChartLineItem{
-				Key:   date,
-				Value: float32(stat.PromptTokens),
-			})
-		} else {
-			callCountTotalLine = append(callCountTotalLine, StatisticChartLineItem{
-				Key:   date,
-				Value: 0,
-			})
-			callSuccessLine = append(callSuccessLine, StatisticChartLineItem{
-				Key:   date,
-				Value: 0,
-			})
-			callFailureLine = append(callFailureLine, StatisticChartLineItem{
-				Key:   date,
-				Value: 0,
-			})
-			totalTokensLine = append(totalTokensLine, StatisticChartLineItem{
-				Key:   date,
-				Value: 0,
-			})
-			completionTokensLine = append(completionTokensLine, StatisticChartLineItem{
-				Key:   date,
-				Value: 0,
-			})
-			promptTokensLine = append(promptTokensLine, StatisticChartLineItem{
-				Key:   date,
-				Value: 0,
-			})
-		}
-	}
+	lines := BuildChartLines(stats, dates,
+		func(r model.ModelRecord) string { return r.Date },
+		func(r model.ModelRecord) map[string]float32 {
+			return map[string]float32{
+				"app_statistic_call_count_total":  float32(r.CallCount),
+				"app_statistic_call_success":      float32(r.CallCount - r.CallFailure),
+				"app_statistic_call_failure":      float32(r.CallFailure),
+				"app_statistic_total_tokens":      float32(r.TotalTokens),
+				"app_statistic_completion_tokens": float32(r.CompletionTokens),
+				"app_statistic_prompt_tokens":     float32(r.PromptTokens),
+			}
+		},
+		lineNames,
+	)
 
 	return &ModelStatisticTrend{
 		ModelCalls: StatisticChart{
-			Name: "app_statistic_model_calls",
-			Lines: []StatisticChartLine{
-				{
-					Name:  "app_statistic_call_count_total",
-					Items: callCountTotalLine,
-				},
-				{
-					Name:  "app_statistic_call_success",
-					Items: callSuccessLine,
-				},
-				{
-					Name:  "app_statistic_call_failure",
-					Items: callFailureLine,
-				},
-			},
+			Name:  "app_statistic_model_calls",
+			Lines: lines[:3],
 		},
 		TokensUsage: StatisticChart{
-			Name: "app_statistic_tokens_usage",
-			Lines: []StatisticChartLine{
-				{
-					Name:  "app_statistic_total_tokens",
-					Items: totalTokensLine,
-				},
-				{
-					Name:  "app_statistic_completion_tokens",
-					Items: completionTokensLine,
-				},
-				{
-					Name:  "app_statistic_prompt_tokens",
-					Items: promptTokensLine,
-				},
-			},
+			Name:  "app_statistic_tokens_usage",
+			Lines: lines[3:],
 		},
 	}, nil
-}
-
-// calculatePoP 计算环比
-func calculatePoP(current, previous float32) float32 {
-	if previous == 0 {
-		if current == 0 {
-			return 0
-		}
-		return 100 // 避免除以零的错误
-	}
-	value, _ := strconv.ParseFloat(fmt.Sprintf("%.2f", ((current-previous)/previous)*100), 32)
-	return float32(value)
 }

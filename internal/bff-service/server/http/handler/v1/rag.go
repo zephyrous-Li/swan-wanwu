@@ -3,6 +3,7 @@ package v1
 import (
 	"github.com/UnicomAI/wanwu/internal/bff-service/model/request"
 	"github.com/UnicomAI/wanwu/internal/bff-service/service"
+	"github.com/UnicomAI/wanwu/pkg/constant"
 	gin_util "github.com/UnicomAI/wanwu/pkg/gin-util"
 	"github.com/gin-gonic/gin"
 )
@@ -24,7 +25,7 @@ func ChatDraftRag(ctx *gin.Context) {
 	if !gin_util.Bind(ctx, &req) {
 		return
 	}
-	if err := service.ChatRagStream(ctx, userId, orgId, req, false); err != nil {
+	if err := service.ChatRagStream(ctx, userId, orgId, req, false, constant.AppStatisticSourceDraft); err != nil {
 		gin_util.Response(ctx, nil, err)
 	}
 }
@@ -67,7 +68,7 @@ func ChatPublishedRag(ctx *gin.Context) {
 	if !gin_util.Bind(ctx, &req) {
 		return
 	}
-	if err := service.ChatRagStream(ctx, userId, orgId, req, true); err != nil {
+	if err := service.ChatRagStream(ctx, userId, orgId, req, true, constant.AppStatisticSourceWeb); err != nil {
 		gin_util.Response(ctx, nil, err)
 	}
 }

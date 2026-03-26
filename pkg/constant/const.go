@@ -74,5 +74,13 @@ const (
 const (
 	KnowledgeBase       = 0 // 文本知识库
 	KnowledgeQA         = 1 // 问答库
-	MultiModalKnowledge = 2 // 多模态知识库
+	KnowledgeMultiModal = 2 // 多模态知识库
+)
+
+// app statistic source
+const (
+	AppStatisticSourceWeb     = "web"
+	AppStatisticSourceOpenAPI = "openapi"
+	AppStatisticSourceWebUrl  = "webURL"
+	AppStatisticSourceDraft   = "draft" // 应用的草稿版本不统计
 )
