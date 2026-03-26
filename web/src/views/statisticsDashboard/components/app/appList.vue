@@ -74,7 +74,7 @@
           />
           <el-table-column
             prop="avgStreamCosts"
-            :label="$t('statisticsDashboard.avgStreamCosts') + ` (ms)`"
+            :label="$t('statisticsDashboard.avgFirstCosts') + ` (ms)`"
             align="left"
           >
             <template slot-scope="scope">

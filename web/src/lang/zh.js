@@ -1810,6 +1810,7 @@ export default {
     appCallCountTotal: '调用总次数',
     appCallCount: '调用次数',
     appCallFailure: '调用失败次数',
+    avgFirstCosts: '平均首响应耗时 (流式)',
     avgStreamCosts: '平均耗时 (流式)',
     streamCount: '调用次数 (流式)',
     nonStreamCount: '调用次数 (非流式)',
