@@ -73,3 +73,55 @@ export const exportAppData = params => {
     responseType: 'blob',
   });
 };
+
+/**
+ * API统计接口
+ */
+
+// 获取API下拉列表
+export const getApiSelect = params => {
+  return service({
+    url: `${USER_API}/statistic/api/select`,
+    method: 'get',
+    params,
+  });
+};
+
+// 获取API路径列表
+export const getApiRoutes = params => {
+  return service({
+    url: `${USER_API}/statistic/api/routes`,
+    method: 'get',
+    params,
+  });
+};
+
+// 获取API统计数据
+export const getApiData = data => {
+  return service({
+    url: `${USER_API}/statistic/api`,
+    method: 'post',
+    data,
+  });
+};
+
+// 获取模型列表
+export const fetchApiList = data => {
+  const type = data.type;
+  delete data.type;
+  return service({
+    url: `${USER_API}/statistic/api/${type || 'list'}`,
+    method: 'post',
+    data,
+  });
+};
+
+// 模型数据导出
+export const exportApiData = (data, type) => {
+  return service({
+    url: `${USER_API}/statistic/api/export/${type}`,
+    method: 'post',
+    data,
+    responseType: 'blob',
+  });
+};

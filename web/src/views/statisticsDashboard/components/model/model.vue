@@ -21,7 +21,7 @@
         <el-select
           v-model="modelParams.models"
           :placeholder="$t('statisticsDashboard.model')"
-          class="no-border-select"
+          class="no-border-select scroll-select"
           style="margin-left: 15px; width: 600px"
           clearable
           multiple
@@ -29,8 +29,9 @@
         >
           <el-option
             v-for="item in modelList"
+            v-if="item.displayName"
             :key="item.modelId"
-            :label="item.displayName || item.model"
+            :label="item.displayName"
             :value="item.modelId"
           >
             <div class="model-option-content">
@@ -40,7 +41,7 @@
                   :src="convertModelIcon(item?.avatar.path)"
                 />
                 <span class="model-name">
-                  {{ item.displayName || item.model }}
+                  {{ item.displayName }}
                 </span>
               </div>
 

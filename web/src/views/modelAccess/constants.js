@@ -145,6 +145,16 @@ export const TYPE_OBJ = {
   },
 };
 
+export const DEFAULT_MODEL_ITEM = {
+  displayName: i18n.t('modelAccess.custom'),
+  model: 'custom',
+  tags: [
+    {
+      text: i18n.t('modelAccess.custom'),
+    },
+  ],
+};
+
 export const IMAGE = 'image';
 export const VIDEO = 'video';
 export const SUPPORT_FILE_TYPE_OBJ = {
