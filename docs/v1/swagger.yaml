@@ -4230,6 +4230,58 @@ definitions:
         description: 创建ApiKey的时间
         type: string
     type: object
+  response.AppStatistic:
+    properties:
+      overview:
+        $ref: '#/definitions/response.AppStatisticOverview'
+      trend:
+        $ref: '#/definitions/response.AppStatisticTrend'
+    type: object
+  response.AppStatisticItem:
+    properties:
+      appId:
+        type: string
+      appName:
+        type: string
+      appType:
+        type: string
+      avgNonStreamCosts:
+        type: number
+      avgStreamCosts:
+        type: number
+      callCount:
+        type: integer
+      callFailure:
+        type: integer
+      failureRate:
+        type: number
+      nonStreamCount:
+        type: integer
+      orgName:
+        type: string
+      streamCount:
+        type: integer
+    type: object
+  response.AppStatisticOverview:
+    properties:
+      avgNonStreamCosts:
+        $ref: '#/definitions/response.StatisticOverviewItem'
+      avgStreamCosts:
+        $ref: '#/definitions/response.StatisticOverviewItem'
+      callCount:
+        $ref: '#/definitions/response.StatisticOverviewItem'
+      callFailure:
+        $ref: '#/definitions/response.StatisticOverviewItem'
+      nonStreamCount:
+        $ref: '#/definitions/response.StatisticOverviewItem'
+      streamCount:
+        $ref: '#/definitions/response.StatisticOverviewItem'
+    type: object
+  response.AppStatisticTrend:
+    properties:
+      callTrend:
+        $ref: '#/definitions/response.StatisticChart'
+    type: object
   response.AppUrlInfo:
     properties:
       appId:
@@ -6712,6 +6764,23 @@ definitions:
         $ref: '#/definitions/response.StatisticChart'
       tokensUsage:
         $ref: '#/definitions/response.StatisticChart'
+    type: object
+  response.MyAppItem:
+    properties:
+      appId:
+        type: string
+      appType:
+        type: string
+      avatar:
+        allOf:
+        - $ref: '#/definitions/request.Avatar'
+        description: 图标
+      createdAt:
+        type: integer
+      name:
+        type: string
+      publishType:
+        type: string
     type: object
   response.OAuthAppInfo:
     properties:
@@ -15490,6 +15559,176 @@ paths:
       summary: 获取词表数据列表
       tags:
       - safety
+  /statistic/app:
+    get:
+      consumes:
+      - application/json
+      description: 获取应用统计数据
+      parameters:
+      - description: 开始时间（格式yyyy-mm-dd）
+        in: query
+        name: startDate
+        required: true
+        type: string
+      - description: 结束时间（格式yyyy-mm-dd）
+        in: query
+        name: endDate
+        required: true
+        type: string
+      - description: 应用ID列表
+        in: query
+        name: apps
+        type: string
+      - description: 应用类型（默认agent）
+        in: query
+        name: appType
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/response.Response'
+            - properties:
+                data:
+                  $ref: '#/definitions/response.AppStatistic'
+              type: object
+      security:
+      - JWT: []
+      summary: 获取应用统计数据
+      tags:
+      - app_observability.statistic
+  /statistic/app/export:
+    get:
+      consumes:
+      - application/json
+      description: 导出应用统计列表数据
+      parameters:
+      - description: 开始时间（格式yyyy-mm-dd）
+        in: query
+        name: startDate
+        required: true
+        type: string
+      - description: 结束时间（格式yyyy-mm-dd）
+        in: query
+        name: endDate
+        required: true
+        type: string
+      - description: 应用ID列表
+        in: query
+        name: apps
+        type: string
+      - description: 应用类型（默认agent）
+        in: query
+        name: appType
+        type: string
+      produces:
+      - application/octet-stream
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/response.Response'
+      security:
+      - JWT: []
+      summary: 导出应用统计列表
+      tags:
+      - app_observability.statistic
+  /statistic/app/list:
+    get:
+      consumes:
+      - application/json
+      description: 获取应用统计列表（分页）
+      parameters:
+      - description: 开始时间（格式yyyy-mm-dd）
+        in: query
+        name: startDate
+        required: true
+        type: string
+      - description: 结束时间（格式yyyy-mm-dd）
+        in: query
+        name: endDate
+        required: true
+        type: string
+      - description: 应用ID列表
+        in: query
+        name: apps
+        type: string
+      - description: 应用类型（默认agent）
+        in: query
+        name: appType
+        type: string
+      - description: 页面编号，从1开始
+        in: query
+        name: pageNo
+        required: true
+        type: integer
+      - description: 单页数量
+        in: query
+        name: pageSize
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/response.Response'
+            - properties:
+                data:
+                  allOf:
+                  - $ref: '#/definitions/response.PageResult'
+                  - properties:
+                      list:
+                        items:
+                          $ref: '#/definitions/response.AppStatisticItem'
+                        type: array
+                    type: object
+              type: object
+      security:
+      - JWT: []
+      summary: 获取应用统计列表
+      tags:
+      - app_observability.statistic
+  /statistic/app/select:
+    get:
+      consumes:
+      - application/json
+      description: 获取当前用户在当前组织下发布的应用列表（包括私有发布、组织内发布、公开发布）
+      parameters:
+      - description: 应用类型
+        in: query
+        name: appType
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/response.Response'
+            - properties:
+                data:
+                  allOf:
+                  - $ref: '#/definitions/response.ListResult'
+                  - properties:
+                      list:
+                        items:
+                          $ref: '#/definitions/response.MyAppItem'
+                        type: array
+                    type: object
+              type: object
+      security:
+      - JWT: []
+      summary: 获取当前用户在当前组织下发布的应用列表
+      tags:
+      - app_observability.statistic
   /statistic/client:
     get:
       consumes:

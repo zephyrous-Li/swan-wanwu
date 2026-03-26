@@ -276,7 +276,7 @@ func PublishedWorkflowRun(ctx *gin.Context) {
 	if !gin_util.Bind(ctx, &req) {
 		return
 	}
-	resp, err := service.PublishedWorkflowRun(ctx, getOrgID(ctx), req)
+	resp, err := service.PublishedWorkflowRun(ctx, getUserID(ctx), getOrgID(ctx), req)
 	if err != nil {
 		gin_util.Response(ctx, nil, err)
 		return

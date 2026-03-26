@@ -1,0 +1,318 @@
+package service
+
+import (
+	"context"
+	"fmt"
+	"math"
+
+	app_service "github.com/UnicomAI/wanwu/api/proto/app-service"
+	assistant_service "github.com/UnicomAI/wanwu/api/proto/assistant-service"
+	"github.com/UnicomAI/wanwu/api/proto/common"
+	err_code "github.com/UnicomAI/wanwu/api/proto/err-code"
+	iam_service "github.com/UnicomAI/wanwu/api/proto/iam-service"
+	rag_service "github.com/UnicomAI/wanwu/api/proto/rag-service"
+	"github.com/UnicomAI/wanwu/internal/bff-service/model/response"
+	"github.com/UnicomAI/wanwu/pkg/constant"
+	grpc_util "github.com/UnicomAI/wanwu/pkg/grpc-util"
+	"github.com/UnicomAI/wanwu/pkg/log"
+	"github.com/UnicomAI/wanwu/pkg/util"
+	"github.com/gin-gonic/gin"
+	"github.com/xuri/excelize/v2"
+)
+
+func GetAppStatistic(ctx *gin.Context, userId, orgId, startDate, endDate string, appIds []string, appType string) (*response.AppStatistic, error) {
+	if appType == "" {
+		appType = constant.AppTypeAgent
+	}
+	resp, err := app.GetAppStatistic(ctx.Request.Context(), &app_service.GetAppStatisticReq{
+		UserId:    userId,
+		OrgId:     orgId,
+		StartDate: startDate,
+		EndDate:   endDate,
+		AppIds:    appIds,
+		AppType:   appType,
+	})
+	if err != nil {
+		return nil, err
+	}
+	return &response.AppStatistic{
+		Overview: response.AppStatisticOverview{
+			CallCount:         convertModelStatisticOverviewItem(resp.Overview.GetCallCount()),
+			CallFailure:       convertModelStatisticOverviewItem(resp.Overview.GetCallFailure()),
+			StreamCount:       convertModelStatisticOverviewItem(resp.Overview.GetStreamCount()),
+			NonStreamCount:    convertModelStatisticOverviewItem(resp.Overview.GetNonStreamCount()),
+			AvgStreamCosts:    convertModelStatisticOverviewItem(resp.Overview.GetAvgStreamCosts()),
+			AvgNonStreamCosts: convertModelStatisticOverviewItem(resp.Overview.GetAvgNonStreamCosts()),
+		},
+		Trend: response.AppStatisticTrend{
+			CallTrend: convertStatisticChart(ctx, resp.Trend.GetCallTrend()),
+		},
+	}, nil
+}
+
+func GetAppStatisticList(ctx *gin.Context, userId, orgId, startDate, endDate string, appIds []string, appType string, page, pageSize int32) (*response.PageResult, error) {
+	if appType == "" {
+		appType = constant.AppTypeAgent
+	}
+	resp, err := app.GetAppStatisticList(ctx.Request.Context(), &app_service.GetAppStatisticListReq{
+		UserId:    userId,
+		OrgId:     orgId,
+		StartDate: startDate,
+		EndDate:   endDate,
+		AppIds:    appIds,
+		AppType:   appType,
+		PageNo:    page,
+		PageSize:  pageSize,
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	var orgIds []string
+	var statAppIds []string
+	for _, item := range resp.Items {
+		orgIds = append(orgIds, item.OrgId)
+		statAppIds = append(statAppIds, item.AppId)
+	}
+	orgResp, err := iam.GetOrgByOrgIDs(ctx, &iam_service.GetOrgByOrgIDsReq{OrgIds: orgIds})
+	if err != nil {
+		return nil, err
+	}
+	orgNameMap := make(map[string]string)
+	if orgResp != nil && orgResp.Orgs != nil {
+		for _, org := range orgResp.Orgs {
+			orgNameMap[org.Id] = org.Name
+		}
+	}
+	// 先根据ids获取应用名称，避免在循环中调用接口
+	ret, err := getAppNameMap(ctx, statAppIds, appType)
+	if err != nil {
+		log.Errorf("get app name map err: %v", err)
+		return nil, err
+	}
+	items := make([]response.AppStatisticItem, 0, len(resp.Items))
+	for _, item := range resp.Items {
+		roundedFailureRate := float32(math.Round(float64(item.FailureRate)*100) / 100)
+		roundedAvgStreamCosts := float32(math.Round(float64(item.AvgStreamCosts)*100) / 100)
+		roundedAvgNonStreamCosts := float32(math.Round(float64(item.AvgNonStreamCosts)*100) / 100)
+		items = append(items, response.AppStatisticItem{
+			AppId:             item.AppId,
+			AppType:           item.AppType,
+			AppName:           ret[item.AppId],
+			OrgName:           orgNameMap[item.OrgId],
+			CallCount:         item.CallCount,
+			CallFailure:       item.CallFailure,
+			FailureRate:       roundedFailureRate,
+			StreamCount:       item.StreamCount,
+			NonStreamCount:    item.NonStreamCount,
+			AvgStreamCosts:    roundedAvgStreamCosts,
+			AvgNonStreamCosts: roundedAvgNonStreamCosts,
+		})
+	}
+	return &response.PageResult{
+		List:     items,
+		Total:    int64(resp.Total),
+		PageNo:   int(page),
+		PageSize: int(pageSize),
+	}, nil
+}
+
+func ExportAppStatisticList(ctx *gin.Context, userId, orgId, startDate, endDate string, appIds []string, appType string) (*excelize.File, error) {
+	resp, err := GetAppStatisticList(ctx, userId, orgId, startDate, endDate, appIds, appType, -1, -1)
+	if err != nil {
+		return nil, err
+	}
+	return writeAppListExcel(resp.List.([]response.AppStatisticItem))
+}
+
+func writeAppListExcel(items []response.AppStatisticItem) (*excelize.File, error) {
+	sheet := "应用统计列表"
+	title := []any{"应用名称", "应用类型", "组织", "调用次数", "调用失败次数", "失败率", "流式调用次数", "非流式调用次数", "平均流式耗时", "平均非流式耗时"}
+	var rows [][]any
+	for _, item := range items {
+		rows = append(rows, []any{
+			item.AppName,
+			item.AppType,
+			item.OrgName,
+			item.CallCount,
+			item.CallFailure,
+			item.FailureRate,
+			item.StreamCount,
+			item.NonStreamCount,
+			item.AvgStreamCosts,
+			item.AvgNonStreamCosts,
+		})
+	}
+	return writeExcel(sheet, title, rows)
+}
+
+func getAppNameMap(ctx *gin.Context, appId []string, appType string) (map[string]string, error) {
+	switch appType {
+	case constant.AppTypeAgent:
+		agentListInfos, err := assistant.GetAssistantByIds(ctx.Request.Context(), &assistant_service.GetAssistantByIdsReq{AssistantIdList: appId})
+		if err != nil {
+			log.Errorf("get agent info err: %v", err)
+			return nil, grpc_util.ErrorStatus(err_code.Code_BFFGeneral, fmt.Sprintf("get app name error: %v", err))
+		}
+		if len(agentListInfos.AssistantInfos) == 0 {
+			return make(map[string]string), nil
+		}
+		// 返回和appId映射，以id为key，name为值的map
+		result := make(map[string]string)
+		for _, info := range agentListInfos.AssistantInfos {
+			result[info.Info.AppId] = info.Info.Name
+		}
+		return result, nil
+	case constant.AppTypeRag:
+		ragListInfos, err := rag.GetRagByIds(ctx.Request.Context(), &rag_service.GetRagByIdsReq{RagIdList: appId})
+		if err != nil {
+			log.Errorf("get rag info err: %v", err)
+			return nil, grpc_util.ErrorStatus(err_code.Code_BFFGeneral, fmt.Sprintf("get app name error: %v", err))
+		}
+		if len(ragListInfos.RagInfos) == 0 {
+			return make(map[string]string), nil
+		}
+		// 返回和appId映射，以id为key，name为值的map
+		result := make(map[string]string)
+		for _, info := range ragListInfos.RagInfos {
+			result[info.AppId] = info.Name
+		}
+		return result, nil
+	case constant.AppTypeWorkflow, constant.AppTypeChatflow:
+		workflowRet, err := ListWorkflowByIDs(ctx, "", appId)
+		if err != nil {
+			log.Errorf("get workflow info err: %v", err)
+			return nil, grpc_util.ErrorStatus(err_code.Code_BFFGeneral, fmt.Sprintf("get app name error: %v", err))
+		}
+		// 返回和appId映射，以id为key，name为值的map
+		result := make(map[string]string)
+		for _, info := range workflowRet.Workflows {
+			result[info.WorkflowId] = info.Name
+		}
+		return result, nil
+	}
+	return nil, grpc_util.ErrorStatus(err_code.Code_BFFGeneral, fmt.Sprintf("unsupported app type: %v", appType))
+}
+
+func RecordAppStatistic(ctx context.Context, userId, orgId, appId, appType string, isSuccess, isStream bool, streamCosts, nonStreamCosts int64, source string) {
+	go func() {
+		// 不使用外部ctx，避免外部ctx过期导致统计记录失败
+		defer util.PrintPanicStack()
+		_, err := app.RecordAppStatistic(context.Background(), &app_service.RecordAppStatisticReq{
+			UserId:         userId,
+			OrgId:          orgId,
+			AppId:          appId,
+			AppType:        appType,
+			IsSuccess:      isSuccess,
+			IsStream:       isStream,
+			StreamCosts:    streamCosts,
+			NonStreamCosts: nonStreamCosts,
+			Source:         source,
+		})
+		if err != nil {
+			log.Errorf("record app %v type %v source %v statistic err: %v", appId, appType, source, err)
+		}
+	}()
+}
+
+func GetAppListSelect(ctx *gin.Context, userId, orgId, appType string) (*response.ListResult, error) {
+	resp, err := app.GetAppList(ctx.Request.Context(), &app_service.GetAppListReq{
+		UserId:  userId,
+		OrgId:   orgId,
+		AppType: appType,
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	var appIds []string
+	for _, info := range resp.Infos {
+		appIds = append(appIds, info.AppId)
+	}
+
+	items := make([]response.MyAppItem, 0, len(resp.Infos))
+
+	switch appType {
+	case constant.AppTypeAgent:
+		agentInfos, err := assistant.GetAssistantByIds(ctx.Request.Context(), &assistant_service.GetAssistantByIdsReq{
+			AssistantIdList: appIds,
+		})
+		if err != nil {
+			log.Errorf("app select get agent info err: %v", err)
+			return nil, err
+		}
+		agentMap := make(map[string]*common.AppBrief)
+		for _, info := range agentInfos.AssistantInfos {
+			if info.Info != nil {
+				agentMap[info.Info.AppId] = info.Info
+			}
+		}
+		for _, info := range resp.Infos {
+			item := response.MyAppItem{
+				AppId:       info.AppId,
+				AppType:     info.AppType,
+				PublishType: info.PublishType,
+				CreatedAt:   info.CreatedAt,
+			}
+			if agentInfo, ok := agentMap[info.AppId]; ok {
+				item.Name = agentInfo.Name
+				item.Avatar = cacheAppAvatar(ctx, agentInfo.AvatarPath, appType)
+			}
+			items = append(items, item)
+		}
+
+	case constant.AppTypeRag:
+		ragInfos, err := rag.GetRagByIds(ctx.Request.Context(), &rag_service.GetRagByIdsReq{
+			RagIdList: appIds,
+		})
+		if err != nil {
+			log.Errorf("app select get rag info err: %v", err)
+			return nil, err
+		}
+		ragMap := make(map[string]*common.AppBrief)
+		for _, info := range ragInfos.RagInfos {
+			ragMap[info.AppId] = info
+		}
+		for _, info := range resp.Infos {
+			item := response.MyAppItem{
+				AppId:       info.AppId,
+				AppType:     info.AppType,
+				PublishType: info.PublishType,
+				CreatedAt:   info.CreatedAt,
+			}
+			if ragInfo, ok := ragMap[info.AppId]; ok {
+				item.Name = ragInfo.Name
+				item.Avatar = cacheAppAvatar(ctx, ragInfo.AvatarPath, appType)
+			}
+			items = append(items, item)
+		}
+
+	case constant.AppTypeWorkflow, constant.AppTypeChatflow:
+		workflowRet, err := ListWorkflowByIDs(ctx, "", appIds)
+		if err != nil {
+			log.Errorf("app select get workflow info err: %v", err)
+			return nil, err
+		}
+		workflowMap := make(map[string]*response.CozeWorkflowListDataWorkflow)
+		for _, info := range workflowRet.Workflows {
+			workflowMap[info.WorkflowId] = info
+		}
+		for _, info := range resp.Infos {
+			item := response.MyAppItem{
+				AppId:       info.AppId,
+				AppType:     info.AppType,
+				PublishType: info.PublishType,
+				CreatedAt:   info.CreatedAt,
+			}
+			if workflowInfo, ok := workflowMap[info.AppId]; ok {
+				item.Name = workflowInfo.Name
+				item.Avatar = cacheWorkflowAvatar(workflowInfo.URL, appType)
+			}
+			items = append(items, item)
+		}
+	}
+	return &response.ListResult{
+		List:  items,
+		Total: int64(len(items)),
+	}, nil
+}

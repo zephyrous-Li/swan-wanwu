@@ -155,6 +155,40 @@
                 }
             }
         },
+        "/app/record": {
+            "post": {
+                "description": "应用使用记录",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "callback"
+                ],
+                "summary": "应用使用记录",
+                "parameters": [
+                    {
+                        "description": "应用使用记录请求参数",
+                        "name": "data",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/request.AppRecordRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/response.Response"
+                        }
+                    }
+                }
+            }
+        },
         "/callback/mcp": {
             "get": {
                 "description": "获取自定义MCP详情",
@@ -3415,6 +3449,38 @@
                 },
                 "provider": {
                     "description": "模型供应商",
+                    "type": "string"
+                }
+            }
+        },
+        "request.AppRecordRequest": {
+            "type": "object",
+            "properties": {
+                "appId": {
+                    "type": "string"
+                },
+                "appType": {
+                    "type": "string"
+                },
+                "isStream": {
+                    "type": "boolean"
+                },
+                "isSuccess": {
+                    "type": "boolean"
+                },
+                "nonStreamCosts": {
+                    "type": "integer"
+                },
+                "orgId": {
+                    "type": "string"
+                },
+                "source": {
+                    "type": "string"
+                },
+                "streamCosts": {
+                    "type": "integer"
+                },
+                "userId": {
                     "type": "string"
                 }
             }

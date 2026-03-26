@@ -1549,6 +1549,27 @@ definitions:
         description: 模型供应商
         type: string
     type: object
+  request.AppRecordRequest:
+    properties:
+      appId:
+        type: string
+      appType:
+        type: string
+      isStream:
+        type: boolean
+      isSuccess:
+        type: boolean
+      nonStreamCosts:
+        type: integer
+      orgId:
+        type: string
+      source:
+        type: string
+      streamCosts:
+        type: integer
+      userId:
+        type: string
+    type: object
   request.Avatar:
     properties:
       key:
@@ -2352,6 +2373,28 @@ paths:
           schema:
             $ref: '#/definitions/response.Response'
       summary: 更新知识库状态
+      tags:
+      - callback
+  /app/record:
+    post:
+      consumes:
+      - application/json
+      description: 应用使用记录
+      parameters:
+      - description: 应用使用记录请求参数
+        in: body
+        name: data
+        required: true
+        schema:
+          $ref: '#/definitions/request.AppRecordRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/response.Response'
+      summary: 应用使用记录
       tags:
       - callback
   /callback/mcp:

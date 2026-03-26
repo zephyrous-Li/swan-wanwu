@@ -25,13 +25,14 @@ func WorkflowRun(ctx *gin.Context) {
 	if !gin_util.Bind(ctx, &req) {
 		return
 	}
-	// 转换为 JSON bytes
+	userID := getUserID(ctx)
+	orgID := getOrgID(ctx)
 	jsonBytes, err := json.Marshal(req.Parameters)
 	if err != nil {
 		gin_util.Response(ctx, nil, err)
 		return
 	}
-	resp, err := service.OpenAPIWorkflowRun(ctx, req.UUID, jsonBytes)
+	resp, err := service.OpenAPIWorkflowRun(ctx, userID, orgID, req.UUID, jsonBytes)
 	if err != nil {
 		gin_util.Response(ctx, nil, err)
 		return

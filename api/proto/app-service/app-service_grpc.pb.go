@@ -54,6 +54,9 @@ const (
 	AppService_GetModelStatistic_FullMethodName            = "/app_service.AppService/GetModelStatistic"
 	AppService_RecordModelStatistic_FullMethodName         = "/app_service.AppService/RecordModelStatistic"
 	AppService_GetModelStatisticList_FullMethodName        = "/app_service.AppService/GetModelStatisticList"
+	AppService_GetAppStatistic_FullMethodName              = "/app_service.AppService/GetAppStatistic"
+	AppService_RecordAppStatistic_FullMethodName           = "/app_service.AppService/RecordAppStatistic"
+	AppService_GetAppStatisticList_FullMethodName          = "/app_service.AppService/GetAppStatisticList"
 )
 
 // AppServiceClient is the client API for AppService service.
@@ -102,6 +105,9 @@ type AppServiceClient interface {
 	GetModelStatistic(ctx context.Context, in *GetModelStatisticReq, opts ...grpc.CallOption) (*ModelStatistic, error)
 	RecordModelStatistic(ctx context.Context, in *RecordModelStatisticReq, opts ...grpc.CallOption) (*emptypb.Empty, error)
 	GetModelStatisticList(ctx context.Context, in *GetModelStatisticListReq, opts ...grpc.CallOption) (*GetModelStatisticListResp, error)
+	GetAppStatistic(ctx context.Context, in *GetAppStatisticReq, opts ...grpc.CallOption) (*AppStatistic, error)
+	RecordAppStatistic(ctx context.Context, in *RecordAppStatisticReq, opts ...grpc.CallOption) (*emptypb.Empty, error)
+	GetAppStatisticList(ctx context.Context, in *GetAppStatisticListReq, opts ...grpc.CallOption) (*GetAppStatisticListResp, error)
 }
 
 type appServiceClient struct {
@@ -452,6 +458,36 @@ func (c *appServiceClient) GetModelStatisticList(ctx context.Context, in *GetMod
 	return out, nil
 }
 
+func (c *appServiceClient) GetAppStatistic(ctx context.Context, in *GetAppStatisticReq, opts ...grpc.CallOption) (*AppStatistic, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(AppStatistic)
+	err := c.cc.Invoke(ctx, AppService_GetAppStatistic_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *appServiceClient) RecordAppStatistic(ctx context.Context, in *RecordAppStatisticReq, opts ...grpc.CallOption) (*emptypb.Empty, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(emptypb.Empty)
+	err := c.cc.Invoke(ctx, AppService_RecordAppStatistic_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *appServiceClient) GetAppStatisticList(ctx context.Context, in *GetAppStatisticListReq, opts ...grpc.CallOption) (*GetAppStatisticListResp, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(GetAppStatisticListResp)
+	err := c.cc.Invoke(ctx, AppService_GetAppStatisticList_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // AppServiceServer is the server API for AppService service.
 // All implementations must embed UnimplementedAppServiceServer
 // for forward compatibility.
@@ -498,6 +534,9 @@ type AppServiceServer interface {
 	GetModelStatistic(context.Context, *GetModelStatisticReq) (*ModelStatistic, error)
 	RecordModelStatistic(context.Context, *RecordModelStatisticReq) (*emptypb.Empty, error)
 	GetModelStatisticList(context.Context, *GetModelStatisticListReq) (*GetModelStatisticListResp, error)
+	GetAppStatistic(context.Context, *GetAppStatisticReq) (*AppStatistic, error)
+	RecordAppStatistic(context.Context, *RecordAppStatisticReq) (*emptypb.Empty, error)
+	GetAppStatisticList(context.Context, *GetAppStatisticListReq) (*GetAppStatisticListResp, error)
 	mustEmbedUnimplementedAppServiceServer()
 }
 
@@ -609,6 +648,15 @@ func (UnimplementedAppServiceServer) RecordModelStatistic(context.Context, *Reco
 }
 func (UnimplementedAppServiceServer) GetModelStatisticList(context.Context, *GetModelStatisticListReq) (*GetModelStatisticListResp, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method GetModelStatisticList not implemented")
+}
+func (UnimplementedAppServiceServer) GetAppStatistic(context.Context, *GetAppStatisticReq) (*AppStatistic, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method GetAppStatistic not implemented")
+}
+func (UnimplementedAppServiceServer) RecordAppStatistic(context.Context, *RecordAppStatisticReq) (*emptypb.Empty, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method RecordAppStatistic not implemented")
+}
+func (UnimplementedAppServiceServer) GetAppStatisticList(context.Context, *GetAppStatisticListReq) (*GetAppStatisticListResp, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method GetAppStatisticList not implemented")
 }
 func (UnimplementedAppServiceServer) mustEmbedUnimplementedAppServiceServer() {}
 func (UnimplementedAppServiceServer) testEmbeddedByValue()                    {}
@@ -1243,6 +1291,60 @@ func _AppService_GetModelStatisticList_Handler(srv interface{}, ctx context.Cont
 	return interceptor(ctx, in, info, handler)
 }
 
+func _AppService_GetAppStatistic_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(GetAppStatisticReq)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(AppServiceServer).GetAppStatistic(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: AppService_GetAppStatistic_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(AppServiceServer).GetAppStatistic(ctx, req.(*GetAppStatisticReq))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _AppService_RecordAppStatistic_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(RecordAppStatisticReq)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(AppServiceServer).RecordAppStatistic(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: AppService_RecordAppStatistic_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(AppServiceServer).RecordAppStatistic(ctx, req.(*RecordAppStatisticReq))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _AppService_GetAppStatisticList_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(GetAppStatisticListReq)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(AppServiceServer).GetAppStatisticList(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: AppService_GetAppStatisticList_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(AppServiceServer).GetAppStatisticList(ctx, req.(*GetAppStatisticListReq))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 // AppService_ServiceDesc is the grpc.ServiceDesc for AppService service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -1385,6 +1487,18 @@ var AppService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "GetModelStatisticList",
 			Handler:    _AppService_GetModelStatisticList_Handler,
+		},
+		{
+			MethodName: "GetAppStatistic",
+			Handler:    _AppService_GetAppStatistic_Handler,
+		},
+		{
+			MethodName: "RecordAppStatistic",
+			Handler:    _AppService_RecordAppStatistic_Handler,
+		},
+		{
+			MethodName: "GetAppStatisticList",
+			Handler:    _AppService_GetAppStatisticList_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},

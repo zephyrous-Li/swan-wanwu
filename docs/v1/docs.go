@@ -13335,6 +13335,291 @@ const docTemplate = `{
                 }
             }
         },
+        "/statistic/app": {
+            "get": {
+                "security": [
+                    {
+                        "JWT": []
+                    }
+                ],
+                "description": "获取应用统计数据",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "app_observability.statistic"
+                ],
+                "summary": "获取应用统计数据",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "开始时间（格式yyyy-mm-dd）",
+                        "name": "startDate",
+                        "in": "query",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "结束时间（格式yyyy-mm-dd）",
+                        "name": "endDate",
+                        "in": "query",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "应用ID列表",
+                        "name": "apps",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "应用类型（默认agent）",
+                        "name": "appType",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/response.Response"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/definitions/response.AppStatistic"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    }
+                }
+            }
+        },
+        "/statistic/app/export": {
+            "get": {
+                "security": [
+                    {
+                        "JWT": []
+                    }
+                ],
+                "description": "导出应用统计列表数据",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/octet-stream"
+                ],
+                "tags": [
+                    "app_observability.statistic"
+                ],
+                "summary": "导出应用统计列表",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "开始时间（格式yyyy-mm-dd）",
+                        "name": "startDate",
+                        "in": "query",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "结束时间（格式yyyy-mm-dd）",
+                        "name": "endDate",
+                        "in": "query",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "应用ID列表",
+                        "name": "apps",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "应用类型（默认agent）",
+                        "name": "appType",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/response.Response"
+                        }
+                    }
+                }
+            }
+        },
+        "/statistic/app/list": {
+            "get": {
+                "security": [
+                    {
+                        "JWT": []
+                    }
+                ],
+                "description": "获取应用统计列表（分页）",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "app_observability.statistic"
+                ],
+                "summary": "获取应用统计列表",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "开始时间（格式yyyy-mm-dd）",
+                        "name": "startDate",
+                        "in": "query",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "结束时间（格式yyyy-mm-dd）",
+                        "name": "endDate",
+                        "in": "query",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "应用ID列表",
+                        "name": "apps",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "应用类型（默认agent）",
+                        "name": "appType",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "页面编号，从1开始",
+                        "name": "pageNo",
+                        "in": "query",
+                        "required": true
+                    },
+                    {
+                        "type": "integer",
+                        "description": "单页数量",
+                        "name": "pageSize",
+                        "in": "query",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/response.Response"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "allOf": [
+                                                {
+                                                    "$ref": "#/definitions/response.PageResult"
+                                                },
+                                                {
+                                                    "type": "object",
+                                                    "properties": {
+                                                        "list": {
+                                                            "type": "array",
+                                                            "items": {
+                                                                "$ref": "#/definitions/response.AppStatisticItem"
+                                                            }
+                                                        }
+                                                    }
+                                                }
+                                            ]
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    }
+                }
+            }
+        },
+        "/statistic/app/select": {
+            "get": {
+                "security": [
+                    {
+                        "JWT": []
+                    }
+                ],
+                "description": "获取当前用户在当前组织下发布的应用列表（包括私有发布、组织内发布、公开发布）",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "app_observability.statistic"
+                ],
+                "summary": "获取当前用户在当前组织下发布的应用列表",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "应用类型",
+                        "name": "appType",
+                        "in": "query",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/response.Response"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "allOf": [
+                                                {
+                                                    "$ref": "#/definitions/response.ListResult"
+                                                },
+                                                {
+                                                    "type": "object",
+                                                    "properties": {
+                                                        "list": {
+                                                            "type": "array",
+                                                            "items": {
+                                                                "$ref": "#/definitions/response.MyAppItem"
+                                                            }
+                                                        }
+                                                    }
+                                                }
+                                            ]
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    }
+                }
+            }
+        },
         "/statistic/client": {
             "get": {
                 "security": [
@@ -21431,6 +21716,86 @@ const docTemplate = `{
                 }
             }
         },
+        "response.AppStatistic": {
+            "type": "object",
+            "properties": {
+                "overview": {
+                    "$ref": "#/definitions/response.AppStatisticOverview"
+                },
+                "trend": {
+                    "$ref": "#/definitions/response.AppStatisticTrend"
+                }
+            }
+        },
+        "response.AppStatisticItem": {
+            "type": "object",
+            "properties": {
+                "appId": {
+                    "type": "string"
+                },
+                "appName": {
+                    "type": "string"
+                },
+                "appType": {
+                    "type": "string"
+                },
+                "avgNonStreamCosts": {
+                    "type": "number"
+                },
+                "avgStreamCosts": {
+                    "type": "number"
+                },
+                "callCount": {
+                    "type": "integer"
+                },
+                "callFailure": {
+                    "type": "integer"
+                },
+                "failureRate": {
+                    "type": "number"
+                },
+                "nonStreamCount": {
+                    "type": "integer"
+                },
+                "orgName": {
+                    "type": "string"
+                },
+                "streamCount": {
+                    "type": "integer"
+                }
+            }
+        },
+        "response.AppStatisticOverview": {
+            "type": "object",
+            "properties": {
+                "avgNonStreamCosts": {
+                    "$ref": "#/definitions/response.StatisticOverviewItem"
+                },
+                "avgStreamCosts": {
+                    "$ref": "#/definitions/response.StatisticOverviewItem"
+                },
+                "callCount": {
+                    "$ref": "#/definitions/response.StatisticOverviewItem"
+                },
+                "callFailure": {
+                    "$ref": "#/definitions/response.StatisticOverviewItem"
+                },
+                "nonStreamCount": {
+                    "$ref": "#/definitions/response.StatisticOverviewItem"
+                },
+                "streamCount": {
+                    "$ref": "#/definitions/response.StatisticOverviewItem"
+                }
+            }
+        },
+        "response.AppStatisticTrend": {
+            "type": "object",
+            "properties": {
+                "callTrend": {
+                    "$ref": "#/definitions/response.StatisticChart"
+                }
+            }
+        },
         "response.AppUrlInfo": {
             "type": "object",
             "properties": {
@@ -25156,6 +25521,34 @@ const docTemplate = `{
                 },
                 "tokensUsage": {
                     "$ref": "#/definitions/response.StatisticChart"
+                }
+            }
+        },
+        "response.MyAppItem": {
+            "type": "object",
+            "properties": {
+                "appId": {
+                    "type": "string"
+                },
+                "appType": {
+                    "type": "string"
+                },
+                "avatar": {
+                    "description": "图标",
+                    "allOf": [
+                        {
+                            "$ref": "#/definitions/request.Avatar"
+                        }
+                    ]
+                },
+                "createdAt": {
+                    "type": "integer"
+                },
+                "name": {
+                    "type": "string"
+                },
+                "publishType": {
+                    "type": "string"
                 }
             }
         },

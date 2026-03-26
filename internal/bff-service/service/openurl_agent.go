@@ -119,7 +119,11 @@ func AppUrlConversionStream(ctx *gin.Context, req request.UrlConversionStreamReq
 	if err != nil {
 		return err
 	}
-	// 1. CallAssistantConversationStream
+	streamParams := &agentChatStreamParams{startTime: time.Now()}
+	defer func() {
+		RecordAppStatistic(ctx.Request.Context(), appUrlInfo.UserId, appUrlInfo.OrgId, appUrlInfo.AppId, constant.AppTypeAgent, !streamParams.hasErr, true, streamParams.firstTokenLatency, 0, constant.AppStatisticSourceWebUrl)
+	}()
+
 	chatCh, err := CallAssistantConversationStream(ctx, xCid, appUrlInfo.OrgId, request.ConversionStreamRequest{
 		AssistantId:    appUrlInfo.AppId,
 		ConversationId: req.ConversationId,
@@ -127,11 +131,12 @@ func AppUrlConversionStream(ctx *gin.Context, req request.UrlConversionStreamReq
 		Prompt:         req.Prompt,
 	}, true)
 	if err != nil {
+		streamParams.hasErr = true
 		return err
 	}
 	// 2. 流式返回结果
 	_ = sse_util.NewSSEWriter(ctx, fmt.Sprintf("[Agent] %v conversation %v recv", appUrlInfo.AppId, req.ConversationId), sse_util.DONE_MSG).
-		WriteStream(chatCh, nil, buildAgentChatRespLineProcessor(), nil)
+		WriteStream(chatCh, streamParams, buildAgentChatRespLineProcessor(), nil)
 	return nil
 }
 

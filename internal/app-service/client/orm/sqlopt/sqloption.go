@@ -52,6 +52,16 @@ func WithAppIDs(Ids []string) SQLOption {
 	})
 }
 
+// WithAppIDsForStatistic 统计查询时使用，增加app_id过滤，但不强制要求app_id必须存在，目前应用于应用统计
+func WithAppIDsForStatistic(Ids []string) SQLOption {
+	return funcSQLOption(func(db *gorm.DB) *gorm.DB {
+		if len(Ids) > 0 {
+			return db.Where("app_id IN (?)", Ids)
+		}
+		return db
+	})
+}
+
 func WithExcludeUserID(userID string) SQLOption {
 	return funcSQLOption(func(db *gorm.DB) *gorm.DB {
 		if userID != "" {

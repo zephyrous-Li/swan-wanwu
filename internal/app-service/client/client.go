@@ -71,4 +71,7 @@ type IClient interface {
 	GetModelStatisticList(ctx context.Context, userId, orgId, startDate, endDate string, modelIds []string, modelType string, offset, limit int32) (*orm.ModelStatisticList, *err_code.Status)
 	RecordModelStatistic(ctx context.Context, userId, orgId, modelId, model, modelType string,
 		promptTokens, completionTokens, totalTokens, firstTokenLatency, costs int64, isSuccess bool, isStream bool, provider string) *err_code.Status
+	GetAppStatistic(ctx context.Context, userId, orgId, startDate, endDate string, appIds []string, appType string) (*orm.AppStatistic, *err_code.Status)
+	GetAppStatisticList(ctx context.Context, userId, orgId, startDate, endDate string, appIds []string, appType string, offset, limit int32) (*orm.AppStatisticList, *err_code.Status)
+	RecordAppStatistic(ctx context.Context, userId, orgId, appId, appType string, isSuccess, isStream bool, streamCosts, nonStreamCosts int64, source string) *err_code.Status
 }

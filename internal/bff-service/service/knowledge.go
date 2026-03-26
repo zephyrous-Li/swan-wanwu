@@ -368,7 +368,7 @@ func buildUserKnowledgeList(knowledgeList []*response.KnowledgeInfo) (map[string
 			KnowledgeName: knowledge.RagName,
 		})
 		retMap[knowledge.CreateUserId] = knowledgeInfos
-		if knowledge.Category == constant.MultiModalKnowledge {
+		if knowledge.Category == constant.KnowledgeMultiModal {
 			enableVision = true
 		}
 	}
