@@ -40,7 +40,13 @@ func (cfg *LLM) NewReq(req *mp_common.LLMReq) (mp_common.ILLMReq, error) {
 		return nil, err
 	}
 	if req.EnableThinking != nil {
-		m["enable_thinking"] = *req.EnableThinking
+		if m["chat_template_kwargs"] == nil {
+			m["chat_template_kwargs"] = map[string]interface{}{}
+		}
+		chatTemplateKwargs := m["chat_template_kwargs"].(map[string]interface{})
+		chatTemplateKwargs["enable_thinking"] = *req.EnableThinking
+		// 为了兼容性，同时传递thinking参数
+		chatTemplateKwargs["thinking"] = *req.EnableThinking
 	}
 	if req.Stream != nil && *req.Stream {
 		if req.StreamOptions != nil && req.StreamOptions.IncludeUsage != nil {
