@@ -534,7 +534,7 @@ func DraftAssistantConversionStream(ctx *gin.Context) {
 		}
 	}
 
-	if err := service.AssistantConversionStream(ctx, userId, orgId, req, true, constant.AppStatisticSourceDraft); err != nil {
+	if err := service.AssistantConversionStream(ctx, userId, orgId, req, false, constant.AppStatisticSourceDraft); err != nil {
 		gin_util.Response(ctx, nil, err)
 	}
 }

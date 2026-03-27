@@ -32,10 +32,13 @@ const (
 	IS_SYSTEM = "IS_SYSTEM" // 当前组织X_ORG_ID是否是【系统】
 
 	// openapi相关
-	APP_ID   = "APP_ID"
-	APP_TYPE = "APP_TYPE"
+	APP_ID     = "APP_ID"
+	APP_TYPE   = "APP_TYPE"
+	ANSWER     = "ANSWER"
+	API_KEY_ID = "API_KEY_ID"
 
-	ANSWER = "ANSWER"
+	// 流式首响应时延 (ms)
+	FIRST_RESP_LATENCY = "FIRST_RESP_LATENCY"
 
 	// OAuth相关
 	OAUTH_SCOPE     = "SCOPE"

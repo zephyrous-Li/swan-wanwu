@@ -216,6 +216,10 @@ func RecordAppStatistic(ctx context.Context, userId, orgId, appId, appType strin
 }
 
 func GetAppListSelect(ctx *gin.Context, userId, orgId, appType string) (*response.ListResult, error) {
+	// 和前端约定好如果不传appType参数，默认查询agent类型的应用列表
+	if appType == "" {
+		appType = constant.AppTypeAgent
+	}
 	resp, err := app.GetAppList(ctx.Request.Context(), &app_service.GetAppListReq{
 		UserId:  userId,
 		OrgId:   orgId,

@@ -15,6 +15,7 @@ import (
 	"github.com/UnicomAI/wanwu/pkg/redis"
 	"github.com/UnicomAI/wanwu/pkg/util"
 	"gorm.io/gorm"
+	"gorm.io/gorm/clause"
 )
 
 const luaUpdateAppStats = `
@@ -254,57 +255,43 @@ func updateAppStats(ctx context.Context, date string, db *gorm.DB) error {
 }
 
 func updateAppStatsByRecord(ctx context.Context, db *gorm.DB, appId, appType, userId, orgId, date string, record *AppRecordStats) error {
-	appStat := &model.AppRecord{
-		OrgID:   orgId,
-		UserID:  userId,
-		AppID:   appId,
-		AppType: appType,
-		Date:    date,
+	appStat := &model.AppStatistic{
+		OrgID:              orgId,
+		UserID:             userId,
+		AppID:              appId,
+		AppType:            appType,
+		Date:               date,
+		CallCount:          record.CallCount,
+		CallFailure:        record.CallFailure,
+		StreamCount:        record.StreamCount,
+		StreamFailure:      record.StreamFailure,
+		StreamCosts:        record.StreamCosts,
+		NonStreamCount:     record.NonStreamCount,
+		NonStreamFailure:   record.NonStreamFailure,
+		NonStreamCosts:     record.NonStreamCosts,
+		WebCallCount:       record.WebCallCount,
+		WebCallFailure:     record.WebCallFailure,
+		OpenapiCallCount:   record.OpenapiCallCount,
+		OpenapiCallFailure: record.OpenapiCallFailure,
+		WebUrlCallCount:    record.WebUrlCallCount,
+		WebUrlCallFailure:  record.WebUrlCallFailure,
 	}
 
-	if err := db.WithContext(ctx).Where(&model.AppRecord{
-		OrgID:   orgId,
-		UserID:  userId,
-		AppID:   appId,
-		AppType: appType,
-		Date:    date,
-	}).FirstOrCreate(appStat).Error; err != nil {
-		return err
-	}
-
-	if appStat.CallCount == record.CallCount &&
-		appStat.CallFailure == record.CallFailure &&
-		appStat.StreamCount == record.StreamCount &&
-		appStat.StreamFailure == record.StreamFailure &&
-		appStat.StreamCosts == record.StreamCosts &&
-		appStat.NonStreamCount == record.NonStreamCount &&
-		appStat.NonStreamFailure == record.NonStreamFailure &&
-		appStat.NonStreamCosts == record.NonStreamCosts &&
-		appStat.WebCallCount == record.WebCallCount &&
-		appStat.WebCallFailure == record.WebCallFailure &&
-		appStat.OpenapiCallCount == record.OpenapiCallCount &&
-		appStat.OpenapiCallFailure == record.OpenapiCallFailure &&
-		appStat.WebUrlCallCount == record.WebUrlCallCount &&
-		appStat.WebUrlCallFailure == record.WebUrlCallFailure {
-		return nil
-	}
-
-	return db.WithContext(ctx).Model(appStat).Updates(map[string]any{
-		"call_count":           record.CallCount,
-		"call_failure":         record.CallFailure,
-		"stream_count":         record.StreamCount,
-		"stream_failure":       record.StreamFailure,
-		"stream_costs":         record.StreamCosts,
-		"non_stream_count":     record.NonStreamCount,
-		"non_stream_failure":   record.NonStreamFailure,
-		"non_stream_costs":     record.NonStreamCosts,
-		"web_call_count":       record.WebCallCount,
-		"web_call_failure":     record.WebCallFailure,
-		"openapi_call_count":   record.OpenapiCallCount,
-		"openapi_call_failure": record.OpenapiCallFailure,
-		"web_url_call_count":   record.WebUrlCallCount,
-		"web_url_call_failure": record.WebUrlCallFailure,
-	}).Error
+	return db.WithContext(ctx).Clauses(clause.OnConflict{
+		Columns: []clause.Column{
+			{Name: "org_id"},
+			{Name: "user_id"},
+			{Name: "app_id"},
+			{Name: "app_type"},
+			{Name: "date"},
+		},
+		DoUpdates: clause.AssignmentColumns([]string{
+			"call_count", "call_failure", "stream_count", "stream_failure",
+			"stream_costs", "non_stream_count", "non_stream_failure", "non_stream_costs",
+			"web_call_count", "web_call_failure", "openapi_call_count", "openapi_call_failure",
+			"web_url_call_count", "web_url_call_failure",
+		}),
+	}).Create(appStat).Error
 }
 
 func getAppStatisticList(ctx context.Context, db *gorm.DB, userId, orgId, startDate, endDate string, appIds []string, appType string, offset, limit int32) ([]AppStatisticItem, int32, error) {
@@ -318,12 +305,12 @@ func getAppStatisticList(ctx context.Context, db *gorm.DB, userId, orgId, startD
 	}
 	var total int64
 	countQuery := sqlopt.SQLOptions(opts...).Apply(db).WithContext(ctx).
-		Model(&model.AppRecord{}).
+		Model(&model.AppStatistic{}).
 		Select("COUNT(DISTINCT app_id)")
 	if err := countQuery.Count(&total).Error; err != nil {
 		return nil, 0, fmt.Errorf("count app stat list err: %v", err)
 	}
-	var stats []model.AppRecord
+	var stats []model.AppStatistic
 	query := sqlopt.SQLOptions(opts...).Apply(db).WithContext(ctx).
 		Select("app_id, ANY_VALUE(app_type) as app_type, " +
 			"ANY_VALUE(org_id) as org_id, " +
@@ -388,7 +375,7 @@ func statisticAppStatsOverview(ctx context.Context, db *gorm.DB, userID, orgID, 
 
 func appStatsByDateRange(ctx context.Context, db *gorm.DB, userID, orgID string, dates []string, appIds []string, appType string) (*AppStatisticOverview, error) {
 	startDate, endDate := dates[0], dates[len(dates)-1]
-	var stat model.AppRecord
+	var stat model.AppStatistic
 	opts := []sqlopt.SQLOption{
 		sqlopt.WithOrgID(orgID),
 		sqlopt.WithUserID(userID),
@@ -424,12 +411,12 @@ func appStatsByDateRange(ctx context.Context, db *gorm.DB, userID, orgID string,
 }
 
 func statisticAppStatsTrend(ctx context.Context, db *gorm.DB, userID, orgID, startDate, endDate string, appIds []string, appType string) (*AppStatisticTrend, error) {
-	dates, err := BuildDateRange(startDate, endDate)
+	dates, err := buildDateRange(startDate, endDate)
 	if err != nil {
 		return nil, err
 	}
 
-	var stats []model.AppRecord
+	var stats []model.AppStatistic
 	opts := []sqlopt.SQLOption{
 		sqlopt.WithUserID(userID),
 		sqlopt.WithOrgID(orgID),
@@ -459,9 +446,9 @@ func statisticAppStatsTrend(ctx context.Context, db *gorm.DB, userID, orgID, sta
 		"app_statistic_openapi_call_count",
 		"app_statistic_web_url_call_count",
 	}
-	callTrendLines := BuildChartLines(stats, dates,
-		func(r model.AppRecord) string { return r.Date },
-		func(r model.AppRecord) map[string]float32 {
+	callTrendLines := buildChartLines(stats, dates,
+		func(r model.AppStatistic) string { return r.Date },
+		func(r model.AppStatistic) map[string]float32 {
 			return map[string]float32{
 				"app_statistic_call_count_total":   float32(r.CallCount),
 				"app_statistic_web_call_count":     float32(r.WebCallCount),
@@ -474,7 +461,7 @@ func statisticAppStatsTrend(ctx context.Context, db *gorm.DB, userID, orgID, sta
 
 	return &AppStatisticTrend{
 		CallTrend: StatisticChart{
-			Name:  "app_statistic_call_trend",
+			Name:  "app_statistic_app_call_trend",
 			Lines: callTrendLines,
 		},
 	}, nil

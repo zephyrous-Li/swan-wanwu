@@ -7,6 +7,7 @@ import (
 	"strings"
 	"sync"
 
+	"github.com/UnicomAI/wanwu/internal/bff-service/model/response"
 	"github.com/gin-gonic/gin"
 )
 
@@ -45,6 +46,10 @@ func (paths Paths) Get(absPath, method string) *_path {
 // --- API ---
 
 func LoadOrStore(absPath, method, desc string, authType PermLevel, tag TagName, handler gin.HandlerFunc, middlewares ...gin.HandlerFunc) (bool, error) {
+	return LoadOrStoreWithOpenAPIType(absPath, method, desc, authType, tag, "", handler, middlewares...)
+}
+
+func LoadOrStoreWithOpenAPIType(absPath, method, desc string, authType PermLevel, tag TagName, apiType string, handler gin.HandlerFunc, middlewares ...gin.HandlerFunc) (bool, error) {
 	key := pathKey(absPath, method)
 	actual, loaded := paths.LoadOrStore(key, &_path{
 		absPath:  absPath,
@@ -52,6 +57,7 @@ func LoadOrStore(absPath, method, desc string, authType PermLevel, tag TagName, 
 		desc:     desc,
 		authType: authType,
 		tags:     []TagName{tag},
+		apiType:  apiType,
 
 		handler:     handler,
 		middlewares: middlewares,
@@ -129,6 +135,7 @@ type _path struct {
 	desc     string
 	authType PermLevel
 	tags     []TagName
+	apiType  string // OpenAPI 类型: agent, rag, workflow, chatflow, knowledge
 
 	handler     gin.HandlerFunc
 	middlewares []gin.HandlerFunc
@@ -136,4 +143,25 @@ type _path struct {
 
 func pathKey(absPath, method string) string {
 	return fmt.Sprintf("[%s]%s", method, absPath)
+}
+
+func GetApiKeyStatisticRoutes(openApiType string) *response.ListResult {
+	var result []response.ApiKeyStatisticRouteItem
+	paths.Range(func(key, value any) bool {
+		p, ok := value.(*_path)
+		if !ok || p.apiType == "" {
+			return true
+		}
+		if openApiType == "" || p.apiType == openApiType {
+			result = append(result, response.ApiKeyStatisticRouteItem{
+				Method: p.method,
+				Path:   p.absPath,
+			})
+		}
+		return true
+	})
+	return &response.ListResult{
+		List:  result,
+		Total: int64(len(result)),
+	}
 }

@@ -17,6 +17,7 @@ import (
 	"github.com/UnicomAI/wanwu/internal/bff-service/model/request"
 	"github.com/UnicomAI/wanwu/internal/bff-service/model/response"
 	"github.com/UnicomAI/wanwu/pkg/constant"
+	gin_util "github.com/UnicomAI/wanwu/pkg/gin-util"
 	grpc_util "github.com/UnicomAI/wanwu/pkg/grpc-util"
 	"github.com/UnicomAI/wanwu/pkg/log"
 	"github.com/UnicomAI/wanwu/pkg/util"
@@ -212,6 +213,7 @@ func ChatflowChat(ctx *gin.Context, userId, orgId, workflowId, conversationId, m
 		if !firstTokenRecorded {
 			firstTokenLatency = time.Since(startTime).Milliseconds()
 			firstTokenRecorded = true
+			ctx.Set(gin_util.FIRST_RESP_LATENCY, firstTokenLatency)
 		}
 		// 写入数据到响应体（添加双换行符符合SSE格式）
 		if _, err := ctx.Writer.Write([]byte(scan.Text() + "\n")); err != nil {

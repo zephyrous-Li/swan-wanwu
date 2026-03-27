@@ -860,6 +860,75 @@ definitions:
         description: Title is a human-readable title for the tool, useful for UI display
         type: string
     type: object
+  request.APIKeyStatisticListReq:
+    properties:
+      apiKeyIds:
+        description: API Key 列表
+        items:
+          type: string
+        type: array
+      endDate:
+        description: 结束时间（格式yyyy-mm-dd）
+        type: string
+      methodPaths:
+        description: OpenAPI方法+路径（例如：POST-/agent/chat）
+        items:
+          type: string
+        type: array
+      pageNo:
+        description: 页面编号，从1开始
+        type: integer
+      pageSize:
+        description: 单页数量
+        type: integer
+      startDate:
+        description: 开始时间（格式yyyy-mm-dd）
+        type: string
+    type: object
+  request.APIKeyStatisticRecordReq:
+    properties:
+      apiKeyIds:
+        description: API Key 列表
+        items:
+          type: string
+        type: array
+      endDate:
+        description: 结束时间（格式yyyy-mm-dd）
+        type: string
+      methodPaths:
+        description: OpenAPI方法+路径（例如：POST-/agent/chat）
+        items:
+          type: string
+        type: array
+      pageNo:
+        description: 页面编号，从1开始
+        type: integer
+      pageSize:
+        description: 单页数量
+        type: integer
+      startDate:
+        description: 开始时间（格式yyyy-mm-dd）
+        type: string
+    type: object
+  request.APIKeyStatisticReq:
+    properties:
+      apiKeyIds:
+        description: API Key 列表
+        items:
+          type: string
+        type: array
+      endDate:
+        description: 结束时间（格式yyyy-mm-dd）
+        type: string
+      methodPaths:
+        description: OpenAPI方法+路径（例如：POST-/agent/chat）
+        items:
+          type: string
+        type: array
+      startDate:
+        description: 开始时间（格式yyyy-mm-dd）
+        type: string
+    type: object
   request.AnalysisUrlDocReq:
     properties:
       knowledgeId:
@@ -2531,6 +2600,44 @@ definitions:
     required:
     - modelId
     type: object
+  request.ExportAPIKeyStatisticListReq:
+    properties:
+      apiKeyIds:
+        description: API Key 列表
+        items:
+          type: string
+        type: array
+      endDate:
+        description: 结束时间（格式yyyy-mm-dd）
+        type: string
+      methodPaths:
+        description: OpenAPI方法+路径（例如：POST-/agent/chat）
+        items:
+          type: string
+        type: array
+      startDate:
+        description: 开始时间（格式yyyy-mm-dd）
+        type: string
+    type: object
+  request.ExportAPIKeyStatisticRecordReq:
+    properties:
+      apiKeyIds:
+        description: API Key 列表
+        items:
+          type: string
+        type: array
+      endDate:
+        description: 结束时间（格式yyyy-mm-dd）
+        type: string
+      methodPaths:
+        description: OpenAPI方法+路径（例如：POST-/agent/chat）
+        items:
+          type: string
+        type: array
+      startDate:
+        description: 开始时间（格式yyyy-mm-dd）
+        type: string
+    type: object
   request.GenAppKeyRequest:
     properties:
       appId:
@@ -4177,12 +4284,88 @@ definitions:
         description: 状态
         type: boolean
     type: object
+  response.APIKeyStatistic:
+    properties:
+      overview:
+        $ref: '#/definitions/response.APIKeyStatisticOverview'
+      trend:
+        $ref: '#/definitions/response.APIKeyStatisticTrend'
+    type: object
+  response.APIKeyStatisticItem:
+    properties:
+      apiKey:
+        type: string
+      avgNonStreamCosts:
+        type: number
+      avgStreamCosts:
+        type: number
+      callCount:
+        type: integer
+      callFailure:
+        type: integer
+      methodPath:
+        type: string
+      name:
+        type: string
+      nonStreamCount:
+        type: integer
+      streamCount:
+        type: integer
+    type: object
+  response.APIKeyStatisticOverview:
+    properties:
+      avgNonStreamCosts:
+        $ref: '#/definitions/response.StatisticOverviewItem'
+      avgStreamCosts:
+        $ref: '#/definitions/response.StatisticOverviewItem'
+      callCount:
+        $ref: '#/definitions/response.StatisticOverviewItem'
+      callFailure:
+        $ref: '#/definitions/response.StatisticOverviewItem'
+      nonStreamCount:
+        $ref: '#/definitions/response.StatisticOverviewItem'
+      streamCount:
+        $ref: '#/definitions/response.StatisticOverviewItem'
+    type: object
+  response.APIKeyStatisticRecordItem:
+    properties:
+      apiKey:
+        type: string
+      callTime:
+        type: string
+      methodPath:
+        type: string
+      name:
+        type: string
+      nonStreamCosts:
+        type: integer
+      requestBody:
+        type: string
+      responseBody:
+        type: string
+      responseStatus:
+        type: string
+      streamCosts:
+        type: integer
+    type: object
+  response.APIKeyStatisticTrend:
+    properties:
+      apiCalls:
+        $ref: '#/definitions/response.StatisticChart'
+    type: object
   response.AnalysisDocUrlResp:
     properties:
       urlList:
         items:
           $ref: '#/definitions/response.DocUrl'
         type: array
+    type: object
+  response.ApiKeyStatisticRouteItem:
+    properties:
+      method:
+        type: string
+      path:
+        type: string
     type: object
   response.AppBriefInfo:
     properties:
@@ -6765,6 +6948,11 @@ definitions:
       tokensUsage:
         $ref: '#/definitions/response.StatisticChart'
     type: object
+  response.ModelTagItem:
+    properties:
+      text:
+        type: string
+    type: object
   response.MyAppItem:
     properties:
       appId:
@@ -7007,7 +7195,7 @@ definitions:
         type: string
       tags:
         items:
-          $ref: '#/definitions/response.TagItem'
+          $ref: '#/definitions/response.ModelTagItem'
         type: array
     type: object
   response.RerankInfo:
@@ -7308,11 +7496,6 @@ definitions:
         type: integer
       timeCost:
         description: 耗时
-        type: string
-    type: object
-  response.TagItem:
-    properties:
-      text:
         type: string
     type: object
   response.ToolAction4Workflow:
@@ -15559,6 +15742,218 @@ paths:
       summary: 获取词表数据列表
       tags:
       - safety
+  /statistic/api:
+    post:
+      consumes:
+      - application/json
+      description: 获取API Key统计数据（概览+趋势）
+      parameters:
+      - description: 获取API Key统计数据请求参数
+        in: body
+        name: data
+        required: true
+        schema:
+          $ref: '#/definitions/request.APIKeyStatisticReq'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/response.Response'
+            - properties:
+                data:
+                  $ref: '#/definitions/response.APIKeyStatistic'
+              type: object
+      security:
+      - JWT: []
+      summary: 获取API Key统计数据
+      tags:
+      - app_observability.statistic
+  /statistic/api/list:
+    post:
+      consumes:
+      - application/json
+      description: 获取API Key调用统计（分页，按名称+apikey+路径分组）
+      parameters:
+      - description: 获取API Key调用统计请求参数
+        in: body
+        name: data
+        required: true
+        schema:
+          $ref: '#/definitions/request.APIKeyStatisticListReq'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/response.Response'
+            - properties:
+                data:
+                  allOf:
+                  - $ref: '#/definitions/response.PageResult'
+                  - properties:
+                      list:
+                        items:
+                          $ref: '#/definitions/response.APIKeyStatisticItem'
+                        type: array
+                    type: object
+              type: object
+      security:
+      - JWT: []
+      summary: 获取API Key调用统计
+      tags:
+      - app_observability.statistic
+  /statistic/api/list/export:
+    post:
+      consumes:
+      - application/json
+      description: 导出API Key统计列表
+      parameters:
+      - description: 导出API Key统计列表请求参数
+        in: body
+        name: data
+        required: true
+        schema:
+          $ref: '#/definitions/request.ExportAPIKeyStatisticListReq'
+      produces:
+      - application/octet-stream
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/response.Response'
+      security:
+      - JWT: []
+      summary: 导出API Key统计列表
+      tags:
+      - app_observability.statistic
+  /statistic/api/record:
+    post:
+      consumes:
+      - application/json
+      description: 获取API Key调用记录（分页，单条记录）
+      parameters:
+      - description: 获取API Key调用记录请求参数
+        in: body
+        name: data
+        required: true
+        schema:
+          $ref: '#/definitions/request.APIKeyStatisticRecordReq'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/response.Response'
+            - properties:
+                data:
+                  allOf:
+                  - $ref: '#/definitions/response.PageResult'
+                  - properties:
+                      list:
+                        items:
+                          $ref: '#/definitions/response.APIKeyStatisticRecordItem'
+                        type: array
+                    type: object
+              type: object
+      security:
+      - JWT: []
+      summary: 获取API Key调用记录
+      tags:
+      - app_observability.statistic
+  /statistic/api/record/export:
+    post:
+      consumes:
+      - application/json
+      description: 导出API Key调用记录
+      parameters:
+      - description: 导出API Key调用记录请求参数
+        in: body
+        name: data
+        required: true
+        schema:
+          $ref: '#/definitions/request.ExportAPIKeyStatisticRecordReq'
+      produces:
+      - application/octet-stream
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/response.Response'
+      security:
+      - JWT: []
+      summary: 导出API Key调用记录
+      tags:
+      - app_observability.statistic
+  /statistic/api/routes:
+    get:
+      consumes:
+      - application/json
+      description: 根据openApiType获取对应的路由信息，不传则返回所有OpenAPI路由
+      parameters:
+      - description: 'OpenAPI类型: agent, rag, workflow, chatflow, knowledge'
+        in: query
+        name: openApiType
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/response.Response'
+            - properties:
+                data:
+                  allOf:
+                  - $ref: '#/definitions/response.ListResult'
+                  - properties:
+                      list:
+                        items:
+                          $ref: '#/definitions/response.ApiKeyStatisticRouteItem'
+                        type: array
+                    type: object
+              type: object
+      security:
+      - JWT: []
+      summary: 获取API Key统计路由列表
+      tags:
+      - app_observability.statistic
+  /statistic/api/select:
+    get:
+      consumes:
+      - application/json
+      description: 获取API Key列表（用于下拉列表展示apikey）
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/response.Response'
+            - properties:
+                data:
+                  allOf:
+                  - $ref: '#/definitions/response.ListResult'
+                  - properties:
+                      list:
+                        items:
+                          $ref: '#/definitions/response.APIKeyDetailResponse'
+                        type: array
+                    type: object
+              type: object
+      security:
+      - JWT: []
+      summary: 获取API Key列表
+      tags:
+      - app_observability.statistic
   /statistic/app:
     get:
       consumes:
@@ -15703,7 +16098,6 @@ paths:
       - description: 应用类型
         in: query
         name: appType
-        required: true
         type: string
       produces:
       - application/json

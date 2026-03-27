@@ -143,6 +143,7 @@ func NewClient(db *gorm.DB) (*Client, error) {
 	if err := db.AutoMigrate(&Metadata{}); err != nil {
 		return nil, err
 	}
+
 	// 自动迁移表结构
 	if err := db.AutoMigrate(
 		model.OpenApiKey{},
@@ -155,8 +156,10 @@ func NewClient(db *gorm.DB) (*Client, error) {
 		model.SensitiveWordTable{},
 		model.SensitiveWordVocabulary{},
 		model.ChatflowApplcation{},
-		model.ModelRecord{},
-		model.AppRecord{},
+		model.ModelStatistic{},
+		model.AppStatistic{},
+		model.APIKeyRecord{},
+		model.APIKeyStatistic{},
 	); err != nil {
 		return nil, err
 	}

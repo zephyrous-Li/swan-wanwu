@@ -27,6 +27,7 @@ const (
 )
 
 type agentChatStreamParams struct {
+	ctx               *gin.Context
 	startTime         time.Time
 	firstTokenLatency int64
 	hasRecorded       bool
@@ -35,7 +36,7 @@ type agentChatStreamParams struct {
 
 func AssistantConversionStream(ctx *gin.Context, userId, orgId string, req request.ConversionStreamRequest, needLatestPublished bool, source string) (err error) {
 	// 1. CallAssistantConversationStream
-	streamParams := &agentChatStreamParams{startTime: time.Now()}
+	streamParams := &agentChatStreamParams{ctx: ctx, startTime: time.Now()}
 	defer func() {
 		if source != constant.AppStatisticSourceDraft {
 			RecordAppStatistic(ctx.Request.Context(), userId, orgId, req.AssistantId, constant.AppTypeAgent, !streamParams.hasErr, true, streamParams.firstTokenLatency, 0, source)
@@ -291,6 +292,9 @@ func buildAgentChatRespLineProcessor() func(sse_util.SSEWriterClient[string], st
 			if !p.hasRecorded {
 				p.firstTokenLatency = time.Since(p.startTime).Milliseconds()
 				p.hasRecorded = true
+				if p.ctx != nil {
+					p.ctx.Set(gin_util.FIRST_RESP_LATENCY, p.firstTokenLatency)
+				}
 			}
 		}
 		if strings.HasPrefix(lineText, "error:") {

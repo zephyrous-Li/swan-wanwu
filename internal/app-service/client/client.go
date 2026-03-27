@@ -66,12 +66,21 @@ type IClient interface {
 	GetChatflowApplicationByApplicationID(ctx context.Context, orgId, userId, applicationId string) (*model.ChatflowApplcation, *err_code.Status)
 	CreateChatflowApplication(ctx context.Context, orgId, userId, workflowId, applicationId string) *err_code.Status
 
-	// --- statistic ---
+	// ---model statistic ---
 	GetModelStatistic(ctx context.Context, userId, orgId, startDate, endDate string, modelIds []string, modelType string) (*orm.ModelStatistic, *err_code.Status)
 	GetModelStatisticList(ctx context.Context, userId, orgId, startDate, endDate string, modelIds []string, modelType string, offset, limit int32) (*orm.ModelStatisticList, *err_code.Status)
 	RecordModelStatistic(ctx context.Context, userId, orgId, modelId, model, modelType string,
 		promptTokens, completionTokens, totalTokens, firstTokenLatency, costs int64, isSuccess bool, isStream bool, provider string) *err_code.Status
+
+	// --- app statistic ---
 	GetAppStatistic(ctx context.Context, userId, orgId, startDate, endDate string, appIds []string, appType string) (*orm.AppStatistic, *err_code.Status)
 	GetAppStatisticList(ctx context.Context, userId, orgId, startDate, endDate string, appIds []string, appType string, offset, limit int32) (*orm.AppStatisticList, *err_code.Status)
 	RecordAppStatistic(ctx context.Context, userId, orgId, appId, appType string, isSuccess, isStream bool, streamCosts, nonStreamCosts int64, source string) *err_code.Status
+
+	// --- api key statistic ---
+	GetAPIKeyStatistic(ctx context.Context, userId, orgId, startDate, endDate string, apiKeyIds, methodPaths []string) (*orm.APIKeyStatistic, *err_code.Status)
+	GetAPIKeyStatisticList(ctx context.Context, userId, orgId, startDate, endDate string, apiKeyIds, methodPaths []string, offset, limit int32) (*orm.APIKeyStatisticList, *err_code.Status)
+	GetAPIKeyStatisticRecord(ctx context.Context, userId, orgId, startDate, endDate string, apiKeyIds, methodPaths []string, offset, limit int32) (*orm.APIKeyStatisticRecordList, *err_code.Status)
+	RecordAPIKeyStatistic(ctx context.Context, userId, orgId, apiKeyId, methodPath string,
+		callTime int64, httpStatus string, isStream bool, streamCosts, nonStreamCosts int64, requestBody, responseBody string) *err_code.Status
 }

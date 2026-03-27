@@ -57,7 +57,14 @@ service AppService {
   rpc GetAppStatistic(GetAppStatisticReq) returns (AppStatistic) {}
   rpc RecordAppStatistic(RecordAppStatisticReq) returns (google.protobuf.Empty) {}
   rpc GetAppStatisticList(GetAppStatisticListReq) returns (GetAppStatisticListResp) {}
+
+   // --- api key statistic ---
+  rpc GetAPIKeyStatistic(GetAPIKeyStatisticReq) returns (APIKeyStatistic) {}
+  rpc GetAPIKeyStatisticList(GetAPIKeyStatisticListReq) returns (GetAPIKeyStatisticListResp) {}
+  rpc GetAPIKeyStatisticRecord(GetAPIKeyStatisticRecordReq) returns (GetAPIKeyStatisticRecordResp) {}
+  rpc RecordAPIKeyStatistic(RecordAPIKeyStatisticReq) returns (google.protobuf.Empty) {}
 }
+
 
 // 创建API Key请求
 message CreateApiKeyReq {
@@ -501,6 +508,108 @@ message AppStatisticItem {
   float failureRate = 6;
   float avgStreamCosts = 7;
   float avgNonStreamCosts = 8;
-  int32 streamCount = 9;       // 流式调用次数
-  int32 nonStreamCount = 10;   // 非流式调用次数
+  int32 streamCount = 9; // 流式调用次数
+  int32 nonStreamCount = 10; // 非流式调用次数
+}
+
+// --- api key statistic ---
+
+message GetAPIKeyStatisticReq {
+  string userId = 1;
+  string orgId = 2;
+  string startDate = 3;
+  string endDate = 4;
+  repeated string apiKeyIds = 5;
+  repeated string methodPaths = 6;
+}
+
+message APIKeyStatistic {
+  APIKeyStatisticOverview overview = 1;
+  APIKeyStatisticTrend trend = 2;
+}
+
+message APIKeyStatisticOverview {
+  APIKeyStatisticOverviewItem callCount = 1;
+  APIKeyStatisticOverviewItem callFailure = 2;
+  APIKeyStatisticOverviewItem avgStreamCosts = 3;
+  APIKeyStatisticOverviewItem avgNonStreamCosts = 4;
+  APIKeyStatisticOverviewItem streamCount = 5;
+  APIKeyStatisticOverviewItem nonStreamCount = 6;
+}
+
+message APIKeyStatisticOverviewItem {
+  float value = 1;
+  float periodOverPeriod = 2;
+}
+
+message APIKeyStatisticTrend {
+  common.StatisticChart apiCalls = 1;
+}
+
+message GetAPIKeyStatisticListReq {
+  string userId = 1;
+  string orgId = 2;
+  string startDate = 3;
+  string endDate = 4;
+  repeated string apiKeyIds = 5;
+  repeated string methodPaths = 6;
+  int32 pageNo = 7;
+  int32 pageSize = 8;
+}
+
+message GetAPIKeyStatisticListResp {
+  repeated APIKeyStatisticItem items = 1;
+  int32 total = 2;
+}
+
+message APIKeyStatisticItem {
+  string apiKeyId = 1;
+  string methodPath = 2;
+  int32 callCount = 3;
+  int32 callFailure = 4;
+  float avgStreamCosts = 5;
+  float avgNonStreamCosts = 6;
+  int32 streamCount = 7;
+  int32 nonStreamCount = 8;
+}
+
+message GetAPIKeyStatisticRecordReq {
+  string userId = 1;
+  string orgId = 2;
+  string startDate = 3;
+  string endDate = 4;
+  repeated string apiKeyIds = 5;
+  repeated string methodPaths = 6;
+  int32 pageNo = 7;
+  int32 pageSize = 8;
+}
+
+message GetAPIKeyStatisticRecordResp {
+  repeated APIKeyStatisticRecordItem items = 1;
+  int32 total = 2;
+}
+
+message APIKeyStatisticRecordItem {
+  string apiKeyId = 1;
+  string methodPath = 2;
+  int64 callTime = 3;
+  string responseStatus = 4;
+  int64 streamCosts = 5;
+  int64 nonStreamCosts = 6;
+  string requestBody = 7;
+  string responseBody = 8;
+}
+
+message RecordAPIKeyStatisticReq {
+  string userId = 1;
+  string orgId = 2;
+  string apiKeyId = 3;
+  string methodPath = 4;
+  int64 callTime = 5;
+  string httpStatus = 6;
+  bool isStream = 7;
+  int64 streamCosts = 8;
+  int64 nonStreamCosts = 9;
+  string requestBody = 10;
+  string responseBody = 11;
 }
