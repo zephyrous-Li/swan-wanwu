@@ -199,6 +199,7 @@
     }
 
     .name {
+      min-height: 22px;
       font-weight: bold;
       color: $create_card_text_color;
       font-size: 16px;
@@ -206,6 +207,7 @@
       text-overflow: ellipsis;
       display: -webkit-box;
       -webkit-box-orient: vertical;
+      line-height: 1;
       line-clamp: 1;
       -webkit-line-clamp: 1;
       position: relative;
