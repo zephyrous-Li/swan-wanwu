@@ -158,9 +158,10 @@ export default {
           display: flex;
           flex-direction: column;
           justify-content: space-between;
-          padding: 3px 0;
+          padding: 0 0 3px 0;
 
           .mcp_name {
+            min-height: 22px;
             display: block;
             font-size: 15px;
             font-weight: 700;
@@ -168,6 +169,7 @@ export default {
             white-space: nowrap;
             text-overflow: ellipsis;
             color: $create_card_text_color;
+            line-height: 1;
           }
 
           .mcp_from {
