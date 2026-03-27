@@ -444,7 +444,9 @@ func statisticAppStatsTrend(ctx context.Context, db *gorm.DB, userID, orgID, sta
 		"app_statistic_call_count_total",
 		"app_statistic_web_call_count",
 		"app_statistic_openapi_call_count",
-		"app_statistic_web_url_call_count",
+	}
+	if appType == constant.AppTypeAgent {
+		callTrendLineNames = append(callTrendLineNames, "app_statistic_web_url_call_count")
 	}
 	callTrendLines := buildChartLines(stats, dates,
 		func(r model.AppStatistic) string { return r.Date },
