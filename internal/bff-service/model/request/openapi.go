@@ -10,10 +10,11 @@ func (req *OpenAPIAgentCreateConversationRequest) Check() error {
 }
 
 type OpenAPIAgentChatRequest struct {
-	UUID           string `json:"uuid" validate:"required"`
-	ConversationID string `json:"conversation_id" validate:"required"`
-	Query          string `json:"query" validate:"required"`
-	Stream         bool   `json:"stream"`
+	UUID           string                 `json:"uuid" validate:"required"`
+	ConversationID string                 `json:"conversation_id" validate:"required"`
+	Query          string                 `json:"query" validate:"required"`
+	Stream         bool                   `json:"stream"`
+	FileInfo       []ConversionStreamFile `json:"file_info"`
 }
 
 func (req *OpenAPIAgentChatRequest) Check() error {

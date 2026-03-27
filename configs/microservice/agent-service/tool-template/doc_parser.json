@@ -1,47 +1,65 @@
 {
-    "api_schema": {
-        "info": {
-            "description": "用于解析并回答用户上传的docx、txt、xlsx各种类型文件内容的问题",
-            "title": "chatdoc",
-            "version": "1.0.0"
-        },
-        "openapi": "3.0.0",
-        "paths": {
-            "/v1/doc_pra": {
-                "post": {
-                    "description": "用于解析并回答用户上传的docx、txt、xlsx各种类型文件内容的问题",
-                    "summary": "chatdoc",
-                    "operationId": "chatdoc",
-                    "requestBody": {
-                        "content": {
-                            "application/json": {
-                                "schema": {
-                                    "properties": {
-                                        "query": {
-                                            "description": "用户提出的问题",
-                                            "type": "string"
-                                        },
-                                        "upload_file_url": {
-                                            "description": "文件下载链接",
-                                            "type": "string"
-                                        }
-                                    },
-                                    "required": [
-                                        "query",
-                                        "upload_file_url"
-                                    ],
-                                    "type": "object"
-                                }
-                            }
-                        }
+  "api_schema": {
+    "info": {
+      "description": "接收文档 URL，对文档进行解析并返回完整文档内容，不进行切分",
+      "title": "chatdoc",
+      "version": "1.0.0"
+    },
+    "openapi": "3.0.0",
+    "paths": {
+      "/v1/doc_parse": {
+        "post": {
+          "description": "接收文档 URL，对文档进行解析并返回完整文档内容，不进行切分",
+          "summary": "解析文档返回内容",
+          "operationId": "chatdoc",
+          "requestBody": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "properties": {
+                    "upload_file_url": {
+                      "description": "文件下载链接",
+                      "type": "string"
                     }
+                  },
+                  "required": [
+                    "upload_file_url"
+                  ],
+                  "type": "object"
                 }
+              }
             }
-        },
-        "servers": [
-            {
-                "url": "%s"
+          },
+          "responses": {
+            "200": {
+              "description": "解析成功",
+              "content": {
+                "application/json": {
+                  "schema": {
+                    "properties": {
+                      "code": {
+                        "type": "integer"
+                      },
+                      "data": {
+                        "type": "string"
+                      },
+                      "msg": {
+                        "type": "string"
+                      }
+                    },
+                    "type": "object"
+                  }
+                }
+              }
             }
-        ]
-    }
+          }
+        }
+      }
+    },
+    "servers": [
+      {
+        "url": "%s"
+      }
+    ]
+  }
 }
