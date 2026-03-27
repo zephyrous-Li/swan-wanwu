@@ -138,7 +138,9 @@
             !n.error &&
             (n.response ||
               n.msg_type ||
-              (n.subConversions && n.subConversions.length))
+              (n.subConversions && n.subConversions.length) ||
+              n.activeReasoning ||
+              (n.stableReasoningChunks && n.stableReasoningChunks.length))
           "
           class="session-answer"
           :id="'message-container' + i"
@@ -169,11 +171,25 @@
                   class="think_icon"
                 />
                 <div
-                  v-if="showDSBtn(n.response)"
+                  v-if="
+                    showDSBtn(n.response || '') ||
+                    n.activeReasoning ||
+                    (n.stableReasoningChunks && n.stableReasoningChunks.length)
+                  "
                   class="deepseek"
                   @click="toggle($event, i)"
                 >
-                  {{ n.thinkText }}
+                  {{
+                    n.activeReasoning ||
+                    (n.stableReasoningChunks && n.stableReasoningChunks.length)
+                      ? n.finish === 0 &&
+                        !n.response &&
+                        !n.activeResponse &&
+                        (!n.stableChunks || n.stableChunks.length === 0)
+                        ? n.thinkText || $t('agent.thinking')
+                        : $t('agent.thinked')
+                      : n.thinkText
+                  }}
                   <i
                     v-bind:class="{
                       'el-icon-arrow-down': !n.isOpen,
@@ -188,7 +204,9 @@
               <div
                 v-else-if="
                   !(n.messageSequence && n.messageSequence.length) &&
-                  showDSBtn(n.response)
+                  (showDSBtn(n.response || '') ||
+                    n.activeReasoning ||
+                    (n.stableReasoningChunks && n.stableReasoningChunks.length))
                 "
               >
                 <div class="deepseek" @click="toggle($event, i)">
@@ -196,7 +214,17 @@
                     :src="require('@/assets/imgs/think-icon.png')"
                     class="think_icon"
                   />
-                  {{ n.thinkText }}
+                  {{
+                    n.activeReasoning ||
+                    (n.stableReasoningChunks && n.stableReasoningChunks.length)
+                      ? n.finish === 0 &&
+                        !n.response &&
+                        !n.activeResponse &&
+                        (!n.stableChunks || n.stableChunks.length === 0)
+                        ? n.thinkText || $t('agent.thinking')
+                        : $t('agent.thinked')
+                      : n.thinkText
+                  }}
                   <i
                     v-bind:class="{
                       'el-icon-arrow-down': !n.isOpen,
@@ -320,6 +348,34 @@
                 </div>
 
                 <!-- 主会话-->
+                <!-- 透传的独立思考过程区域 -->
+                <template
+                  v-if="
+                    (n.stableReasoningChunks &&
+                      n.stableReasoningChunks.length) ||
+                    n.activeReasoning
+                  "
+                >
+                  <div
+                    class="answer-content no-order-chunk-answer reasoning-area ds-res"
+                    v-show="n.isOpen"
+                  >
+                    <section class="reasoning-area-content">
+                      <div
+                        v-for="(chunk, idx) in n.stableReasoningChunks"
+                        :key="'r-' + idx"
+                        class="chunk_stable"
+                        v-html="chunk"
+                      ></div>
+                      <div
+                        v-if="n.activeReasoning"
+                        class="chunk_active"
+                        v-html="n.activeReasoning"
+                      ></div>
+                    </section>
+                  </div>
+                </template>
+
                 <template
                   v-if="
                     (n.stableChunks && n.stableChunks.length) ||
@@ -384,7 +440,12 @@
           </div>
           <!--出处-->
           <div
-            v-if="n.searchList && n.searchList.length && n.finish === 1"
+            v-if="
+              n.searchList &&
+              n.searchList.length &&
+              n.finish === 1 &&
+              chatType !== 'agent'
+            "
             class="search-list"
           >
             <h2
@@ -445,7 +506,7 @@
                   </span>
                   <!-- <span @click="goPreview($event,m)" class="search-doc">查看全文</span> -->
                 </div>
-                <el-collapse-transition v-if="chatType !== 'agent'">
+                <el-collapse-transition>
                   <div v-show="m.collapse ? true : false" class="snippet">
                     <p v-html="m.snippet"></p>
                   </div>
@@ -720,16 +781,12 @@ export default {
     this.setupScrollListener();
     smoothscroll.polyfill();
     document.addEventListener('click', this.handleCitationClick);
-    document.addEventListener('click', this.handleCitationBtnClick);
     window.addEventListener('resize', this.handleWindowResize);
     this.updateAllFileScrollStates();
   },
   beforeDestroy() {
     if (this.handleCitationClick) {
       document.removeEventListener('click', this.handleCitationClick);
-    }
-    if (this.handleCitationBtnClick) {
-      document.removeEventListener('click', this.handleCitationBtnClick);
     }
     const container = document.getElementById(this.scrollContainerId);
     if (container) {
@@ -766,21 +823,6 @@ export default {
     },
     handleRecommendedQuestion(m) {
       this.$emit('handleRecommendedQuestion', m.question);
-    },
-    handleCitationBtnClick(e) {
-      const target = e.target;
-      if (target.classList.contains('citation-tips-content-icon')) {
-        const index = target.dataset.index;
-        const citation = Number(target.dataset.citation);
-        const historyItem = this.session_data.history[index];
-        if (historyItem && historyItem.searchList) {
-          const searchItem = historyItem.searchList[citation - 1];
-          if (searchItem) {
-            const j = historyItem.searchList.indexOf(searchItem);
-            this.collapseClick(historyItem, searchItem, j);
-          }
-        }
-      }
     },
     updateAllFileScrollStates() {
       this.session_data.history.forEach((item, index) => {
@@ -856,22 +898,38 @@ export default {
       return this.imgConfig.map(t => t.toLowerCase()).includes(type);
     },
     handleCitationClick(e) {
-      const target = e.target.closest('.citation');
-      const subConversionItem = target
-        ? target.closest('.sub-conversion-item')
-        : null;
+      const target = e.target;
 
-      if (subConversionItem && target.dataset.pid) {
+      // 处理引用气泡内部图标点击 (兼容代码，实际不触发)
+      if (target.classList.contains('citation-tips-content-icon')) {
+        const index = target.dataset.index;
+        const citation = Number(target.dataset.citation);
+        const historyItem = this.session_data.history[index];
+        if (historyItem && historyItem.searchList) {
+          const searchItem = historyItem.searchList[citation - 1];
+          if (searchItem) {
+            const j = historyItem.searchList.indexOf(searchItem);
+            this.collapseClick(historyItem, searchItem, j);
+          }
+        }
+        e.stopPropagation();
+        return;
+      }
+
+      // 处理引用标签点击
+      const citationTarget = target.closest('.citation');
+      if (!citationTarget) return;
+
+      const subConversionItem = citationTarget.closest('.sub-conversion-item');
+
+      if (subConversionItem && citationTarget.dataset.pid) {
         // 子会话引用点击处理
-        const pid = target.dataset.pid;
-        // 父会话在 history 中的索引
-        const parentsIndex = Number(target.dataset.parentsIndex);
-        // 引用tag
-        const citationIndex = Number(target.textContent);
+        const pid = citationTarget.dataset.pid;
+        const parentsIndex = Number(citationTarget.dataset.parentsIndex);
+        const citationIndex = Number(citationTarget.textContent);
         const historyItem = this.session_data.history[parentsIndex];
 
         if (historyItem && historyItem.subConversions) {
-          // 在对应的 history 项中找到该子会话实例
           const subConversion = historyItem.subConversions.find(
             a => a.id === pid,
           );
@@ -884,7 +942,6 @@ export default {
             const searchItem = subConversion.searchList[citationIndex - 1];
             this.collapseClick(subConversion, searchItem, citationIndex - 1);
 
-            // 视图滚动：在当前子会话容器范围内寻找对应的引用详情项
             this.$nextTick(() => {
               const targetSearchItem = subConversionItem.querySelector(
                 `.search-list-item[data-citation-index="${citationIndex}"]`,
@@ -903,6 +960,46 @@ export default {
         }
       }
 
+      // Agent 主会话引用（无 data-pid，来自顶层回答）跳转到对应的知识库子会话
+
+      if (this.chatType === 'agent' && !citationTarget.dataset.pid) {
+        const index = Number(citationTarget.textContent);
+        const parentsIndex = Number(citationTarget.dataset.parentsIndex);
+        const historyItem = this.session_data.history[parentsIndex];
+
+        if (historyItem && historyItem.subConversions) {
+          const knowledgeSub = historyItem.subConversions.find(
+            a =>
+              a.conversationType ===
+              AGENT_MESSAGE_CONFIG.MAIN_KNOWLEDGE.CONVERSATION_TYPE,
+          );
+
+          if (knowledgeSub) {
+            this.$set(knowledgeSub, 'isOpen', true);
+            this.$nextTick(() => {
+              const container = document.querySelector(
+                `.sub-conversion-item[data-pid="${knowledgeSub.id}"]`,
+              );
+              if (container) {
+                const targetSearchItem = container.querySelector(
+                  `.knowledge-item[data-index="${index - 1}"]`,
+                );
+                if (targetSearchItem) {
+                  targetSearchItem.scrollIntoView({
+                    behavior: 'smooth',
+                    block: 'center',
+                  });
+                }
+              }
+            });
+            e.stopPropagation();
+            return;
+          }
+        }
+        return;
+      }
+
+      // 通用引用点击处理
       this.$handleCitationClick(e, {
         sessionStatus: this.sessionStatus,
         sessionData: this.session_data,
@@ -1084,8 +1181,6 @@ export default {
      * @param {number} index - 当前条目在 searchList 中的索引
      */
     collapseClick(sourceContainer, searchItem, index) {
-      if (this.chatType === 'agent') return;
-
       this.$set(sourceContainer.searchList, index, {
         ...searchItem,
         collapse: !searchItem.collapse,
@@ -1790,7 +1885,7 @@ export default {
     height: calc(100% - 46px);
     flex: 1;
     overflow-y: auto !important;
-    padding: 20px;
+    padding: 20px 4px;
   }
   /*删除历史...*/
   .session-setting {
@@ -2007,5 +2102,9 @@ img.failed::after {
   display: flex;
   flex-direction: column;
   gap: 10px;
+}
+
+.reasoning-area {
+  margin-bottom: 8px;
 }
 </style>

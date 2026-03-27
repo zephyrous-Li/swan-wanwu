@@ -60,7 +60,7 @@
           <p class="docInfo_size">
             {{ $t('knowledgeManage.fileSize') }}：{{
               fileList[0]['size'] > 1024
-                ? (fileList[0]['size'] / (1024 * 1024)).toFixed(5) + ' MB'
+                ? (fileList[0]['size'] / (1024 * 1024)).toFixed(2) + ' MB'
                 : fileList[0]['size'] + ' bytes'
             }}
           </p>
@@ -845,8 +845,8 @@ export default {
     background-color: rgba(87, 104, 161, 0.08) !important;
     color: rgba(15, 21, 40, 0.82);
   }
-  i {
-    font-size: 18px;
+  ::v-deep i {
+    font-size: 16px;
   }
 }
 

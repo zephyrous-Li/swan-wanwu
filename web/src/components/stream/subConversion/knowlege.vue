@@ -33,9 +33,8 @@
           :ref="'snippet-' + knowledgeIndex"
           class="snippet"
           :class="{ 'is-collapsed': !expandedMap[knowledgeIndex] }"
-        >
-          {{ knowledgeItem.snippet }}
-        </div>
+          v-html="md.render(knowledgeItem.snippet || '')"
+        ></div>
         <div
           v-if="isOverflowMap[knowledgeIndex]"
           class="expand-btn"
@@ -54,6 +53,7 @@
 
 <script>
 import { formatScore } from '@/utils/util';
+import { md } from '@/mixins/markdown-it';
 export default {
   props: {
     /**
@@ -86,6 +86,7 @@ export default {
   },
   data() {
     return {
+      md: md,
       formatScore,
       expandedMap: {}, // 用于记录每个条目的展开状态
       isOverflowMap: {}, // 用于记录每个条目是否溢出

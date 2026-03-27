@@ -1,6 +1,6 @@
 <template>
   <div class="full-content flex">
-    <el-main class="scroll">
+    <el-main class="scroll" style="padding: 20px 0">
       <div class="smart-center" style="padding: 0">
         <!--开场白设置-->
         <div v-show="echo" class="session rl echo">
@@ -173,9 +173,13 @@ export default {
         });
         return;
       }
+      if (this.recommendTimer) {
+        clearInterval(this.recommendTimer);
+        this.recommendTimer = null;
+      }
       this.conversationId = '';
       this.echo = true;
-      this.clearPageHistory();
+      this.clearHistory();
       this.$emit('setHistoryStatus');
     },
     //切换对话
@@ -183,6 +187,10 @@ export default {
       if (this.sessionStatus === 0) {
         return;
       } else {
+        if (this.recommendTimer) {
+          clearInterval(this.recommendTimer);
+          this.recommendTimer = null;
+        }
         this.stopBtShow = false;
       }
 
@@ -713,6 +721,7 @@ export default {
     }
   },
   beforeDestroy() {
+    this.stopEventSource();
     if (this.recommendTimer) {
       clearInterval(this.recommendTimer);
       this.recommendTimer = null;

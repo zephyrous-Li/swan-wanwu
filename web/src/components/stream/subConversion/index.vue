@@ -294,9 +294,22 @@ export default {
     }
   }
 
-  .sub-conversion-content-wrapper {
+  ::v-deep .sub-conversion-content-wrapper {
     padding: 10px 12px;
     background: #edeef5;
+    p:has(img) {
+      display: flex;
+      flex-direction: column;
+      align-items: flex-start;
+    }
+    img {
+      align-self: center;
+      max-width: 100%;
+      max-height: 50vh;
+      min-height: 50px;
+      background: #ccc;
+      object-fit: contain;
+    }
   }
 
   .sub-conversion-content {
@@ -311,8 +324,19 @@ export default {
       color: #999;
     }
 
+    p:has(img) {
+      display: flex;
+      flex-direction: column;
+      align-items: flex-start;
+    }
+
     img {
-      width: 80% !important;
+      align-self: center;
+      width: 100% !important;
+      max-height: 50vh;
+      min-height: 50px;
+      background: #ccc;
+      object-fit: contain;
     }
 
     ::v-deep p {
@@ -337,6 +361,7 @@ export default {
       white-space: nowrap;
       margin-bottom: 2px;
       transform: scale(0.8);
+      top: 0;
     }
   }
 
