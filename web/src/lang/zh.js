@@ -1837,6 +1837,7 @@ export default {
     reqContent: '请求内容',
     resContent: '响应内容',
     finishReason: '结束原因',
+    all: '全部',
   },
   statistics: {
     title: '统计分析',
