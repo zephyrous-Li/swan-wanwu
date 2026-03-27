@@ -155,9 +155,6 @@ func (s *Service) GetMCPAvatar(ctx context.Context, req *mcp_service.GetMCPAvata
 	if req.AvatarPath == "" {
 		return nil, errStatus(errs.Code_MCPGetMCPAvatarErr, toErrStatus("mcp_get_mcp_avatar_err", "avatar path is empty"))
 	}
-	if err := util.ValidateFileName(req.AvatarPath); err != nil {
-		return nil, errStatus(errs.Code_MCPGetMCPAvatarErr, toErrStatus("mcp_get_mcp_avatar_err", "invalid avatar path"))
-	}
 	data, err := os.ReadFile(filepath.Join(config.ConfigDir, req.AvatarPath))
 	if err != nil {
 		return nil, errStatus(errs.Code_MCPGetMCPAvatarErr, toErrStatus("mcp_get_mcp_avatar_err", err.Error()))

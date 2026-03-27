@@ -34,6 +34,10 @@ type FileMergeResult struct {
 	FilePath          string
 }
 
+// ============================================================================
+// Public API Functions (公开接口函数)
+// ============================================================================
+
 func FileExt(filePath string) string {
 	if len(filePath) == 0 {
 		return ""
@@ -209,28 +213,6 @@ func AppendFileStream(filePath string, destinationFile *os.File) (int64, error) 
 	return byteCount, nil
 }
 
-func appendFile(reader *bufio.Reader, destinationFile *os.File) (byteCount int64, error error) {
-	buf := make([]byte, MaxScanTokenSize)
-	for {
-		n, err := reader.Read(buf)
-		if FileEOF(err) { // 检查是否到达文件末尾
-			break
-		}
-		if err != nil {
-			log.Errorf("Error reading file: %s", err)
-			return -1, err
-		}
-		line := buf[:n]
-		bytesWritten, err := destinationFile.Write(line)
-		if err != nil {
-			log.Errorf("appendFile error %s", err)
-			return -1, err
-		}
-		byteCount += int64(bytesWritten)
-	}
-	return byteCount, nil
-}
-
 func FileEOF(err error) bool {
 	return errors.Is(err, io.EOF) || (err != nil && err.Error() == "EOF")
 }
@@ -310,6 +292,33 @@ func FileData2FileHeader(filename string, fileData []byte) (*multipart.FileHeade
 	return fileHeaders[0], nil
 }
 
+// IsSafePath 检查用户提供的路径是否安全，防止路径遍历攻击
+//
+// 该函数验证 userPath 是否在 baseDir 范围内，防止恶意用户通过 "../" 等方式访问预期目录之外的文件
+// 主要用于处理用户可控的文件路径输入场景，如文件上传、下载、解压缩等操作
+//
+// 参数:
+//   - baseDir: 基础目录路径（安全边界），userPath 必须在此目录及其子目录内
+//   - userPath: 用户提供的相对路径或文件名，可以是包含目录结构的相对路径（如 "subdir/file.txt"）
+//
+// 返回值:
+//   - bool: 路径是否安全（true=安全，false=不安全）
+//   - string: 安全的绝对路径（如果验证通过），可以直接用于文件操作
+//   - error: 错误信息（如果路径不安全或处理失败）
+//
+// 安全检查包括：
+//  1. 路径遍历检查：禁止 ".." 等目录遍历字符
+//  2. 边界检查：确保最终路径在 baseDir 范围内
+//  3. 符号链接检查：解析符号链接后再次验证是否逃逸出基础目录
+//  4. 跨平台兼容：正确处理 Windows 和 Unix 系统的路径差异
+//
+// 使用示例:
+//
+//	safe, path, err := IsSafePath("/data/uploads", "user123/avatar.jpg")
+//	if !safe {
+//	    return errors.New("invalid file path")
+//	}
+//	// 使用 path 进行文件操作
 func IsSafePath(baseDir, userPath string) (bool, string, error) {
 	if userPath == "" {
 		return false, "", fmt.Errorf("path cannot be empty")
@@ -372,25 +381,39 @@ func IsSafePath(baseDir, userPath string) (bool, string, error) {
 	return true, resolvedPath, nil
 }
 
-func isPathWithinBase(base, target string) bool {
-	if target == base {
-		return true
-	}
-
-	if !strings.HasPrefix(target, base) {
-		return false
-	}
-
-	if len(target) > len(base) {
-		sep := string(filepath.Separator)
-		if !strings.HasPrefix(target[len(base):], sep) {
-			return false
-		}
-	}
-
-	return true
-}
-
+// ValidateFileName 验证文件名是否安全合法，防止文件名注入攻击
+//
+// 该函数用于验证单个文件名（不包含路径），确保文件名符合操作系统规范和安全要求
+// 适用于验证用户上传的文件名、导出文件名、资源标识符等场景
+//
+// 参数:
+//   - fileName: 待验证的文件名（仅文件名，不应包含路径分隔符）
+//
+// 返回值:
+//   - error: 文件名不合法时返回错误，合法则返回 nil
+//
+// 验证规则：
+//
+//  1. 基本检查：
+//     - 不能为空字符串
+//     - 不能是 "." 或 ".."
+//     - 长度不能超过 255 个字符（大多数文件系统限制）
+//     - 不能包含路径分隔符（/ 或 \）
+//
+//  2. 跨平台检查：
+//     - Windows: 禁止保留字符（<>:"/\|?*），不能以点或空格结尾，禁止保留设备名（CON、PRN、AUX、NUL、COM1-9、LPT1-9）
+//     - Unix/Linux: 禁止空字符（\x00）
+//
+// 注意事项：
+//   - 该函数仅验证文件名，不验证完整路径
+//   - 对于完整路径验证，应使用 IsSafePath 函数
+//   - 对于相对路径（包含目录结构），应先提取文件名部分再验证
+//
+// 使用示例:
+//
+//	if err := ValidateFileName(userInputFileName); err != nil {
+//	    return fmt.Errorf("invalid file name: %w", err)
+//	}
 func ValidateFileName(fileName string) error {
 	if fileName == "" {
 		return fmt.Errorf("filename cannot be empty")
@@ -421,6 +444,53 @@ func ValidateFileName(fileName string) error {
 	}
 
 	return validateUnixFileName(fileName)
+}
+
+// ============================================================================
+// Internal Helper Functions (内部辅助函数)
+// ============================================================================
+
+func appendFile(reader *bufio.Reader, destinationFile *os.File) (byteCount int64, error error) {
+	buf := make([]byte, MaxScanTokenSize)
+	for {
+		n, err := reader.Read(buf)
+		if FileEOF(err) { // 检查是否到达文件末尾
+			break
+		}
+		if err != nil {
+			log.Errorf("Error reading file: %s", err)
+			return -1, err
+		}
+		line := buf[:n]
+		bytesWritten, err := destinationFile.Write(line)
+		if err != nil {
+			log.Errorf("appendFile error %s", err)
+			return -1, err
+		}
+		byteCount += int64(bytesWritten)
+	}
+	return byteCount, nil
+}
+
+// isPathWithinBase 检查 target 路径是否在 base 目录内（包含 base 本身）
+// 用于 IsSafePath 的辅助函数，确保路径不会逃逸出基础目录
+func isPathWithinBase(base, target string) bool {
+	if target == base {
+		return true
+	}
+
+	if !strings.HasPrefix(target, base) {
+		return false
+	}
+
+	if len(target) > len(base) {
+		sep := string(filepath.Separator)
+		if !strings.HasPrefix(target[len(base):], sep) {
+			return false
+		}
+	}
+
+	return true
 }
 
 func validateWindowsFileName(fileName string) error {

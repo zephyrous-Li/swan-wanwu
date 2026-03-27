@@ -50,8 +50,11 @@ func setupTidb(execMode string) error {
 		if strings.Contains(cleanPath, "..") {
 			return fmt.Errorf("invalid sql file path: path traversal not allowed")
 		}
-		absPath, _ := filepath.Abs(sqlFile)
-		if !strings.HasPrefix(absPath, filepath.Dir(os.Args[0])) && !strings.HasPrefix(absPath, "/opt/") && !strings.HasPrefix(absPath, "/home/") {
+		absPath, err := filepath.Abs(sqlFile)
+		if err != nil {
+			return fmt.Errorf("failed to get absolute path for sql file: %w", err)
+		}
+		if !strings.HasPrefix(absPath, "/opt/") && !strings.HasPrefix(absPath, "/home/") {
 			log.Printf("warning: sql file path may be unsafe: %s", sqlFile)
 		}
 	}
