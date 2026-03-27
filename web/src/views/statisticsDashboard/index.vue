@@ -1,26 +1,57 @@
 <template>
-  <div class="page-wrapper" style="padding-top: 20px">
-    <div class="tabs" style="margin-top: 0">
-      <div :class="['tab', { active: tabActive === 0 }]" @click="tabClick(0)">
-        {{ $t('statisticsDashboard.model') }}
+  <div class="page-wrapper">
+    <div class="tabs tabs-spacing">
+      <div
+        v-for="item in tabList"
+        :key="item.type"
+        :class="['tab', { active: tabActive === item.type }]"
+        @click="tabClick(item.type)"
+      >
+        {{ item.name }}
       </div>
     </div>
 
-    <div v-if="tabActive === 0">
+    <div v-if="tabActive === STATISTIC.APP">
+      <App />
+    </div>
+
+    <div v-if="tabActive === STATISTIC.MODEL">
       <Model />
+    </div>
+
+    <div v-if="tabActive === STATISTIC.API">
+      <API />
     </div>
   </div>
 </template>
 
 <script>
-import Model from './components/model.vue';
+import Model from './components/model/model.vue';
+import App from './components/app/app.vue';
+import API from './components/api/api.vue';
+import { STATISTIC } from './constants';
 
 export default {
-  components: { Model },
+  components: { Model, App, API },
   data() {
     return {
+      STATISTIC,
       radio: '',
-      tabActive: 0,
+      tabActive: STATISTIC.APP,
+      tabList: [
+        {
+          name: this.$t('statisticsDashboard.app'),
+          type: STATISTIC.APP,
+        },
+        {
+          name: this.$t('statisticsDashboard.model'),
+          type: STATISTIC.MODEL,
+        },
+        {
+          name: 'API',
+          type: STATISTIC.API,
+        },
+      ],
     };
   },
   methods: {

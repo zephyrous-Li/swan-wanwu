@@ -126,32 +126,6 @@ export default {
         font-size: 18px;
       }
     }
-
-    .tabs {
-      display: flex;
-      font-size: 27px;
-      margin-top: 30px;
-      color: #fff;
-
-      .tab {
-        width: 1.63rem;
-        min-width: 163px;
-        margin-right: 20px;
-        border: 1px solid #fff;
-        cursor: pointer;
-
-        p:nth-child(1) {
-          font-size: 18px;
-          padding: 4px 0 3px 0;
-        }
-
-        p:nth-child(2) {
-          font-size: 12px;
-          font-weight: 400;
-          padding: 0 0 6px 0;
-        }
-      }
-    }
   }
 }
 

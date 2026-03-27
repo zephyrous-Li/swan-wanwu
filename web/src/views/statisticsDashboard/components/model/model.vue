@@ -1,5 +1,5 @@
 <template>
-  <div id="statistics_client" class="statistics_common list-common">
+  <div class="statistics_common list-common statistics_client_wrapper">
     <div>
       <div style="padding: 5px 24px">
         <label>{{ $t('statisticsDashboard.modelSelect') }}:</label>
@@ -21,7 +21,7 @@
         <el-select
           v-model="modelParams.models"
           :placeholder="$t('statisticsDashboard.model')"
-          class="no-border-select"
+          class="no-border-select scroll-select"
           style="margin-left: 15px; width: 600px"
           clearable
           multiple
@@ -29,8 +29,9 @@
         >
           <el-option
             v-for="item in modelList"
+            v-if="item.displayName"
             :key="item.modelId"
-            :label="item.displayName || item.model"
+            :label="item.displayName"
             :value="item.modelId"
           >
             <div class="model-option-content">
@@ -40,7 +41,7 @@
                   :src="convertModelIcon(item?.avatar.path)"
                 />
                 <span class="model-name">
-                  {{ item.displayName || item.model }}
+                  {{ item.displayName }}
                 </span>
               </div>
 
@@ -165,7 +166,7 @@ import UserEchart from '@/components/echart/userEchart.vue';
 import ModelList from './modelList.vue';
 import { avatarSrc, formatAmount, getModelDefaultIcon } from '@/utils/util.js';
 import { getModelData } from '@/api/statisticsDashboard';
-import { MODEL_TYPE } from '@/views/modelAccess/constants';
+import { MODEL_TYPE, LLM } from '@/views/modelAccess/constants';
 import { fetchModelList } from '@/api/modelAccess';
 
 export default {
@@ -181,8 +182,6 @@ export default {
       loading: false,
       content: {}, // 存储返回的总揽数据
       echartContent: {}, // 存储返回的echart数据
-      type: 'model',
-      concurrentUser: {},
       count: [
         {
           name: this.$t('statisticsDashboard.tokenTotals'),
@@ -242,12 +241,11 @@ export default {
         },
       ],
       searchShow: true,
-      timeout: null, // 防抖定时
       searchTime: {
         time: [],
       },
       modelParams: {
-        modelType: '',
+        modelType: LLM,
         models: [],
       },
     };
@@ -260,6 +258,9 @@ export default {
       };
     },
   },
+  mounted() {
+    this.fetchModels();
+  },
   methods: {
     formatAmount,
     formatParams(params) {
@@ -269,6 +270,12 @@ export default {
       };
     },
     async fetchModels() {
+      if (!this.modelParams.modelType) {
+        this.modelList = [];
+        this.modelParams.models = [];
+        return;
+      }
+
       const res = await fetchModelList({
         filterScope: '',
         modelType: this.modelParams.modelType,
@@ -311,267 +318,5 @@ export default {
 </script>
 <style lang="scss" scoped>
 @import '@/style/modelSelect.scss';
-.statistics_common {
-  position: relative;
-  height: 100%;
-  padding: 0;
-  /*background: #fff;*/
-  overflow: hidden;
-  z-index: 100;
-  .statistics_content_box {
-    position: relative;
-    height: 100%;
-    padding: 0 24px 0 24px;
-    overflow-y: auto;
-  }
-  .el-radio-button__inner {
-    cursor: pointer;
-    color: $color;
-  }
-  .el-radio-button {
-    &.is-active {
-      span {
-        color: #fff !important;
-        background: $color !important;
-      }
-    }
-    &.is-disabled {
-      span {
-        color: #999 !important;
-        box-shadow: none;
-      }
-    }
-  }
-  .el-backtop {
-    i {
-      font-size: 20px;
-      color: $color;
-    }
-  }
-  .my-pagination {
-    ::v-deep.el-pagination {
-      text-align: right;
-    }
-    .el-pagination.is-background .el-pager li:not(.disabled).active {
-      background-color: $color;
-      color: #fff;
-    }
-
-    .el-pagination .el-select .el-input .el-input__inner {
-      padding-right: 25px;
-      width: 109px;
-      border-color: #cccccc;
-    }
-
-    .el-pagination .el-select .el-input .el-input__inner {
-      padding-right: 25px;
-      width: 109px;
-      border-color: #cccccc;
-    }
-
-    .el-pager li:hover {
-      color: $color;
-    }
-    .el-pager li.active {
-      color: $color;
-      cursor: default;
-      border: 1px solid $color;
-    }
-
-    .el-pagination__editor.el-input .el-input__inner {
-      height: 28px;
-      background: #ffffff;
-      border: 1px solid #cccccc;
-    }
-    .el-pagination.is-background .el-pager li:not(.disabled):hover {
-      color: $color;
-    }
-  }
-  .el-empty {
-    position: absolute;
-    top: 50%;
-    left: 50%;
-    transform: translate(-50%, -50%);
-    padding: 0;
-  }
-  .el-empty__image {
-    width: 15%;
-  }
-}
-
-#statistics_client {
-  .item_box {
-    .client_const {
-      display: flex;
-      padding: 20px 0;
-      justify-content: space-between;
-      background: #fff;
-      margin-bottom: 20px;
-      border-radius: 5px;
-
-      span {
-        display: flex;
-        justify-content: center;
-        align-items: center;
-        width: calc(100% / 3);
-        height: 100px;
-        border-left: 1px solid #e8e9eb;
-
-        &:first-child {
-          border: 0;
-        }
-
-        img {
-          height: 70px;
-          margin-right: 20px;
-        }
-
-        div {
-          display: flex;
-          flex-direction: column;
-          justify-content: space-between;
-          height: 70px;
-          font-size: 15px;
-
-          strong {
-            font-size: 20px;
-          }
-        }
-      }
-    }
-
-    .defaultColor {
-      color: #abb0b5 !important;
-    }
-
-    .defaultBg {
-      background: #abb0b5 !important;
-    }
-
-    .data_echart_box {
-      display: flex;
-      justify-content: space-between;
-
-      .data_echart {
-        width: calc(50% - 10px);
-      }
-    }
-
-    .data_echart {
-      display: inline-block;
-      width: 100%;
-      position: relative;
-      margin-bottom: 20px;
-      background: #fff;
-      border-radius: 5px;
-
-      .title {
-        display: block;
-        margin-bottom: 20px;
-      }
-
-      .el-radio-group {
-        margin-bottom: 20px;
-      }
-    }
-
-    .dataOverview {
-      padding: 20px;
-      margin-bottom: 20px;
-      margin-top: 15px;
-      background: #fff;
-      flex: 1;
-      border-radius: 5px;
-      box-shadow: 0 2px 12px 0 rgba(0, 0, 0, 0.08);
-
-      .client_dataOverview_content {
-        display: flex;
-        flex-wrap: wrap;
-        justify-content: flex-start;
-        margin-top: 20px;
-
-        .card {
-          position: relative;
-          width: 24%;
-          height: 120px;
-          background: rgb(245, 246, 249);
-          border-radius: 4px;
-          padding: 15px 0;
-          margin-left: 0.5%;
-          margin-right: 0.5%;
-          margin-bottom: 20px;
-          display: flex;
-          flex-direction: column;
-          align-items: center;
-          justify-content: space-between;
-
-          &:nth-last-child(-n + 7) {
-            margin-bottom: 0;
-          }
-
-          span {
-            position: relative;
-
-            &:last-child {
-              display: flex;
-              align-items: center;
-              justify-content: space-between;
-              font-size: 12px;
-              color: rgb(171, 176, 181);
-            }
-
-            label {
-              color: #303133;
-              margin-left: 10px;
-              font-weight: bold;
-              font-size: 14px;
-            }
-
-            img {
-              width: 13px;
-              vertical-align: middle;
-            }
-          }
-
-          strong {
-            font-size: 15px;
-          }
-
-          i {
-            position: absolute;
-            width: 8px;
-            height: 8px;
-            border-radius: 50%;
-            top: 5px;
-            left: -13px;
-            z-index: 1;
-          }
-        }
-      }
-    }
-
-    .title {
-      position: relative;
-      font-size: 14px;
-      font-weight: bold;
-      padding-left: 10px;
-
-      &::after {
-        content: '';
-        width: 3px;
-        height: 15px;
-        background: $color;
-        position: absolute;
-        left: 0;
-        top: 50%;
-        transform: translate(0, -50%);
-      }
-
-      label {
-        font-size: 10px;
-        color: rgb(171, 176, 181);
-      }
-    }
-  }
-}
+@import '@/style/statisticsDashboard.scss';
 </style>

@@ -62,6 +62,7 @@ export default {
 };
 </script>
 <style lang="scss">
+@import '@/style/tabs.scss';
 .mcp-management {
   height: calc(100% - 50px);
 
@@ -80,28 +81,6 @@ export default {
       height: 1.6em;
       color: $color;
       vertical-align: -0.25em;
-    }
-  }
-
-  .mcp-tabs {
-    margin: 0 20px;
-    padding-top: 20px;
-
-    .mcp-tab {
-      display: inline-block;
-      vertical-align: middle;
-      width: 160px;
-      height: 40px;
-      border-bottom: 1px solid #333;
-      line-height: 40px;
-      text-align: center;
-      cursor: pointer;
-    }
-
-    .active {
-      background: #333;
-      color: #fff;
-      font-weight: bold;
     }
   }
 
@@ -172,9 +151,10 @@ export default {
           display: flex;
           flex-direction: column;
           justify-content: space-between;
-          padding: 3px 0;
+          padding: 0 0 3px 0;
 
           .mcp_name {
+            min-height: 22px;
             display: block;
             font-size: 15px;
             font-weight: 700;
@@ -182,6 +162,7 @@ export default {
             white-space: nowrap;
             text-overflow: ellipsis;
             color: $create_card_text_color;
+            line-height: 1;
           }
 
           .mcp_from {

@@ -38,7 +38,7 @@
         >
           <div class="card-title">
             <img
-              class="card-logo"
+              class="common-card-logo"
               :src="
                 item.avatar && item.avatar.path
                   ? avatarSrc(item.avatar.path)
@@ -144,11 +144,6 @@ export default {
 };
 </script>
 <style lang="scss">
-.card-logo {
-  width: 50px;
-  height: 50px;
-  object-fit: cover;
-}
 .mcp-content-box .noData {
   width: 100%;
   text-align: center;

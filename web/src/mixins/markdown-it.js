@@ -54,3 +54,7 @@ export const md = MarkdownIt({
 });
 
 md.use(mk, { throwOnError: false, errorColor: '#000000', output: 'mathml' });
+
+// 禁用缩进代码块（Indented Code Block）规则
+// 解决流式输出中因格式化产生的行首空格导致 Markdown 语法（如加粗、标题等）失效的问题
+md.disable('code');

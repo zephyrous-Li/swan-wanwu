@@ -6,17 +6,11 @@
       <span class="page-title-name">{{ $t('menu.setting') }}</span>
     </div>
     <!-- tabs: UI 改版统计分析、OAuth 提出到菜单，无需切换 tab -->
-    <div class="setting-tabs" v-if="checkPerm(settingPerm)">
-      <div
-        :class="['setting-tab', { active: tabActive === 0 }]"
-        @click="tabClick(0)"
-      >
+    <div class="tabs tabs-spacing" v-if="checkPerm(settingPerm)">
+      <div :class="['tab', { active: tabActive === 0 }]" @click="tabClick(0)">
         {{ $t('org.title') }}
       </div>
-      <div
-        :class="['setting-tab', { active: tabActive === 1 }]"
-        @click="tabClick(1)"
-      >
+      <div :class="['tab', { active: tabActive === 1 }]" @click="tabClick(1)">
         {{ $t('infoSetting.title') }}
       </div>
     </div>
@@ -37,7 +31,7 @@
       <Role v-if="radio === 'role'" />
       <Org v-if="radio === 'org'" />
     </div>
-    <div v-if="tabActive === 1" style="margin: 30px 20px 0 20px">
+    <div v-if="tabActive === 1" style="margin: 16px 20px 0 20px">
       <InfoSetting />
     </div>
   </div>
@@ -95,6 +89,7 @@ export default {
 </script>
 
 <style lang="scss" scoped>
+@import '@/style/tabs.scss';
 .tab-span {
   display: inline-block;
   vertical-align: middle;
@@ -106,8 +101,9 @@ export default {
 }
 .tab-span.is-active {
   color: $color;
-  background: #fff;
+  background: $color_opacity;
   font-weight: bold;
+  border-radius: 16px;
 }
 .page-title {
   .el-icon-arrow-left {
@@ -115,25 +111,6 @@ export default {
     font-size: 15px;
     cursor: pointer;
     color: $color_title;
-  }
-}
-.setting-tabs {
-  margin: 20px;
-  .setting-tab {
-    display: inline-block;
-    vertical-align: middle;
-    width: 160px;
-    height: 40px;
-    border-bottom: 1px solid #333;
-    font-size: 14px;
-    line-height: 40px;
-    text-align: center;
-    cursor: pointer;
-  }
-  .active {
-    background: #333;
-    color: #fff;
-    font-weight: bold;
   }
 }
 </style>

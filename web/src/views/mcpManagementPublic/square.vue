@@ -1,6 +1,6 @@
 <template>
   <div class="page-wrapper mcp-management">
-    <div class="common_bg">
+    <div class="common_bg" style="padding-top: 10px">
       <!--<div class="page-title">
         <img class="page-title-img" src="@/assets/imgs/mcp_menu.svg" alt="" />
         <span class="page-title-name">{{ $t('menu.mcp') }}</span>
@@ -41,7 +41,7 @@
                   >
                     <div class="card-title">
                       <img
-                        class="card-logo"
+                        class="common-card-logo"
                         :src="
                           item.avatar && item.avatar.path
                             ? avatarSrc(item.avatar.path)
@@ -162,8 +162,9 @@ export default {
     }
     .tab-span.is-active {
       color: $color;
-      background: #fff;
+      background: $color_opacity;
       font-weight: bold;
+      border-radius: 16px;
     }
     .mcp-main {
       display: flex;
@@ -243,8 +244,9 @@ export default {
                     display: flex;
                     flex-direction: column;
                     justify-content: space-between;
-                    padding: 3px 0;
+                    padding: 0 0 3px 0;
                     .mcp_name {
+                      min-height: 22px;
                       display: block;
                       font-size: 15px;
                       font-weight: 700;
@@ -252,6 +254,7 @@ export default {
                       white-space: nowrap;
                       text-overflow: ellipsis;
                       color: $create_card_text_color;
+                      line-height: 1;
                     }
                     .mcp_from {
                       label {
@@ -302,11 +305,6 @@ export default {
           }
         }
       }
-    }
-    .card-logo {
-      width: 50px;
-      height: 50px;
-      object-fit: cover;
     }
   }
   .card-search {

@@ -1,14 +1,11 @@
 <template>
   <div class="page-wrapper modelAccess">
-    <div
-      class="table-wrap list-common wrap-fullheight"
-      style="padding-top: 20px"
-    >
+    <div class="table-wrap list-common wrap-fullheight">
       <!--<div class="page-title">
         <img class="page-title-img" src="@/assets/imgs/model.svg" alt="" />
         <span class="page-title-name">{{ $t('modelAccess.title') }}</span>
       </div>-->
-      <div class="tabs" style="margin: 0 20px">
+      <div class="tabs tabs-x-top">
         <div
           v-for="item in isSystem
             ? tabList.filter(({ type }) => !type)
@@ -156,7 +153,7 @@
           >
             <div class="card-top">
               <img
-                class="card-img"
+                class="common-card-logo ml-10"
                 :src="
                   item.avatar && item.avatar.path
                     ? avatarSrc(item.avatar.path)
@@ -544,16 +541,6 @@ export default {
     display: flex;
     align-items: center;
     justify-content: space-between;
-  }
-  .card-img {
-    width: 46px;
-    height: 46px;
-    object-fit: cover;
-    background: #ffffff;
-    box-shadow: 0 1px 4px 0 rgba(0, 0, 0, 0.15);
-    border-radius: 8px;
-    border: 0 solid #d9d9d9;
-    margin-right: 10px;
   }
   .card-title {
     width: calc(100% - 90px);

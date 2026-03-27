@@ -42,7 +42,7 @@
         >
           <div class="card-title">
             <img
-              class="card-logo"
+              class="common-card-logo"
               :src="
                 item.avatar && item.avatar.path
                   ? avatarSrc(item.avatar.path)
@@ -193,11 +193,6 @@ export default {
   .radio-box {
     margin: 20px 0 0 0 !important;
   }
-}
-.card-logo {
-  width: 50px;
-  height: 50px;
-  object-fit: cover;
 }
 .mcp-content-box .noData {
   width: 100%;

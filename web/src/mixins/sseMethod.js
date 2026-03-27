@@ -55,7 +55,12 @@ export default {
       _subConversionsMap: null, // 子会话存储 Map
       _subConversionProcessors: null, // 子会话处理器 Map
       responseFiles: [], // 用于存储 SSE 返回的附件文件列表
-      _isInReasoning: false, // 是否处于思考过程中
+
+      // ---- 推理内容（reasoning_content）流处理相关 ----
+      _isInReasoning: false, // 客户端侧：推理打字动画是否仍在进行中
+      _reasoningSSEDone: false, // 服务端侧：SSE 是否已停止推送 reasoning_content
+      _pendingOutputQueue: [], // 正文缓冲队列：推理动画完毕前暂存所有正文帧
+      _reasoningPrint: null, // 推理专用打字机实例（Print）
     };
   },
   created() {
@@ -269,6 +274,120 @@ export default {
         rest,
       });
     },
+
+    /**
+     * 初始化推理内容流处理器
+     * 创建独立的 reasoningProcessor 和 _reasoningPrint，并初始化缓冲状态
+     * @param {Object} options
+     * @param {number} options.lastIndex - 当前会话索引
+     * @param {Object} options.md - markdown-it 实例
+     * @param {Function} options.parseSub - 引用解析函数
+     * @param {Function} options.convertLatexSyntax - LaTeX 转换函数
+     * @returns {StreamProcessor} 推理专用流处理器实例
+     */
+    _initReasoningStream({ lastIndex, md, parseSub, convertLatexSyntax }) {
+      // 初始化状态标志位
+      this._isInReasoning = false;
+      this._reasoningSSEDone = false;
+      this._pendingOutputQueue = [];
+
+      const reasoningProcessor = new StreamProcessor({
+        lastIndex,
+        md: md,
+        parseSub,
+        convertLatexSyntax,
+      });
+
+      // 思考打字机：onPrintEnd 在队列暂时为空时就会触发（可能多次）
+      // 只有服务端也确认完成推理推送后，这次清空才是真正结束
+      this._reasoningPrint = new Print({
+        onPrintEnd: () => {
+          if (this._reasoningSSEDone) {
+            this._flushPendingOutput();
+          }
+        },
+      });
+
+      return reasoningProcessor;
+    },
+
+    /**
+     * 清空正文缓冲队列，将所有暂存的正文内容送入正文打字机
+     * 由 _reasoningPrint.onPrintEnd 或检测到打字机空载时主动调用
+     */
+    _flushPendingOutput() {
+      this._isInReasoning = false;
+      if (this._pendingOutputQueue && this._pendingOutputQueue.length) {
+        this._pendingOutputQueue.forEach(item => {
+          this._print.print(item.sentence, item.commonData, item.cb);
+        });
+        this._pendingOutputQueue = [];
+      }
+    },
+
+    /**
+     * 对每个 SSE 消息帧进行推理/正文路由分发
+     * 根据 _isInReasoning 状态决定正文数据走直通路径还是缓冲队列
+     * @param {Object} options
+     * @param {string} options.reasoning - 当前帧的推理内容
+     * @param {string} options.output - 当前帧的正文内容
+     * @param {number} options.finish - 当前帧的完成状态
+     * @param {Object} options.commonData - 当前帧的公共数据
+     * @param {Function} options.doRenderReasoning - 推理内容打字机回调
+     * @param {Function} options.doRenderMain - 正文内容打字机回调
+     */
+    _dispatchReasoningOrOutput({
+      reasoning,
+      output,
+      finish,
+      commonData,
+      doRenderReasoning,
+      doRenderMain,
+    }) {
+      // 推理帧：首次出现时激活缓冲路径
+      if (reasoning) {
+        if (!this._isInReasoning) {
+          this._isInReasoning = true;
+        }
+        this._reasoningPrint.print(
+          { response: reasoning, finish },
+          commonData,
+          doRenderReasoning,
+        );
+      }
+
+      // 正文帧（含 finish 结束帧）
+      if (output || (!reasoning && [1, 2].includes(finish))) {
+        const mainSentence = { response: output || '', finish };
+
+        // 首次收到 output，服务端侧推理结束
+        if (output && !this._reasoningSSEDone) {
+          this._reasoningSSEDone = true;
+          // 情况B：打字机恰好已为空（全部打完但 onPrintEnd 已被忽略过），主动触发清空
+          if (
+            this._isInReasoning &&
+            this._reasoningPrint.sIndex >=
+              this._reasoningPrint.sentenceArr.length &&
+            this._reasoningPrint.printStatus === 0
+          ) {
+            this._flushPendingOutput();
+          }
+        }
+
+        if (this._isInReasoning) {
+          // 思考动画还未完毕：正文进缓冲等待
+          this._pendingOutputQueue.push({
+            sentence: mainSentence,
+            commonData,
+            cb: doRenderMain,
+          });
+        } else {
+          // 无思考内容或思考已完毕：直通送入正文打字机
+          this._print.print(mainSentence, commonData, doRenderMain);
+        }
+      }
+    },
+
     doragSend() {
       this.stopBtShow = true;
       this.isStoped = false;
@@ -303,6 +422,13 @@ export default {
 
       // 初始化流处理器
       const processor = new StreamProcessor({
+        lastIndex,
+        md,
+        parseSub,
+        convertLatexSyntax,
+      });
+      // 初始化推理流（reasoningProcessor 及相关缓冲状态由 _initReasoningStream 统一管理）
+      const reasoningProcessor = this._initReasoningStream({
         lastIndex,
         md,
         parseSub,
@@ -376,7 +502,6 @@ export default {
 
               if (data.code === 0 || data.code === 1) {
                 //finish 0：进行中  1：关闭   2:敏感词关闭
-                let _sentence = '';
                 const reasoning =
                   data.data && data.data.reasoning_content
                     ? data.data.reasoning_content
@@ -384,67 +509,59 @@ export default {
                 const output =
                   data.data && data.data.output ? data.data.output : '';
 
-                if (reasoning) {
-                  if (!this._isInReasoning) {
-                    _sentence = `<think>${reasoning}`;
-                    this._isInReasoning = true;
-                  } else {
-                    _sentence = reasoning;
-                  }
-                } else if (output) {
-                  if (this._isInReasoning) {
-                    _sentence = `</think>${output}`;
-                    this._isInReasoning = false;
-                  } else {
-                    _sentence = output;
-                  }
-                }
-
-                // 如果是最后一条消息且仍处于思考中，强制闭合
-                if (data.finish === 1 && this._isInReasoning) {
-                  _sentence += '</think>';
-                  this._isInReasoning = false;
-                }
-
-                this._print.print(
-                  {
-                    response: _sentence,
-                    finish: data.finish,
-                  },
-                  commonData,
-                  (worldObj, search_list) => {
-                    this.setStoreSessionStatus(0);
+                const doRender = (worldObj, search_list, field) => {
+                  this.setStoreSessionStatus(0);
+                  if (field === 'main') {
                     processor.updateSearchList(search_list);
                     processor.append(worldObj.world);
+                  } else {
+                    reasoningProcessor.updateSearchList(search_list);
+                    reasoningProcessor.append(worldObj.world);
+                  }
 
-                    const renderResult = processor.getRenderResult();
+                  const renderResult = processor.getRenderResult();
+                  const reasoningRenderResult =
+                    reasoningProcessor.getRenderResult();
 
-                    let fillData = {
-                      ...commonData,
-                      ...renderResult,
-                      finish: worldObj.finish,
-                      searchList: search_list
-                        ? search_list.map(n => ({
-                            ...n,
-                            snippet: n.snippet ? md.render(n.snippet) : '',
-                          }))
-                        : [],
-                    };
+                  let fillData = {
+                    ...commonData,
+                    ...renderResult,
+                    activeReasoning: reasoningRenderResult.activeResponse || '',
+                    stableReasoningChunks:
+                      reasoningRenderResult.stableChunks || [],
+                    finish: worldObj.finish,
+                    searchList: search_list
+                      ? search_list.map(n => ({
+                          ...n,
+                          snippet: n.snippet ? md.render(n.snippet) : '',
+                        }))
+                      : commonData.searchList,
+                  };
 
-                    if (worldObj.finish === 2) {
-                      fillData.response = this.$t('sse.sensitiveTips');
-                      sessionCom.replaceLastData(lastIndex, fillData);
-                      this.$nextTick(() => sessionCom.scrollBottom());
-                      this.setStoreSessionStatus(-1);
-                    } else {
-                      sessionCom.replaceLastData(lastIndex, fillData);
-                    }
+                  if (worldObj.finish === 2) {
+                    fillData.response = this.$t('sse.sensitiveTips');
+                    sessionCom.replaceLastData(lastIndex, fillData);
+                    this.$nextTick(() => sessionCom.scrollBottom());
+                    this.setStoreSessionStatus(-1);
+                  } else {
+                    sessionCom.replaceLastData(lastIndex, fillData);
+                  }
 
-                    if (worldObj.isEnd && worldObj.finish === 1) {
-                      this.setStoreSessionStatus(-1);
-                    }
-                  },
-                );
+                  if (worldObj.isEnd && worldObj.finish === 1) {
+                    this.setStoreSessionStatus(-1);
+                  }
+                };
+
+                this._dispatchReasoningOrOutput({
+                  reasoning,
+                  output,
+                  finish: data.finish,
+                  commonData,
+                  doRenderReasoning: (worldObj, search_list) =>
+                    doRender(worldObj, search_list, 'reasoning'),
+                  doRenderMain: (worldObj, search_list) =>
+                    doRender(worldObj, search_list, 'main'),
+                });
               } else if (data.code === 7 || data.code === -1) {
                 this.setStoreSessionStatus(-1);
                 sessionCom.replaceLastData(lastIndex, {
@@ -677,7 +794,7 @@ export default {
                 // 更新消息序列
                 let sequence =
                   sessionCom.getSessionData()['history'][lastIndex]
-                    .messageSequence || [];
+                    ?.messageSequence || [];
                 if (data.order !== undefined && data.order !== null) {
                   let currentSubItem = sequence.find(
                     item => item.type === 'sub' && item.id === id,
@@ -749,7 +866,7 @@ export default {
                     // 更新消息序列
                     let sequence =
                       sessionCom.getSessionData()['history'][lastIndex]
-                        .messageSequence || [];
+                        ?.messageSequence || [];
 
                     if (data.order !== undefined && data.order !== null) {
                       let currentMainItem = sequence.find(
@@ -866,6 +983,14 @@ export default {
       };
       this.$refs['session-com'].pushHistory(params);
       let endStr = '';
+      // 初始化推理流处理器
+      const reasoningProcessor = this._initReasoningStream({
+        lastIndex,
+        md,
+        parseSub,
+        convertLatexSyntax,
+      });
+
       this._print = new Print({
         onPrintEnd: () => {
           // this.setStoreSessionStatus(-1)
@@ -912,19 +1037,17 @@ export default {
               } catch (error) {
                 return; // 如果解析失败，直接返回，不处理这条消息
               }
-              if (
-                Array.isArray(data.choices) &&
-                data.choices[0] &&
-                data.choices[0].delta
-              ) {
-                data.response = data.choices[0].delta.content;
-                data.finish =
-                  data.choices[0].finish_reason === 'stop' ||
-                  data.choices[0].delta.content === 'stop';
-              } else {
-                data.response = '';
-                data.finish = true;
-              }
+
+              const choices = data.choices && data.choices[0];
+              const delta = (choices && choices.delta) || {};
+              const reasoning = delta.reasoning_content || '';
+              const output = delta.content || '';
+              // 对齐原逻辑的兜底：如果没有 choices 或符合 stop 条件，标识为结束
+              const isFinish =
+                !choices ||
+                choices.finish_reason === 'stop' ||
+                delta.content === 'stop';
+
               this.setStoreSessionStatus(0);
               this.sseResponse = data;
               //待替换的数据，需要前端组装
@@ -956,40 +1079,67 @@ export default {
                 };
                 this.$refs['session-com'].replaceLastData(lastIndex, fillData);
               } else {
-                //finish 0：进行中  1：关闭   2:敏感词关闭
-                this._print.print(
-                  {
-                    response: data.response,
-                    finish: data.finish,
-                  },
+                // 定义推理内容渲染逻辑
+                const doRenderReasoning = worldObj => {
+                  this.setStoreSessionStatus(0);
+                  reasoningProcessor.append(worldObj.world);
+                  const reasoningRenderResult =
+                    reasoningProcessor.getRenderResult();
+                  let fillData = {
+                    ...commonData,
+                    activeReasoning: reasoningRenderResult.activeResponse || '',
+                    stableReasoningChunks:
+                      reasoningRenderResult.stableChunks || [],
+                    finish: 0,
+                  };
+                  this.$refs['session-com'].replaceLastData(
+                    lastIndex,
+                    fillData,
+                  );
+                };
+
+                // 定义正文渲染逻辑（保持原有非分片拼接特性）
+                const doRenderMain = (worldObj, search_list) => {
+                  this.setStoreSessionStatus(0);
+                  const reasoningRenderResult =
+                    reasoningProcessor.getRenderResult();
+                  endStr += worldObj.world;
+                  endStr = convertLatexSyntax(endStr);
+                  endStr = parseSub(endStr, lastIndex);
+                  let fillData = {
+                    ...commonData,
+                    activeReasoning: reasoningRenderResult.activeResponse || '',
+                    stableReasoningChunks:
+                      reasoningRenderResult.stableChunks || [],
+                    response: md.render(endStr),
+                    oriResponse: endStr,
+                    finish: worldObj.finish ? 1 : 0,
+                    searchList:
+                      search_list && search_list.length
+                        ? search_list.map(n => ({
+                            ...n,
+                            snippet: n.snippet ? md.render(n.snippet) : '',
+                          }))
+                        : [],
+                  };
+                  this.$refs['session-com'].replaceLastData(
+                    lastIndex,
+                    fillData,
+                  );
+                  if (worldObj.isEnd && worldObj.finish) {
+                    this.setStoreSessionStatus(-1);
+                  }
+                };
+
+                // 分发处理：如果是推理内容，或者需要缓冲的正文
+                this._dispatchReasoningOrOutput({
+                  reasoning,
+                  output,
+                  finish: isFinish ? 1 : 0,
                   commonData,
-                  (worldObj, search_list) => {
-                    this.setStoreSessionStatus(0);
-                    endStr += worldObj.world;
-                    endStr = convertLatexSyntax(endStr);
-                    endStr = parseSub(endStr, lastIndex);
-                    let fillData = {
-                      ...commonData,
-                      response: md.render(endStr),
-                      oriResponse: endStr,
-                      finish: worldObj.finish,
-                      searchList:
-                        search_list && search_list.length
-                          ? search_list.map(n => ({
-                              ...n,
-                              snippet: n.snippet ? md.render(n.snippet) : '',
-                            }))
-                          : [],
-                    };
-                    this.$refs['session-com'].replaceLastData(
-                      lastIndex,
-                      fillData,
-                    );
-                    if (worldObj.isEnd && worldObj.finish) {
-                      this.setStoreSessionStatus(-1);
-                    }
-                  },
-                );
+                  doRenderReasoning,
+                  doRenderMain,
+                });
               }
             }
           },
@@ -1419,7 +1569,7 @@ export default {
                 // 更新消息序列
                 let sequence =
                   sessionCom.getSessionData()['history'][lastIndex]
-                    .messageSequence || [];
+                    ?.messageSequence || [];
                 if (data.order !== undefined && data.order !== null) {
                   let currentSubItem = sequence.find(
                     item =>
@@ -1495,7 +1645,7 @@ export default {
                     // 更新消息序列
                     let sequence =
                       sessionCom.getSessionData()['history'][lastIndex]
-                        .messageSequence || [];
+                        ?.messageSequence || [];
 
                     if (data.order !== undefined && data.order !== null) {
                       let currentMainItem = sequence.find(

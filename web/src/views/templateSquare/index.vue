@@ -13,11 +13,11 @@
         <span class="page-title-name">{{ $t('menu.templateSquare') }}</span>
       </div>-->
       <!-- tabs -->
-      <div class="templateSquare-tabs">
+      <div class="tabs tabs-spacing">
         <div
           v-for="item in tabList"
           :key="item.type"
-          :class="['templateSquare-tab', { active: type === item.type }]"
+          :class="['tab', { active: type === item.type }]"
           @click="tabClick(item.type)"
         >
           {{ item.name }}
@@ -79,31 +79,9 @@ export default {
 };
 </script>
 <style lang="scss">
+@import '@/style/tabs.scss';
 .templateSquare {
   width: 100%;
   height: 100%;
-
-  .templateSquare-tabs {
-    margin: 0 20px;
-    padding-top: 20px;
-    padding-bottom: 10px;
-
-    .templateSquare-tab {
-      display: inline-block;
-      vertical-align: middle;
-      width: 160px;
-      height: 40px;
-      border-bottom: 1px solid #333;
-      line-height: 40px;
-      text-align: center;
-      cursor: pointer;
-    }
-
-    .active {
-      background: #333;
-      color: #fff;
-      font-weight: bold;
-    }
-  }
 }
 </style>

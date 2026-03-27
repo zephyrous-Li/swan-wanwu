@@ -63,3 +63,17 @@
   display: block;
   z-index: 999;
 }
+
+// 公共卡片logo
+.common-card-logo {
+  width: 46px;
+  height: 46px;
+  object-fit: cover;
+  background: #ffffff;
+  box-shadow: 0 1px 4px 0 rgba(0, 0, 0, 0.15);
+  border-radius: 8px;
+}
+
+.ml-10 {
+  margin-right: 10px;
+}

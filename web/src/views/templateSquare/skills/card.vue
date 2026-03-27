@@ -2,7 +2,7 @@
   <div class="card" @click.stop="handleClick">
     <div class="card-title">
       <img
-        class="card-logo"
+        class="common-card-logo"
         v-if="info.avatar && info.avatar.path"
         :src="avatarSrc(info.avatar.path)"
       />
@@ -128,8 +128,9 @@ export default {
       display: flex;
       flex-direction: column;
       justify-content: space-between;
-      padding: 3px 0;
+      padding: 0 0 3px 0;
       .mcp_name {
+        min-height: 22px;
         display: block;
         font-size: 15px;
         font-weight: 700;
@@ -137,6 +138,7 @@ export default {
         white-space: nowrap;
         text-overflow: ellipsis;
         color: $create_card_text_color;
+        line-height: 1;
       }
       .mcp_from {
         label {
@@ -188,11 +190,6 @@ export default {
       }
     }
   }
-}
-.card-logo {
-  width: 50px;
-  height: 50px;
-  object-fit: cover;
 }
 
 .card-bottom-right {

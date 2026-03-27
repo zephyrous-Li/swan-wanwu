@@ -19,8 +19,9 @@
     }
     .tab-span.is-active {
       color: $color;
-      background: #fff;
+      background: $color_opacity;
       font-weight: bold;
+      border-radius: 16px;
     }
     .tempSquare-main {
       display: flex;
@@ -99,8 +100,9 @@
                     display: flex;
                     flex-direction: column;
                     justify-content: space-between;
-                    padding: 3px 0;
+                    padding: 0 0 3px 0;
                     .mcp_name {
+                      min-height: 22px;
                       display: block;
                       font-size: 15px;
                       font-weight: 700;
@@ -108,6 +110,7 @@
                       white-space: nowrap;
                       text-overflow: ellipsis;
                       color: $create_card_text_color;
+                      line-height: 1;
                     }
                     .mcp_from {
                       label {
@@ -177,9 +180,12 @@
       }
     }
     .card-logo {
-      width: 50px;
-      height: 50px;
+      width: 46px;
+      height: 46px;
       object-fit: cover;
+      background: #ffffff;
+      box-shadow: 0 1px 4px 0 rgba(0, 0, 0, 0.15);
+      border-radius: 8px;
     }
   }
   .card-search {
