@@ -11,6 +11,7 @@ import (
 	"github.com/UnicomAI/wanwu/internal/bff-service/model/request"
 	"github.com/UnicomAI/wanwu/internal/bff-service/pkg/ahocorasick"
 	"github.com/UnicomAI/wanwu/pkg/constant"
+	gin_util "github.com/UnicomAI/wanwu/pkg/gin-util"
 	grpc_util "github.com/UnicomAI/wanwu/pkg/grpc-util"
 	sse_util "github.com/UnicomAI/wanwu/pkg/sse-util"
 	"github.com/UnicomAI/wanwu/pkg/util"
@@ -18,6 +19,7 @@ import (
 )
 
 type ragChatStreamParams struct {
+	ctx               *gin.Context
 	startTime         time.Time
 	firstTokenLatency int64
 	hasRecorded       bool
@@ -26,7 +28,7 @@ type ragChatStreamParams struct {
 
 // ChatRagStream rag私域问答
 func ChatRagStream(ctx *gin.Context, userId, orgId string, req request.ChatRagRequest, needLatestPublished bool, source string) (err error) {
-	streamParams := &ragChatStreamParams{startTime: time.Now()}
+	streamParams := &ragChatStreamParams{ctx: ctx, startTime: time.Now()}
 	defer func() {
 		if source != constant.AppStatisticSourceDraft {
 			RecordAppStatistic(ctx.Request.Context(), userId, orgId, req.RagID, constant.AppTypeRag, !streamParams.hasErr, true, streamParams.firstTokenLatency, 0, source)
@@ -133,6 +135,9 @@ func buildRagChatRespLineProcessor() func(sse_util.SSEWriterClient[string], stri
 			if !p.hasRecorded {
 				p.firstTokenLatency = time.Since(p.startTime).Milliseconds()
 				p.hasRecorded = true
+				if p.ctx != nil {
+					p.ctx.Set(gin_util.FIRST_RESP_LATENCY, p.firstTokenLatency)
+				}
 			}
 		}
 		if strings.HasPrefix(lineText, "error:") {

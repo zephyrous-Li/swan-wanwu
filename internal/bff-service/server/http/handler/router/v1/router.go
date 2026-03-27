@@ -64,4 +64,7 @@ func Register(apiV1 *gin.RouterGroup) {
 
 	// app_statistic
 	registerAppStatistic(apiV1)
+
+	// api_key_statistic
+	registerAPIKeyStatistic(apiV1)
 }

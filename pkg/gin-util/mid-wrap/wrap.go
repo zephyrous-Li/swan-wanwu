@@ -124,6 +124,10 @@ func (w *wrapper) NewSub(subTag, name string, permLevel route.PermLevel, isNavi,
 }
 
 func (w *wrapper) Reg(rg *gin.RouterGroup, relPath, method string, handler gin.HandlerFunc, desc string, middlewares ...gin.HandlerFunc) {
+	w.RegWithAPIType(rg, relPath, method, handler, desc, "", middlewares...)
+}
+
+func (w *wrapper) RegWithAPIType(rg *gin.RouterGroup, relPath, method string, handler gin.HandlerFunc, desc string, openApiType string, middlewares ...gin.HandlerFunc) {
 	if w == nil {
 		log.Panicf("wrapper nil")
 	}
@@ -137,7 +141,7 @@ func (w *wrapper) Reg(rg *gin.RouterGroup, relPath, method string, handler gin.H
 		log.Panicf("wrapper %v register [%v]%v already exist", w.tag, method, absPath)
 	}
 	// check route
-	loaded, err := route.LoadOrStore(absPath, method, desc, w.permLevel, route.TagName{Tag: w.tag, Name: w.name}, handler, middlewares...)
+	loaded, err := route.LoadOrStoreWithOpenAPIType(absPath, method, desc, w.permLevel, route.TagName{Tag: w.tag, Name: w.name}, openApiType, handler, middlewares...)
 	if err != nil {
 		log.Panicf("wrapper %v route err: %v", w.tag, err)
 	}

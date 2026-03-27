@@ -329,3 +329,21 @@ func EndDate(endDate string) SQLOption {
 		return db
 	})
 }
+
+func WithAPIKeyIds(apiKeyIds []string) SQLOption {
+	return funcSQLOption(func(db *gorm.DB) *gorm.DB {
+		if len(apiKeyIds) > 0 {
+			return db.Where("api_key_id IN ?", apiKeyIds)
+		}
+		return db
+	})
+}
+
+func WithMethodPaths(methodPaths []string) SQLOption {
+	return funcSQLOption(func(db *gorm.DB) *gorm.DB {
+		if len(methodPaths) > 0 {
+			return db.Where("method_path IN ?", methodPaths)
+		}
+		return db
+	})
+}

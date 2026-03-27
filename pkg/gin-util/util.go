@@ -37,6 +37,9 @@ const (
 
 	ANSWER = "ANSWER"
 
+	// 流式首响应时延 (ms)
+	FIRST_RESP_LATENCY = "FIRST_RESP_LATENCY"
+
 	// OAuth相关
 	OAUTH_SCOPE     = "SCOPE"
 	OAUTH_CLIENT_ID = "OAuth_Client_ID"

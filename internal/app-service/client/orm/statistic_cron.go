@@ -76,14 +76,17 @@ func syncAllStatistics() error {
 		// 如果存在，说明历史数据已同步，无需继续向前回填
 		hasModel, _ := checkModelStatsRecordExists(ctx, db, date)
 		hasApp, _ := checkAppStatsRecordExists(ctx, db, date)
-
+		hasApi, _ := checkAPIKeyStatsRecordExists(ctx, db, date)
 		if err := updateModelStats(ctx, date, db); err != nil {
 			log.Errorf("update model stats date %v err: %v", date, err)
 		}
 		if err := updateAppStats(ctx, date, db); err != nil {
 			log.Errorf("update app stats date %v err: %v", date, err)
 		}
-		if hasModel && hasApp {
+		if err := updateAPIKeyStats(ctx, date, db); err != nil {
+			log.Errorf("update api key stats date %v err: %v", date, err)
+		}
+		if hasModel && hasApp && hasApi {
 			log.Infof("found existing record for date %v, stop backward sync", date)
 			break
 		}
@@ -107,6 +110,17 @@ func checkAppStatsRecordExists(ctx context.Context, db *gorm.DB, date string) (b
 		sqlopt.WithDate(date),
 	).Apply(db.WithContext(ctx)).Model(&model.AppRecord{}).Count(&count).Error; err != nil {
 		return false, fmt.Errorf("check app stats record exists for date %v err: %v", date, err)
+	}
+	return count > 0, nil
+}
+
+// checkAPIKeyStatsRecordExists 检查指定日期的 API Key 统计记录是否已存在
+func checkAPIKeyStatsRecordExists(ctx context.Context, db *gorm.DB, date string) (bool, error) {
+	var count int64
+	if err := sqlopt.SQLOptions(
+		sqlopt.WithDate(date),
+	).Apply(db.WithContext(ctx)).Model(&model.APIKeyStatistic{}).Count(&count).Error; err != nil {
+		return false, fmt.Errorf("check api key stats record exists for date %v err: %v", date, err)
 	}
 	return count > 0, nil
 }

@@ -113,7 +113,7 @@ func ExportAppStatisticList(ctx *gin.Context) {
 //	@Security		JWT
 //	@Accept			json
 //	@Produce		json
-//	@Param			appType	query		string	true	"应用类型"
+//	@Param			appType	query		string	false	"应用类型"
 //	@Success		200		{object}	response.Response{data=response.ListResult{list=[]response.MyAppItem}}
 //	@Router			/statistic/app/select [get]
 func GetAppListSelect(ctx *gin.Context) {

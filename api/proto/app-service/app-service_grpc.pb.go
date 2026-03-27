@@ -57,6 +57,10 @@ const (
 	AppService_GetAppStatistic_FullMethodName              = "/app_service.AppService/GetAppStatistic"
 	AppService_RecordAppStatistic_FullMethodName           = "/app_service.AppService/RecordAppStatistic"
 	AppService_GetAppStatisticList_FullMethodName          = "/app_service.AppService/GetAppStatisticList"
+	AppService_GetAPIKeyStatistic_FullMethodName           = "/app_service.AppService/GetAPIKeyStatistic"
+	AppService_GetAPIKeyStatisticList_FullMethodName       = "/app_service.AppService/GetAPIKeyStatisticList"
+	AppService_GetAPIKeyStatisticRecord_FullMethodName     = "/app_service.AppService/GetAPIKeyStatisticRecord"
+	AppService_RecordAPIKeyStatistic_FullMethodName        = "/app_service.AppService/RecordAPIKeyStatistic"
 )
 
 // AppServiceClient is the client API for AppService service.
@@ -108,6 +112,11 @@ type AppServiceClient interface {
 	GetAppStatistic(ctx context.Context, in *GetAppStatisticReq, opts ...grpc.CallOption) (*AppStatistic, error)
 	RecordAppStatistic(ctx context.Context, in *RecordAppStatisticReq, opts ...grpc.CallOption) (*emptypb.Empty, error)
 	GetAppStatisticList(ctx context.Context, in *GetAppStatisticListReq, opts ...grpc.CallOption) (*GetAppStatisticListResp, error)
+	// --- api key statistic ---
+	GetAPIKeyStatistic(ctx context.Context, in *GetAPIKeyStatisticReq, opts ...grpc.CallOption) (*APIKeyStatistic, error)
+	GetAPIKeyStatisticList(ctx context.Context, in *GetAPIKeyStatisticListReq, opts ...grpc.CallOption) (*GetAPIKeyStatisticListResp, error)
+	GetAPIKeyStatisticRecord(ctx context.Context, in *GetAPIKeyStatisticRecordReq, opts ...grpc.CallOption) (*GetAPIKeyStatisticRecordResp, error)
+	RecordAPIKeyStatistic(ctx context.Context, in *RecordAPIKeyStatisticReq, opts ...grpc.CallOption) (*emptypb.Empty, error)
 }
 
 type appServiceClient struct {
@@ -488,6 +497,46 @@ func (c *appServiceClient) GetAppStatisticList(ctx context.Context, in *GetAppSt
 	return out, nil
 }
 
+func (c *appServiceClient) GetAPIKeyStatistic(ctx context.Context, in *GetAPIKeyStatisticReq, opts ...grpc.CallOption) (*APIKeyStatistic, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(APIKeyStatistic)
+	err := c.cc.Invoke(ctx, AppService_GetAPIKeyStatistic_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *appServiceClient) GetAPIKeyStatisticList(ctx context.Context, in *GetAPIKeyStatisticListReq, opts ...grpc.CallOption) (*GetAPIKeyStatisticListResp, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(GetAPIKeyStatisticListResp)
+	err := c.cc.Invoke(ctx, AppService_GetAPIKeyStatisticList_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *appServiceClient) GetAPIKeyStatisticRecord(ctx context.Context, in *GetAPIKeyStatisticRecordReq, opts ...grpc.CallOption) (*GetAPIKeyStatisticRecordResp, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(GetAPIKeyStatisticRecordResp)
+	err := c.cc.Invoke(ctx, AppService_GetAPIKeyStatisticRecord_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *appServiceClient) RecordAPIKeyStatistic(ctx context.Context, in *RecordAPIKeyStatisticReq, opts ...grpc.CallOption) (*emptypb.Empty, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(emptypb.Empty)
+	err := c.cc.Invoke(ctx, AppService_RecordAPIKeyStatistic_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // AppServiceServer is the server API for AppService service.
 // All implementations must embed UnimplementedAppServiceServer
 // for forward compatibility.
@@ -537,6 +586,11 @@ type AppServiceServer interface {
 	GetAppStatistic(context.Context, *GetAppStatisticReq) (*AppStatistic, error)
 	RecordAppStatistic(context.Context, *RecordAppStatisticReq) (*emptypb.Empty, error)
 	GetAppStatisticList(context.Context, *GetAppStatisticListReq) (*GetAppStatisticListResp, error)
+	// --- api key statistic ---
+	GetAPIKeyStatistic(context.Context, *GetAPIKeyStatisticReq) (*APIKeyStatistic, error)
+	GetAPIKeyStatisticList(context.Context, *GetAPIKeyStatisticListReq) (*GetAPIKeyStatisticListResp, error)
+	GetAPIKeyStatisticRecord(context.Context, *GetAPIKeyStatisticRecordReq) (*GetAPIKeyStatisticRecordResp, error)
+	RecordAPIKeyStatistic(context.Context, *RecordAPIKeyStatisticReq) (*emptypb.Empty, error)
 	mustEmbedUnimplementedAppServiceServer()
 }
 
@@ -657,6 +711,18 @@ func (UnimplementedAppServiceServer) RecordAppStatistic(context.Context, *Record
 }
 func (UnimplementedAppServiceServer) GetAppStatisticList(context.Context, *GetAppStatisticListReq) (*GetAppStatisticListResp, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method GetAppStatisticList not implemented")
+}
+func (UnimplementedAppServiceServer) GetAPIKeyStatistic(context.Context, *GetAPIKeyStatisticReq) (*APIKeyStatistic, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method GetAPIKeyStatistic not implemented")
+}
+func (UnimplementedAppServiceServer) GetAPIKeyStatisticList(context.Context, *GetAPIKeyStatisticListReq) (*GetAPIKeyStatisticListResp, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method GetAPIKeyStatisticList not implemented")
+}
+func (UnimplementedAppServiceServer) GetAPIKeyStatisticRecord(context.Context, *GetAPIKeyStatisticRecordReq) (*GetAPIKeyStatisticRecordResp, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method GetAPIKeyStatisticRecord not implemented")
+}
+func (UnimplementedAppServiceServer) RecordAPIKeyStatistic(context.Context, *RecordAPIKeyStatisticReq) (*emptypb.Empty, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method RecordAPIKeyStatistic not implemented")
 }
 func (UnimplementedAppServiceServer) mustEmbedUnimplementedAppServiceServer() {}
 func (UnimplementedAppServiceServer) testEmbeddedByValue()                    {}
@@ -1345,6 +1411,78 @@ func _AppService_GetAppStatisticList_Handler(srv interface{}, ctx context.Contex
 	return interceptor(ctx, in, info, handler)
 }
 
+func _AppService_GetAPIKeyStatistic_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(GetAPIKeyStatisticReq)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(AppServiceServer).GetAPIKeyStatistic(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: AppService_GetAPIKeyStatistic_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(AppServiceServer).GetAPIKeyStatistic(ctx, req.(*GetAPIKeyStatisticReq))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _AppService_GetAPIKeyStatisticList_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(GetAPIKeyStatisticListReq)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(AppServiceServer).GetAPIKeyStatisticList(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: AppService_GetAPIKeyStatisticList_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(AppServiceServer).GetAPIKeyStatisticList(ctx, req.(*GetAPIKeyStatisticListReq))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _AppService_GetAPIKeyStatisticRecord_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(GetAPIKeyStatisticRecordReq)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(AppServiceServer).GetAPIKeyStatisticRecord(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: AppService_GetAPIKeyStatisticRecord_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(AppServiceServer).GetAPIKeyStatisticRecord(ctx, req.(*GetAPIKeyStatisticRecordReq))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _AppService_RecordAPIKeyStatistic_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(RecordAPIKeyStatisticReq)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(AppServiceServer).RecordAPIKeyStatistic(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: AppService_RecordAPIKeyStatistic_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(AppServiceServer).RecordAPIKeyStatistic(ctx, req.(*RecordAPIKeyStatisticReq))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 // AppService_ServiceDesc is the grpc.ServiceDesc for AppService service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -1499,6 +1637,22 @@ var AppService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "GetAppStatisticList",
 			Handler:    _AppService_GetAppStatisticList_Handler,
+		},
+		{
+			MethodName: "GetAPIKeyStatistic",
+			Handler:    _AppService_GetAPIKeyStatistic_Handler,
+		},
+		{
+			MethodName: "GetAPIKeyStatisticList",
+			Handler:    _AppService_GetAPIKeyStatisticList_Handler,
+		},
+		{
+			MethodName: "GetAPIKeyStatisticRecord",
+			Handler:    _AppService_GetAPIKeyStatisticRecord_Handler,
+		},
+		{
+			MethodName: "RecordAPIKeyStatistic",
+			Handler:    _AppService_RecordAPIKeyStatistic_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},

@@ -522,6 +522,14 @@
 {"code":0,"key":"app_statistic_completion_tokens","langs":{"zh":"模型调用输出Token"}}
 {"code":0,"key":"app_statistic_prompt_tokens","langs":{"zh":"模型调用输入Token"}}
 {"code":0,"key":"app_statistic_web_call_count","langs":{"zh":"应用网页端调用总数"}}
+{"code":0,"key":"app_statistic_web_call_count","langs":{"zh":"应用网页端调用总数"}}
+{"code":0,"key":"app_statistic_call_trend","langs":{"zh":"应用调用趋势表"}}
+{"code":0,"key":"app_statistic_openapi_call_count","langs":{"zh":"应用OpenAPI调用总数"}}
+{"code":0,"key":"app_statistic_web_url_call_count","langs":{"zh":"应用网页URL调用总数"}}
+{"code":0,"key":"app_statistic_api_key_calls","langs":{"zh":"APIKey调用统计表"}}
+{"code":0,"key":"app_statistic_api_call_count_total","langs":{"zh":"APIKey调用总次数"}}
+{"code":0,"key":"app_statistic_api_call_success","langs":{"zh":"APIKey调用成功次数"}}
+{"code":0,"key":"app_statistic_api_call_failure","langs":{"zh":"APIKey调用失败次数"}}
 {"code":0,"key":"app_statistic_call_trend","langs":{"zh":"应用调用趋势表"}}
 {"code":0,"key":"app_statistic_openapi_call_count","langs":{"zh":"应用OpenAPI调用总数"}}
 {"code":0,"key":"app_statistic_web_url_call_count","langs":{"zh":"应用网页URL调用总数"}}

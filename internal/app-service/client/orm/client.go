@@ -157,6 +157,8 @@ func NewClient(db *gorm.DB) (*Client, error) {
 		model.ChatflowApplcation{},
 		model.ModelRecord{},
 		model.AppRecord{},
+		model.APIKeyRecord{},
+		model.APIKeyStatistic{},
 	); err != nil {
 		return nil, err
 	}
