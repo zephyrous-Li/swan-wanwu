@@ -258,6 +258,9 @@ export default {
       };
     },
   },
+  mounted() {
+    this.fetchModels();
+  },
   methods: {
     formatAmount,
     formatParams(params) {

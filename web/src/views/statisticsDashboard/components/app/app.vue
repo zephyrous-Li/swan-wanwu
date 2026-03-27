@@ -223,6 +223,9 @@ export default {
       };
     },
   },
+  mounted() {
+    this.fetchApps();
+  },
   methods: {
     formatAmount,
     formatParams(params) {
