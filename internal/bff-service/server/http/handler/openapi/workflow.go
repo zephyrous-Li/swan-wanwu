@@ -43,6 +43,7 @@ func WorkflowRun(ctx *gin.Context) {
 		return
 	}
 	ctx.Set(gin_util.STATUS, http.StatusOK)
+	ctx.Set(gin_util.RESULT, string(resp))
 	ctx.Writer.Flush()
 }
 
