@@ -42,10 +42,6 @@ func FileExt(filePath string) string {
 	if len(filePath) == 0 {
 		return ""
 	}
-	cleaned := filepath.Clean(filePath)
-	if strings.Contains(cleaned, "..") || filepath.IsAbs(cleaned) {
-		return ""
-	}
 	for _, ext := range specialFileExtList {
 		if strings.HasSuffix(filePath, ext) {
 			return ext
@@ -70,9 +66,6 @@ func ToFileSizeStr(fileSize int64) string {
 func FileExist(filePath string) (bool, error) {
 	if len(filePath) == 0 {
 		return false, nil
-	}
-	if err := ValidateFileName(filePath); err != nil {
-		return false, fmt.Errorf("invalid file path: %w", err)
 	}
 	_, err := os.Stat(filePath)
 	if err != nil {
@@ -125,14 +118,6 @@ func DirFileList(dir string, subDir bool, fullPath bool) ([]string, error) {
 
 // MergeFile 合并文件
 func MergeFile(filePathList []string, mergeFilePath string) (*FileMergeResult, error) {
-	if err := ValidateFileName(mergeFilePath); err != nil {
-		return nil, fmt.Errorf("invalid merge file path: %w", err)
-	}
-	for _, f := range filePathList {
-		if err := ValidateFileName(f); err != nil {
-			return nil, fmt.Errorf("invalid file path in list: %w", err)
-		}
-	}
 	// 创建或打开文件
 	//0644，表示文件所有者可读写，同组用户及其他用户只可读
 	dir := filepath.Dir(mergeFilePath)
@@ -180,9 +165,6 @@ func DeleteDir(fileDir string) error {
 }
 
 func DeleteFile(file string) error {
-	if err := ValidateFileName(file); err != nil {
-		return fmt.Errorf("invalid file path: %w", err)
-	}
 	err := os.Remove(file)
 	if err != nil {
 		return fmt.Errorf("delete file (%v) err: %v", file, err)
@@ -191,9 +173,6 @@ func DeleteFile(file string) error {
 }
 
 func AppendFileStream(filePath string, destinationFile *os.File) (int64, error) {
-	if err := ValidateFileName(filePath); err != nil {
-		return 0, fmt.Errorf("invalid file path: %w", err)
-	}
 	// Open the source file for reading
 	sourceFile, err := os.Open(filePath)
 	if err != nil {
@@ -381,13 +360,13 @@ func IsSafePath(baseDir, userPath string) (bool, string, error) {
 	return true, resolvedPath, nil
 }
 
-// ValidateFileName 验证文件名是否安全合法，防止文件名注入攻击
+// ValidateFileName 验证文件名或相对路径是否安全合法，防止文件名注入和路径遍历攻击
 //
-// 该函数用于验证单个文件名（不包含路径），确保文件名符合操作系统规范和安全要求
-// 适用于验证用户上传的文件名、导出文件名、资源标识符等场景
+// 该函数用于验证文件名或相对路径，确保符合操作系统规范和安全要求
+// 适用于验证用户上传的文件名、导出文件名、资源标识符、相对路径等场景
 //
 // 参数:
-//   - fileName: 待验证的文件名（仅文件名，不应包含路径分隔符）
+//   - fileName: 待验证的文件名或相对路径（可以包含路径分隔符，如 "subdir/file.txt"）
 //
 // 返回值:
 //   - error: 文件名不合法时返回错误，合法则返回 nil
@@ -397,22 +376,27 @@ func IsSafePath(baseDir, userPath string) (bool, string, error) {
 //  1. 基本检查：
 //     - 不能为空字符串
 //     - 不能是 "." 或 ".."
-//     - 长度不能超过 255 个字符（大多数文件系统限制）
-//     - 不能包含路径分隔符（/ 或 \）
+//     - 路径总长度不能超过 4096 个字符
+//     - 不能包含路径遍历字符 ".."（无论原始还是清理后）
 //
 //  2. 跨平台检查：
-//     - Windows: 禁止保留字符（<>:"/\|?*），不能以点或空格结尾，禁止保留设备名（CON、PRN、AUX、NUL、COM1-9、LPT1-9）
+//     - Windows: 每个路径组件不能包含保留字符（<>:"|?*），不能以点或空格结尾，禁止保留设备名
 //     - Unix/Linux: 禁止空字符（\x00）
 //
 // 注意事项：
-//   - 该函数仅验证文件名，不验证完整路径
-//   - 对于完整路径验证，应使用 IsSafePath 函数
-//   - 对于相对路径（包含目录结构），应先提取文件名部分再验证
+//   - 该函数支持验证包含路径分隔符的相对路径
+//   - 对于需要限制在特定目录内的完整路径验证，应使用 IsSafePath 函数
+//   - 路径分隔符（/ 或 \）会被正确处理，但会检查每个路径组件的合法性
 //
 // 使用示例:
 //
-//	if err := ValidateFileName(userInputFileName); err != nil {
+//	// 验证纯文件名
+//	if err := ValidateFileName("document.pdf"); err != nil {
 //	    return fmt.Errorf("invalid file name: %w", err)
+//	}
+//	// 验证相对路径
+//	if err := ValidateFileName("subdir/document.pdf"); err != nil {
+//	    return fmt.Errorf("invalid file path: %w", err)
 //	}
 func ValidateFileName(fileName string) error {
 	if fileName == "" {
@@ -423,27 +407,30 @@ func ValidateFileName(fileName string) error {
 		return fmt.Errorf("filename cannot be '.' or '..'")
 	}
 
-	if len(fileName) > 255 {
-		return fmt.Errorf("filename too long")
+	// 路径长度限制（大多数系统PATH_MAX为4096）
+	if len(fileName) > 4096 {
+		return fmt.Errorf("path too long")
 	}
 
-	// 检查路径分隔符
-	if strings.ContainsAny(fileName, "/\\") {
-		return fmt.Errorf("filename cannot contain path separators")
+	// 检查原始路径是否包含 ".."
+	if strings.Contains(fileName, "..") {
+		return fmt.Errorf("path contains traversal sequences")
 	}
 
-	// 清理并验证
+	// 清理路径并再次检查
 	cleaned := filepath.Clean(fileName)
-	if cleaned != fileName && cleaned != "." && cleaned != ".." {
-		return fmt.Errorf("filename contains invalid patterns")
+
+	// 检查是否为绝对路径
+	if filepath.IsAbs(cleaned) {
+		return fmt.Errorf("absolute path not allowed")
 	}
 
 	// 操作系统特定检查
 	if runtime.GOOS == "windows" {
-		return validateWindowsFileName(fileName)
+		return validateWindowsPath(fileName)
 	}
 
-	return validateUnixFileName(fileName)
+	return validateUnixPath(fileName)
 }
 
 // ============================================================================
@@ -493,43 +480,71 @@ func isPathWithinBase(base, target string) bool {
 	return true
 }
 
-func validateWindowsFileName(fileName string) error {
-	// Windows保留字符
-	reservedChars := `<>:"/\|?*`
-	if strings.ContainsAny(fileName, reservedChars) {
-		return fmt.Errorf("filename contains invalid characters")
-	}
+func validateWindowsPath(path string) error {
+	// 分割路径，检查每个组件
+	parts := strings.FieldsFunc(path, func(r rune) bool {
+		return r == '/' || r == '\\'
+	})
 
-	// 检查结尾的点和空格
-	if strings.HasSuffix(fileName, ".") || strings.HasSuffix(fileName, " ") {
-		return fmt.Errorf("filename cannot end with dot or space")
-	}
+	for _, part := range parts {
+		if part == "" {
+			continue
+		}
 
-	// 检查保留的设备名
-	nameWithoutExt := strings.TrimSuffix(fileName, filepath.Ext(fileName))
-	upperName := strings.ToUpper(nameWithoutExt)
+		// Windows保留字符（排除路径分隔符，因为在路径中是允许的）
+		reservedChars := `<>:"|?*`
+		if strings.ContainsAny(part, reservedChars) {
+			return fmt.Errorf("path component contains invalid characters: %s", part)
+		}
 
-	reservedNames := map[string]bool{
-		"CON": true, "PRN": true, "AUX": true, "NUL": true,
-		"COM1": true, "COM2": true, "COM3": true, "COM4": true,
-		"COM5": true, "COM6": true, "COM7": true, "COM8": true, "COM9": true,
-		"LPT1": true, "LPT2": true, "LPT3": true, "LPT4": true,
-		"LPT5": true, "LPT6": true, "LPT7": true, "LPT8": true, "LPT9": true,
-	}
+		// 检查结尾的点和空格
+		if strings.HasSuffix(part, ".") || strings.HasSuffix(part, " ") {
+			return fmt.Errorf("path component cannot end with dot or space: %s", part)
+		}
 
-	if reservedNames[upperName] {
-		return fmt.Errorf("filename is a reserved device name")
+		// 检查保留的设备名
+		nameWithoutExt := strings.TrimSuffix(part, filepath.Ext(part))
+		upperName := strings.ToUpper(nameWithoutExt)
+
+		reservedNames := map[string]bool{
+			"CON": true, "PRN": true, "AUX": true, "NUL": true,
+			"COM1": true, "COM2": true, "COM3": true, "COM4": true,
+			"COM5": true, "COM6": true, "COM7": true, "COM8": true, "COM9": true,
+			"LPT1": true, "LPT2": true, "LPT3": true, "LPT4": true,
+			"LPT5": true, "LPT6": true, "LPT7": true, "LPT8": true, "LPT9": true,
+		}
+
+		if reservedNames[upperName] {
+			return fmt.Errorf("path component is a reserved device name: %s", part)
+		}
+
+		// 单个组件长度限制（Windows MAX_PATH组件限制）
+		if len(part) > 255 {
+			return fmt.Errorf("path component too long: %s", part)
+		}
 	}
 
 	return nil
 }
 
-func validateUnixFileName(fileName string) error {
+func validateUnixPath(path string) error {
 	// Unix/Linux 基本检查
-	if strings.Contains(fileName, "\x00") {
-		return fmt.Errorf("filename contains null character")
+	if strings.Contains(path, "\x00") {
+		return fmt.Errorf("path contains null character")
 	}
 
-	// Unix文件名不能包含路径分隔符，已在主函数检查
+	// 分割路径，检查每个组件
+	parts := strings.Split(path, "/")
+	for _, part := range parts {
+		if part == "" {
+			continue
+		}
+
+		// 单个组件长度限制（大多数文件系统限制）
+		if len(part) > 255 {
+			return fmt.Errorf("path component too long: %s", part)
+		}
+	}
+
 	return nil
 }
