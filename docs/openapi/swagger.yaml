@@ -605,6 +605,15 @@ definitions:
         description: 前端请求地址，例如：/v1/static/avatar/abc/def.png (请求非必填)
         type: string
     type: object
+  request.ConversionStreamFile:
+    properties:
+      fileName:
+        type: string
+      fileSize:
+        type: integer
+      fileUrl:
+        type: string
+    type: object
   request.CreateKnowledgeReq:
     properties:
       avatar:
@@ -1007,6 +1016,10 @@ definitions:
     properties:
       conversation_id:
         type: string
+      file_info:
+        items:
+          $ref: '#/definitions/request.ConversionStreamFile'
+        type: array
       query:
         type: string
       stream:

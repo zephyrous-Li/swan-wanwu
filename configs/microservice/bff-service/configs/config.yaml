@@ -193,7 +193,7 @@ skills-template:
   configPath: configs/microservice/bff-service/configs/skills_template_config.yaml
 
 skill-creator-path:
-  configPath: configs/microservice/bff-service/configs/skill_creator_config.yaml
+  configPath: configs/microservice/bff-service/configs/skills_creator_config.yaml
 
 # --- middleware ---
 
@@ -223,7 +223,7 @@ model:
   png_test_file_path: "configs/microservice/bff-service/static/model/test.png"
   pdf_test_file_path: "configs/microservice/bff-service/static/model/test.pdf"
   asr_test_file_path: "configs/microservice/bff-service/static/model/test.wav"
-  recommend_model_config_path: "configs/microservice/bff-service/static/model/recommend_models.yaml"
+  recommend_model_config_path: "configs/microservice/bff-service/configs/recommend_model_config.yaml"
 
 mcp:
   host: mcp-service:9898

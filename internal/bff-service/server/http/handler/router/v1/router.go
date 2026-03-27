@@ -44,27 +44,21 @@ func Register(apiV1 *gin.RouterGroup) {
 	// exploration
 	registerExploration(apiV1)
 
+	// statistic
+	registerStatistic(apiV1)
+
+	// statistic_client
+	// registerStatisticClient(apiV1)
+
+	// api_key
+	registerAPIKey(apiV1)
+
 	// permission
 	registerPermission(apiV1)
 
 	// setting
 	registerSetting(apiV1)
 
-	// statistic_client
-	// registerStatisticClient(apiV1)
-
 	// oauth
 	registerOauth(apiV1)
-
-	// api_key
-	registerAPIKey(apiV1)
-
-	// model_statistic
-	registerModelStatistic(apiV1)
-
-	// app_statistic
-	registerAppStatistic(apiV1)
-
-	// api_key_statistic
-	registerAPIKeyStatistic(apiV1)
 }

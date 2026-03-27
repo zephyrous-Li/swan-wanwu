@@ -2234,6 +2234,20 @@ const docTemplate = `{
                 }
             }
         },
+        "request.ConversionStreamFile": {
+            "type": "object",
+            "properties": {
+                "fileName": {
+                    "type": "string"
+                },
+                "fileSize": {
+                    "type": "integer"
+                },
+                "fileUrl": {
+                    "type": "string"
+                }
+            }
+        },
         "request.CreateKnowledgeReq": {
             "type": "object",
             "required": [
@@ -2817,6 +2831,12 @@ const docTemplate = `{
             "properties": {
                 "conversation_id": {
                     "type": "string"
+                },
+                "file_info": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/request.ConversionStreamFile"
+                    }
                 },
                 "query": {
                     "type": "string"
