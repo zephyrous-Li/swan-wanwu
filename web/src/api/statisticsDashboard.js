@@ -105,7 +105,7 @@ export const getApiData = data => {
   });
 };
 
-// 获取模型列表
+// 获取API列表
 export const fetchApiList = data => {
   const type = data.type;
   delete data.type;
@@ -116,10 +116,10 @@ export const fetchApiList = data => {
   });
 };
 
-// 模型数据导出
+// API数据导出
 export const exportApiData = (data, type) => {
   return service({
-    url: `${USER_API}/statistic/api/export/${type}`,
+    url: `${USER_API}/statistic/api/${type}/export`,
     method: 'post',
     data,
     responseType: 'blob',
