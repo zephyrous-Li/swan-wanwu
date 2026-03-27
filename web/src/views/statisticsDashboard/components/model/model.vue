@@ -166,7 +166,7 @@ import UserEchart from '@/components/echart/userEchart.vue';
 import ModelList from './modelList.vue';
 import { avatarSrc, formatAmount, getModelDefaultIcon } from '@/utils/util.js';
 import { getModelData } from '@/api/statisticsDashboard';
-import { MODEL_TYPE } from '@/views/modelAccess/constants';
+import { MODEL_TYPE, LLM } from '@/views/modelAccess/constants';
 import { fetchModelList } from '@/api/modelAccess';
 
 export default {
@@ -245,7 +245,7 @@ export default {
         time: [],
       },
       modelParams: {
-        modelType: '',
+        modelType: LLM,
         models: [],
       },
     };

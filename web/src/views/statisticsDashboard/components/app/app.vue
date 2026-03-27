@@ -140,7 +140,7 @@ import UserEchart from '@/components/echart/userEchart.vue';
 import AppList from './appList.vue';
 import { avatarSrc, formatAmount } from '@/utils/util.js';
 import { getAppData, getAppSelect } from '@/api/statisticsDashboard';
-import { AppType } from '@/utils/commonSet';
+import { AGENT, AppType, RAG } from '@/utils/commonSet';
 
 export default {
   components: {
@@ -210,7 +210,7 @@ export default {
         time: [],
       },
       appParams: {
-        appType: '',
+        appType: AGENT,
         apps: [],
       },
     };
@@ -242,8 +242,6 @@ export default {
       this.appList = res.data ? res.data.list || [] : [];
     },
     handleSetTime(val) {
-      if (!this.appParams.appType) return;
-
       this.loading = true;
       this.searchTime = val;
 

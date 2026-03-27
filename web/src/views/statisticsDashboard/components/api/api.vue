@@ -11,6 +11,7 @@
           multiple
           filterable
           clearable
+          @change="handleApiNameChange"
         >
           <el-option
             v-for="item in apiNameList"
@@ -143,6 +144,7 @@ import {
   getApiRoutes,
   getApiSelect,
 } from '@/api/statisticsDashboard';
+import { DEFAULT_APP_ITEM, ALL } from '../../constants';
 
 export default {
   components: {
@@ -152,7 +154,7 @@ export default {
   },
   data() {
     return {
-      apiNameList: [],
+      apiNameList: [DEFAULT_APP_ITEM],
       apiRoutesList: [],
       colorsObj: {
         GET: '#5CB87A',
@@ -220,7 +222,7 @@ export default {
         time: [],
       },
       apiParams: {
-        apiKeyIds: [],
+        apiKeyIds: [ALL],
         methodPaths: [],
       },
     };
@@ -241,11 +243,27 @@ export default {
     formatAmount,
     async fetchApiNameList() {
       const res = await getApiSelect();
-      this.apiNameList = res.data ? res.data.list || [] : [];
+      const list = res.data ? res.data.list || [] : [];
+      this.apiNameList = [DEFAULT_APP_ITEM, ...list];
     },
     async fetchApiRoutes() {
       const res = await getApiRoutes();
       this.apiRoutesList = res.data ? res.data.list || [] : [];
+    },
+    handleApiNameChange(keyIds) {
+      if (!keyIds.length) return;
+
+      const addKey = keyIds[keyIds.length - 1];
+      if (addKey === ALL) {
+        this.apiParams.apiKeyIds = [ALL];
+      } else {
+        const allIndex = this.apiParams.apiKeyIds.findIndex(
+          item => item === ALL,
+        );
+        if (allIndex !== -1) {
+          this.apiParams.apiKeyIds.splice(allIndex, 1);
+        }
+      }
     },
     handleSetTime(val) {
       this.loading = true;
