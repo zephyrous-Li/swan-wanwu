@@ -49,7 +49,7 @@ func calculateSuccessCount(totalCount, failureCount int32) int32 {
 
 type ChartLineValueProvider[T any] func(item T) map[string]float32
 
-func BuildChartLines[T any](stats []T, dates []string, getDate func(T) string, getValues ChartLineValueProvider[T], lineNames []string) []StatisticChartLine {
+func buildChartLines[T any](stats []T, dates []string, getDate func(T) string, getValues ChartLineValueProvider[T], lineNames []string) []StatisticChartLine {
 	dateMap := make(map[string]T)
 	for _, stat := range stats {
 		dateMap[getDate(stat)] = stat
@@ -85,7 +85,7 @@ func BuildChartLines[T any](stats []T, dates []string, getDate func(T) string, g
 	return lines
 }
 
-func BuildDateRange(startDate, endDate string) ([]string, error) {
+func buildDateRange(startDate, endDate string) ([]string, error) {
 	startTs, err := util.Date2Time(startDate)
 	if err != nil {
 		return nil, err

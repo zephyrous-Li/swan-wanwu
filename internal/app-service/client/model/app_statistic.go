@@ -1,15 +1,16 @@
 package model
 
-type AppRecord struct {
+type AppStatistic struct {
 	ID        uint32 `gorm:"primary_key"`
-	CreatedAt int64  `gorm:"autoCreateTime:milli;index:idx_app_record_created_at"`
+	CreatedAt int64  `gorm:"autoCreateTime:milli;index:idx_app_statistic_created_at"`
 	UpdatedAt int64  `gorm:"autoUpdateTime:milli"`
 
-	// 基础信息
-	OrgID   string `gorm:"index:idx_app_record_org_id"`
-	UserID  string `gorm:"index:idx_app_record_user_id"`
-	AppID   string `gorm:"index:idx_app_record_app_id"`
-	AppType string `gorm:"index:idx_app_record_app_type"` // agent/rag/workflow/chatflow
+	// 唯一键（用于每日维度聚合）
+	OrgID   string `gorm:"size:64;uniqueIndex:idx_app_statistic_unique,priority:1"`
+	UserID  string `gorm:"size:64;uniqueIndex:idx_app_statistic_unique,priority:2"`
+	AppID   string `gorm:"size:64;uniqueIndex:idx_app_statistic_unique,priority:3"`
+	AppType string `gorm:"size:64;uniqueIndex:idx_app_statistic_unique,priority:4"` // agent/rag/workflow/chatflow
+	Date    string `gorm:"size:16;uniqueIndex:idx_app_statistic_unique,priority:5"` // yyyy-mm-dd
 
 	// 调用统计
 	CallCount   int32
@@ -34,7 +35,4 @@ type AppRecord struct {
 	// 智能体专属
 	WebUrlCallCount   int32
 	WebUrlCallFailure int32
-
-	// 日期
-	Date string `gorm:"index:idx_app_record_date"`
 }

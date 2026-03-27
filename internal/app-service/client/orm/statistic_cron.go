@@ -98,7 +98,7 @@ func checkModelStatsRecordExists(ctx context.Context, db *gorm.DB, date string) 
 	var count int64
 	if err := sqlopt.SQLOptions(
 		sqlopt.WithDate(date),
-	).Apply(db.WithContext(ctx)).Model(&model.ModelRecord{}).Count(&count).Error; err != nil {
+	).Apply(db.WithContext(ctx)).Model(&model.ModelStatistic{}).Count(&count).Error; err != nil {
 		return false, fmt.Errorf("check model stats record exists for date %v err: %v", date, err)
 	}
 	return count > 0, nil
@@ -108,7 +108,7 @@ func checkAppStatsRecordExists(ctx context.Context, db *gorm.DB, date string) (b
 	var count int64
 	if err := sqlopt.SQLOptions(
 		sqlopt.WithDate(date),
-	).Apply(db.WithContext(ctx)).Model(&model.AppRecord{}).Count(&count).Error; err != nil {
+	).Apply(db.WithContext(ctx)).Model(&model.AppStatistic{}).Count(&count).Error; err != nil {
 		return false, fmt.Errorf("check app stats record exists for date %v err: %v", date, err)
 	}
 	return count > 0, nil

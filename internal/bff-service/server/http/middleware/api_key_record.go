@@ -21,7 +21,7 @@ const (
 func APIKeyRecord(StreamType string) gin.HandlerFunc {
 	return func(ctx *gin.Context) {
 		// 检查是否有 API Key ID（由 AuthOpenAPIKey 设置）
-		apiKeyID := ctx.GetString("api_key_id")
+		apiKeyID := ctx.GetString(gin_util.API_KEY_ID)
 		if apiKeyID == "" {
 			ctx.Next()
 			return

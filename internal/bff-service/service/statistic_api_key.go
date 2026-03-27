@@ -4,6 +4,7 @@ import (
 	app_service "github.com/UnicomAI/wanwu/api/proto/app-service"
 	"github.com/UnicomAI/wanwu/internal/bff-service/model/request"
 	"github.com/UnicomAI/wanwu/internal/bff-service/model/response"
+	"github.com/UnicomAI/wanwu/pkg/log"
 	"github.com/UnicomAI/wanwu/pkg/util"
 	"github.com/gin-gonic/gin"
 	"github.com/xuri/excelize/v2"
@@ -59,7 +60,7 @@ func GetAPIKeyStatisticList(ctx *gin.Context, userId, orgId string, req *request
 	infoMap := getAPIKeyInfoMap(ctx)
 	items := make([]response.APIKeyStatisticItem, 0, len(resp.Items))
 	for _, item := range resp.Items {
-		info := infoMap[item.ApiKeyId]
+		info := getAPIKeyDisplayInfo(infoMap, item.ApiKeyId)
 		items = append(items, response.APIKeyStatisticItem{
 			Name:              info.name,
 			APIKey:            info.key,
@@ -98,7 +99,7 @@ func GetAPIKeyStatisticRecord(ctx *gin.Context, userId, orgId string, req *reque
 	infoMap := getAPIKeyInfoMap(ctx)
 	items := make([]response.APIKeyStatisticRecordItem, 0, len(resp.Items))
 	for _, item := range resp.Items {
-		info := infoMap[item.ApiKeyId]
+		info := getAPIKeyDisplayInfo(infoMap, item.ApiKeyId)
 		items = append(items, response.APIKeyStatisticRecordItem{
 			Name:           info.name,
 			APIKey:         info.key,
@@ -137,7 +138,7 @@ func ExportAPIKeyStatisticList(ctx *gin.Context, userId, orgId string, req *requ
 	infoMap := getAPIKeyInfoMap(ctx)
 	items := make([]response.APIKeyStatisticItem, 0, len(resp.Items))
 	for _, item := range resp.Items {
-		info := infoMap[item.ApiKeyId]
+		info := getAPIKeyDisplayInfo(infoMap, item.ApiKeyId)
 		items = append(items, response.APIKeyStatisticItem{
 			Name:              info.name,
 			APIKey:            info.key,
@@ -171,7 +172,7 @@ func ExportAPIKeyStatisticRecord(ctx *gin.Context, userId, orgId string, req *re
 	infoMap := getAPIKeyInfoMap(ctx)
 	items := make([]response.APIKeyStatisticRecordItem, 0, len(resp.Items))
 	for _, item := range resp.Items {
-		info := infoMap[item.ApiKeyId]
+		info := getAPIKeyDisplayInfo(infoMap, item.ApiKeyId)
 		items = append(items, response.APIKeyStatisticRecordItem{
 			Name:           info.name,
 			APIKey:         info.key,
@@ -212,7 +213,7 @@ func GetAPIKeySelect(ctx *gin.Context, userId, orgId string) (*response.ListResu
 
 func RecordAPIKeyCall(ctx *gin.Context, userId, orgId, apiKeyId, methodPath string,
 	callTime int64, httpStatus string, isStream bool, streamCosts, nonStreamCosts int64, requestBody, responseBody string) {
-	_, _ = app.RecordAPIKeyStatistic(ctx.Request.Context(), &app_service.RecordAPIKeyStatisticReq{
+	_, err := app.RecordAPIKeyStatistic(ctx.Request.Context(), &app_service.RecordAPIKeyStatisticReq{
 		UserId:         userId,
 		OrgId:          orgId,
 		ApiKeyId:       apiKeyId,
@@ -225,6 +226,9 @@ func RecordAPIKeyCall(ctx *gin.Context, userId, orgId, apiKeyId, methodPath stri
 		RequestBody:    requestBody,
 		ResponseBody:   responseBody,
 	})
+	if err != nil {
+		log.Errorf("record api key[%v] method_path[%v] call err: %v", apiKeyId, methodPath, err)
+	}
 }
 
 // --- internal ---
@@ -292,6 +296,7 @@ func getAPIKeyInfoMap(ctx *gin.Context) map[string]apiKeyInfo {
 		PageSize: 1000,
 	})
 	if err != nil {
+		log.Warnf("get api key info map err: %v", err)
 		return nil
 	}
 	infoMap := make(map[string]apiKeyInfo)
@@ -302,4 +307,14 @@ func getAPIKeyInfoMap(ctx *gin.Context) map[string]apiKeyInfo {
 		}
 	}
 	return infoMap
+}
+
+func getAPIKeyDisplayInfo(infoMap map[string]apiKeyInfo, apiKeyID string) apiKeyInfo {
+	if info, ok := infoMap[apiKeyID]; ok {
+		return info
+	}
+	return apiKeyInfo{
+		name: "该API Key已被删除",
+		key:  "该API Key已被删除",
+	}
 }

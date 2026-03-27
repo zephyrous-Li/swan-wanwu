@@ -14,6 +14,7 @@ import (
 	"github.com/UnicomAI/wanwu/pkg/redis"
 	"github.com/UnicomAI/wanwu/pkg/util"
 	"gorm.io/gorm"
+	"gorm.io/gorm/clause"
 )
 
 // Lua script for atomic Redis updates of APIKey statistics
@@ -261,12 +262,6 @@ func (c *Client) GetAPIKeyStatisticRecord(ctx context.Context, userId, orgId, st
 	return &APIKeyStatisticRecordList{Items: items, Total: total}, nil
 }
 
-// GetAPIKeyStatisticRecord - wrapper to satisfy IClient interface for date-filtered record listing
-func (c *Client) GetAPIKeyStatisticRecordWrapper(ctx context.Context, userId, orgId, startDate, endDate string, apiKeyIds, methodPaths []string, offset, limit int32) (*APIKeyStatisticRecordList, *errs.Status) {
-	// Delegate to the existing GetAPIKeyStatisticRecord to maintain single source of truth
-	return c.GetAPIKeyStatisticRecord(ctx, userId, orgId, startDate, endDate, apiKeyIds, methodPaths, offset, limit)
-}
-
 // --- internal helpers ---
 
 // updateAPIKeyStats 将 Redis 中的日累积数据刷新到数据库表 api_key_statistic
@@ -294,48 +289,37 @@ func updateAPIKeyStats(ctx context.Context, date string, db *gorm.DB) error {
 	return nil
 }
 
-// updateAPIKeyStatsByRecord 根据记录更新APIKey统计数据到数据库
 func updateAPIKeyStatsByRecord(ctx context.Context, db *gorm.DB, apiKeyId, userId, orgId, methodPath, date string, record *APIKeyRecordStats) error {
 	stat := &model.APIKeyStatistic{
-		OrgID:      orgId,
-		UserID:     userId,
-		APIKeyID:   apiKeyId,
-		MethodPath: methodPath,
-		Date:       date,
+		OrgID:            orgId,
+		UserID:           userId,
+		APIKeyID:         apiKeyId,
+		MethodPath:       methodPath,
+		Date:             date,
+		CallCount:        record.CallCount,
+		CallFailure:      record.CallFailure,
+		StreamCount:      record.StreamCount,
+		NonStreamCount:   record.NonStreamCount,
+		StreamFailure:    record.StreamFailure,
+		NonStreamFailure: record.NonStreamFailure,
+		StreamCosts:      record.StreamCosts,
+		NonStreamCosts:   record.NonStreamCosts,
 	}
 
-	if err := db.WithContext(ctx).Where(&model.APIKeyStatistic{
-		OrgID:      orgId,
-		UserID:     userId,
-		APIKeyID:   apiKeyId,
-		MethodPath: methodPath,
-		Date:       date,
-	}).FirstOrCreate(stat).Error; err != nil {
-		return err
-	}
-
-	if stat.CallCount == record.CallCount &&
-		stat.CallFailure == record.CallFailure &&
-		stat.StreamCount == record.StreamCount &&
-		stat.NonStreamCount == record.NonStreamCount &&
-		stat.StreamFailure == record.StreamFailure &&
-		stat.NonStreamFailure == record.NonStreamFailure &&
-		stat.StreamCosts == record.StreamCosts &&
-		stat.NonStreamCosts == record.NonStreamCosts {
-		return nil
-	}
-
-	return db.WithContext(ctx).Model(stat).Updates(map[string]any{
-		"method_path":        record.MethodPath,
-		"call_count":         record.CallCount,
-		"call_failure":       record.CallFailure,
-		"stream_count":       record.StreamCount,
-		"non_stream_count":   record.NonStreamCount,
-		"stream_failure":     record.StreamFailure,
-		"non_stream_failure": record.NonStreamFailure,
-		"stream_costs":       record.StreamCosts,
-		"non_stream_costs":   record.NonStreamCosts,
-	}).Error
+	return db.WithContext(ctx).Clauses(clause.OnConflict{
+		Columns: []clause.Column{
+			{Name: "org_id"},
+			{Name: "user_id"},
+			{Name: "api_key_id"},
+			{Name: "method_path"},
+			{Name: "date"},
+		},
+		DoUpdates: clause.AssignmentColumns([]string{
+			"call_count", "call_failure", "stream_count",
+			"non_stream_count", "stream_failure", "non_stream_failure",
+			"stream_costs", "non_stream_costs",
+		}),
+	}).Create(stat).Error
 }
 
 // statisticAPIKeyStatsOverview 统计API Key概览数据（占位实现，可扩展）
@@ -414,7 +398,7 @@ func apiKeyStatsByDateRange(ctx context.Context, db *gorm.DB, userID, orgID stri
 
 // statisticAPIKeyStatsTrend 统计API Key趋势数据
 func statisticAPIKeyStatsTrend(ctx context.Context, db *gorm.DB, userID, orgID, startDate, endDate string, apiKeyIds []string, methodPaths []string) (*APIKeyStatisticTrend, error) {
-	dates, err := BuildDateRange(startDate, endDate)
+	dates, err := buildDateRange(startDate, endDate)
 	if err != nil {
 		return nil, err
 	}
@@ -440,7 +424,7 @@ func statisticAPIKeyStatsTrend(ctx context.Context, db *gorm.DB, userID, orgID, 
 		"app_statistic_api_call_failure",
 	}
 
-	lines := BuildChartLines(stats, dates,
+	lines := buildChartLines(stats, dates,
 		func(r model.APIKeyStatistic) string { return r.Date },
 		func(r model.APIKeyStatistic) map[string]float32 {
 			return map[string]float32{
@@ -454,7 +438,7 @@ func statisticAPIKeyStatsTrend(ctx context.Context, db *gorm.DB, userID, orgID, 
 
 	return &APIKeyStatisticTrend{
 		APICalls: StatisticChart{
-			Name:  "app_statistic_api_key_calls",
+			Name:  "app_statistic_api_key_call_trend",
 			Lines: lines,
 		},
 	}, nil

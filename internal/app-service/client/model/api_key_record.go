@@ -24,9 +24,9 @@ type APIKeyRecord struct {
 	// 非流式耗时 (ms)
 	NonStreamCosts int64 `gorm:"index:idx_api_key_record_non_stream_costs"`
 	// 请求体 (JSON)
-	RequestBody string `gorm:"type:text"`
+	RequestBody string `gorm:"type:longtext"`
 	// 响应体 (JSON，流式调用为空)
-	ResponseBody string `gorm:"type:text"`
+	ResponseBody string `gorm:"type:longtext"`
 	// 日期 (yyyy-mm-dd)
 	Date string `gorm:"index:idx_api_key_record_date"`
 }

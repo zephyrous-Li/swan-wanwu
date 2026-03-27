@@ -39,7 +39,7 @@ func AuthOpenAPIKey(openApiType string) func(*gin.Context) {
 		}
 		ctx.Set(gin_util.USER_ID, apiKey.UserId)
 		ctx.Set(gin_util.X_ORG_ID, apiKey.OrgId)
-		ctx.Set("api_key_id", apiKey.KeyId)
+		ctx.Set(gin_util.API_KEY_ID, apiKey.KeyId)
 	}
 }
 

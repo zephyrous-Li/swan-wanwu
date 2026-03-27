@@ -14,6 +14,7 @@ import (
 	"github.com/UnicomAI/wanwu/pkg/redis"
 	"github.com/UnicomAI/wanwu/pkg/util"
 	"gorm.io/gorm"
+	"gorm.io/gorm/clause"
 )
 
 const luaUpdateModelStats = `
@@ -236,59 +237,45 @@ func updateModelStats(ctx context.Context, date string, db *gorm.DB) error {
 }
 
 // updateModelStatsByRecord 根据记录更新模型统计数据到数据库
+// 使用 UPSERT 保证并发安全：INSERT ON CONFLICT DO UPDATE 是数据库原子操作
 func updateModelStatsByRecord(ctx context.Context, db *gorm.DB, modelId, userId, orgId, provider, date string, record *ModelRecordStats) error {
-	modelStat := &model.ModelRecord{
-		OrgID:     orgId,
-		UserID:    userId,
-		ModelID:   modelId,
-		Model:     record.Model,
-		ModelType: record.ModelType,
-		Provider:  provider,
-		Date:      date,
+	modelStat := &model.ModelStatistic{
+		OrgID:             orgId,
+		UserID:            userId,
+		ModelID:           modelId,
+		Model:             record.Model,
+		ModelType:         record.ModelType,
+		Provider:          provider,
+		Date:              date,
+		PromptTokens:      record.PromptTokens,
+		CompletionTokens:  record.CompletionTokens,
+		TotalTokens:       record.TotalTokens,
+		FirstTokenLatency: record.FirstTokenLatency,
+		Costs:             record.Costs,
+		CallCount:         record.CallCount,
+		StreamCount:       record.StreamCount,
+		NonStreamCount:    record.NonStreamCount,
+		CallFailure:       record.CallFailure,
+		StreamFailure:     record.StreamFailure,
+		NonStreamFailure:  record.NonStreamFailure,
 	}
 
-	// 使用 FirstOrCreate 保证并发安全：当多个请求同时查询同一条记录时，只会创建一条记录，避免重复
-	// 查询条件：modelId + userId + orgId + provider + date（唯一标识一条统计记录）
-	// 创建时会设置 Model 和 ModelType 字段
-	if err := db.WithContext(ctx).Where(&model.ModelRecord{
-		OrgID:    orgId,
-		UserID:   userId,
-		ModelID:  modelId,
-		Provider: provider,
-		Date:     date,
-	}).FirstOrCreate(modelStat).Error; err != nil {
-		return err
-	}
-
-	// 检查是否需要更新
-	if modelStat.PromptTokens == record.PromptTokens &&
-		modelStat.CompletionTokens == record.CompletionTokens &&
-		modelStat.TotalTokens == record.TotalTokens &&
-		modelStat.FirstTokenLatency == record.FirstTokenLatency &&
-		modelStat.Costs == record.Costs &&
-		modelStat.CallCount == record.CallCount &&
-		modelStat.StreamCount == record.StreamCount &&
-		modelStat.NonStreamCount == record.NonStreamCount &&
-		modelStat.CallFailure == record.CallFailure &&
-		modelStat.StreamFailure == record.StreamFailure &&
-		modelStat.NonStreamFailure == record.NonStreamFailure {
-		return nil
-	}
-
-	// 更新统计数据
-	return db.WithContext(ctx).Model(modelStat).Updates(map[string]any{
-		"prompt_tokens":       record.PromptTokens,
-		"completion_tokens":   record.CompletionTokens,
-		"total_tokens":        record.TotalTokens,
-		"first_token_latency": record.FirstTokenLatency,
-		"costs":               record.Costs,
-		"call_count":          record.CallCount,
-		"stream_count":        record.StreamCount,
-		"non_stream_count":    record.NonStreamCount,
-		"call_failure":        record.CallFailure,
-		"stream_failure":      record.StreamFailure,
-		"non_stream_failure":  record.NonStreamFailure,
-	}).Error
+	// UPSERT: INSERT ... ON CONFLICT DO UPDATE，数据库原子操作，真正保证并发安全
+	return db.WithContext(ctx).Clauses(clause.OnConflict{
+		Columns: []clause.Column{
+			{Name: "org_id"},
+			{Name: "user_id"},
+			{Name: "model_id"},
+			{Name: "provider"},
+			{Name: "date"},
+		},
+		DoUpdates: clause.AssignmentColumns([]string{
+			"prompt_tokens", "completion_tokens", "total_tokens",
+			"first_token_latency", "costs", "call_count", "stream_count",
+			"non_stream_count", "call_failure", "stream_failure",
+			"non_stream_failure",
+		}),
+	}).Create(modelStat).Error
 }
 
 func getModelStatisticList(ctx context.Context, db *gorm.DB, userId, orgId, startDate, endDate string, modelIds []string, modelType string, offset, limit int32) ([]ModelStatisticItem, int32, error) {
@@ -302,12 +289,12 @@ func getModelStatisticList(ctx context.Context, db *gorm.DB, userId, orgId, star
 	}
 	var total int64
 	countQuery := sqlopt.SQLOptions(opts...).Apply(db).WithContext(ctx).
-		Model(&model.ModelRecord{}).
+		Model(&model.ModelStatistic{}).
 		Select("COUNT(DISTINCT model_id)")
 	if err := countQuery.Count(&total).Error; err != nil {
 		return nil, 0, fmt.Errorf("count model stat list err: %v", err)
 	}
-	var stats []model.ModelRecord
+	var stats []model.ModelStatistic
 	query := sqlopt.SQLOptions(opts...).Apply(db).WithContext(ctx).
 		Select("model_id, ANY_VALUE(model) as model, " +
 			"ANY_VALUE(org_id) as org_id, ANY_VALUE(provider) as provider, " +
@@ -378,7 +365,7 @@ func statisticModelStatsOverview(ctx context.Context, db *gorm.DB, userID, orgID
 // modelStatsByDateRange 按日期范围获取模型统计数据（新接口）
 func modelStatsByDateRange(ctx context.Context, db *gorm.DB, userID, orgID string, dates []string, modelIds []string, modelType string) (*ModelStatisticOverview, error) {
 	startDate, endDate := dates[0], dates[len(dates)-1]
-	var stat model.ModelRecord
+	var stat model.ModelStatistic
 	opts := []sqlopt.SQLOption{
 		sqlopt.WithOrgID(orgID),
 		sqlopt.WithUserID(userID),
@@ -417,12 +404,12 @@ func modelStatsByDateRange(ctx context.Context, db *gorm.DB, userID, orgID strin
 
 // statisticModelStatsTrend 统计模型趋势数据
 func statisticModelStatsTrend(ctx context.Context, db *gorm.DB, userID, orgID, startDate, endDate string, modelIds []string, modelType string) (*ModelStatisticTrend, error) {
-	dates, err := BuildDateRange(startDate, endDate)
+	dates, err := buildDateRange(startDate, endDate)
 	if err != nil {
 		return nil, err
 	}
 
-	var stats []model.ModelRecord
+	var stats []model.ModelStatistic
 	opts := []sqlopt.SQLOption{
 		sqlopt.WithUserID(userID),
 		sqlopt.WithOrgID(orgID),
@@ -450,9 +437,9 @@ func statisticModelStatsTrend(ctx context.Context, db *gorm.DB, userID, orgID, s
 		"app_statistic_prompt_tokens",
 	}
 
-	lines := BuildChartLines(stats, dates,
-		func(r model.ModelRecord) string { return r.Date },
-		func(r model.ModelRecord) map[string]float32 {
+	lines := buildChartLines(stats, dates,
+		func(r model.ModelStatistic) string { return r.Date },
+		func(r model.ModelStatistic) map[string]float32 {
 			return map[string]float32{
 				"app_statistic_call_count_total":  float32(r.CallCount),
 				"app_statistic_call_success":      float32(r.CallCount - r.CallFailure),
@@ -467,11 +454,11 @@ func statisticModelStatsTrend(ctx context.Context, db *gorm.DB, userID, orgID, s
 
 	return &ModelStatisticTrend{
 		ModelCalls: StatisticChart{
-			Name:  "app_statistic_model_calls",
+			Name:  "app_statistic_model_call_trend",
 			Lines: lines[:3],
 		},
 		TokensUsage: StatisticChart{
-			Name:  "app_statistic_tokens_usage",
+			Name:  "app_statistic_model_tokens_usage_trend",
 			Lines: lines[3:],
 		},
 	}, nil
