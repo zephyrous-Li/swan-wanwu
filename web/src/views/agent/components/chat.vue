@@ -1,6 +1,6 @@
 <template>
   <div class="full-content flex">
-    <el-main class="scroll">
+    <el-main class="scroll" style="padding: 20px 0">
       <div class="smart-center" style="padding: 0">
         <!--开场白设置-->
         <div v-show="echo" class="session rl echo">

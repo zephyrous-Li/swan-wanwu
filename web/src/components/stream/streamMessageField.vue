@@ -1885,7 +1885,7 @@ export default {
     height: calc(100% - 46px);
     flex: 1;
     overflow-y: auto !important;
-    padding: 20px;
+    padding: 20px 4px;
   }
   /*删除历史...*/
   .session-setting {

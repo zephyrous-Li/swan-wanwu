@@ -297,8 +297,18 @@ export default {
   ::v-deep .sub-conversion-content-wrapper {
     padding: 10px 12px;
     background: #edeef5;
+    p:has(img) {
+      display: flex;
+      flex-direction: column;
+      align-items: flex-start;
+    }
     img {
-      max-width: 80%;
+      align-self: center;
+      max-width: 100%;
+      max-height: 50vh;
+      min-height: 50px;
+      background: #ccc;
+      object-fit: contain;
     }
   }
 
@@ -314,8 +324,19 @@ export default {
       color: #999;
     }
 
+    p:has(img) {
+      display: flex;
+      flex-direction: column;
+      align-items: flex-start;
+    }
+
     img {
-      width: 80% !important;
+      align-self: center;
+      width: 100% !important;
+      max-height: 50vh;
+      min-height: 50px;
+      background: #ccc;
+      object-fit: contain;
     }
 
     ::v-deep p {

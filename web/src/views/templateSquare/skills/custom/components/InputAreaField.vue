@@ -959,8 +959,8 @@ export default {
     background-color: rgba(87, 104, 161, 0.08) !important;
     color: rgba(15, 21, 40, 0.82);
   }
-  i {
-    font-size: 18px;
+  ::v-deep i {
+    font-size: 16px;
   }
 }
 
