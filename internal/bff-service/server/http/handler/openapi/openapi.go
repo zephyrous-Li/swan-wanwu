@@ -83,7 +83,7 @@ func ChatAgent(ctx *gin.Context) {
 			AssistantId:    appID,
 			ConversationId: req.ConversationID,
 			Prompt:         req.Query,
-			FileInfo:       []request.ConversionStreamFile{},
+			FileInfo:       req.FileInfo,
 		}, true, constant.AppStatisticSourceOpenAPI); err != nil {
 			gin_util.Response(ctx, nil, err)
 		}
@@ -95,7 +95,7 @@ func ChatAgent(ctx *gin.Context) {
 		AssistantId:    appID,
 		ConversationId: req.ConversationID,
 		Prompt:         req.Query,
-		FileInfo:       []request.ConversionStreamFile{},
+		FileInfo:       req.FileInfo,
 	}, true)
 	if err != nil {
 		service.RecordAppStatistic(ctx.Request.Context(), userID, orgID, appID, constant.AppTypeAgent, false, false, 0, 0, constant.AppStatisticSourceOpenAPI)
