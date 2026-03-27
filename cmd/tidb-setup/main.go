@@ -5,6 +5,8 @@ import (
 	"fmt"
 	"log"
 	"os"
+	"path/filepath"
+	"strings"
 
 	_ "github.com/go-sql-driver/mysql"
 )
@@ -33,6 +35,29 @@ func setupTidb(execMode string) error {
 	dbUser := getEnvWithDefault("WANWU_TIDB_USER", "root")
 	dbPassword := os.Getenv("WANWU_TIDB_PASSWORD")
 	sqlFile := os.Getenv("WANWU_TIDB_SQL_FILE")
+
+	if dbPassword != "" {
+		if strings.ContainsAny(dbPassword, "'\";`") {
+			return fmt.Errorf("invalid password: contains forbidden characters")
+		}
+		if len(dbPassword) > 128 {
+			return fmt.Errorf("invalid password: too long")
+		}
+	}
+
+	if sqlFile != "" {
+		cleanPath := filepath.Clean(sqlFile)
+		if strings.Contains(cleanPath, "..") {
+			return fmt.Errorf("invalid sql file path: path traversal not allowed")
+		}
+		absPath, err := filepath.Abs(sqlFile)
+		if err != nil {
+			return fmt.Errorf("failed to get absolute path for sql file: %w", err)
+		}
+		if !strings.HasPrefix(absPath, "/opt/") && !strings.HasPrefix(absPath, "/home/") {
+			log.Printf("warning: sql file path may be unsafe: %s", sqlFile)
+		}
+	}
 
 	// 1. 连接数据库
 	db, err := sql.Open("mysql", fmt.Sprintf("%s:%s@tcp(%s:%s)/?charset=utf8mb4&tls=false",
