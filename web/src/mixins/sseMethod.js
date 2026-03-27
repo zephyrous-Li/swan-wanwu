@@ -357,7 +357,7 @@ export default {
       }
 
       // 正文帧（含 finish 结束帧）
-      if (output || (!reasoning && (finish === 1 || finish === 2))) {
+      if (output || (!reasoning && [1, 2].includes(finish))) {
         const mainSentence = { response: output || '', finish };
 
         // 首次收到 output，服务端侧推理结束
