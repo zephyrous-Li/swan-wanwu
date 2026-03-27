@@ -177,7 +177,7 @@ def generate_community_reports(user_id, kb_name, graph_model_id):
                     logger.warning(f"{get_url} 非200状态码: {poll_resp.status_code}")
             except requests.exceptions.RequestException as req_err:
                 logger.warning(f"轮询请求异常: {req_err}")
-            if (datetime.now() - start_time).total_seconds() > 900:
+            if (datetime.now() - start_time).total_seconds() > 6000:  # 超过100分钟则放弃
                 raise Exception("generate_community_reports 超时未完成")
             time.sleep(2)
     except Exception as e:

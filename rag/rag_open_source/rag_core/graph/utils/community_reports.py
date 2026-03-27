@@ -133,8 +133,23 @@ class CommunityReportsExtractor:
         def extract_community_report_by_attr(community):
             attribute, cm = community
             entities = cm["nodes"]
-            # 将 PROMPT 与具体输入合并为一个字符串
-            user_content = ATTRIBUTE_PROMPT + "\n\n" + "输入：\n" + f"entities = {json.dumps(entities, ensure_ascii=False)}\n" + f'attribute = "{attribute}"'
+
+            # 收集所有相关 chunk 的 reference_snippets（去重）
+            all_snippets = set()
+            for ent in entities:
+                node_data = graph.nodes[ent]
+                reference_snippets = node_data.get("properties", {}).get("reference_snippets", [])
+                for snippet in reference_snippets:
+                    all_snippets.add(snippet)
+
+            # 将 snippets 合并为 context
+            context = "\n\n".join(list(all_snippets)) if all_snippets else ""
+
+            # 构建 prompt
+            if context:
+                user_content = ATTRIBUTE_PROMPT + "\n\n" + "输入：\n" + f"entities = {json.dumps(entities, ensure_ascii=False)}\n" + f'attribute = "{attribute}"\n' + f'related_chunks = """{context}"""'
+            else:
+                user_content = ATTRIBUTE_PROMPT + "\n\n" + "输入：\n" + f"entities = {json.dumps(entities, ensure_ascii=False)}\n" + f'attribute = "{attribute}"'
 
             response = self._llm_client.call_api(user_content)
             extract_report_from_response(response, entities)
@@ -155,6 +170,16 @@ class CommunityReportsExtractor:
 
             ents = new_ents
 
+            # 收集所有相关 chunk 的 reference_snippets（去重）
+            all_snippets = set()
+            for ent in ents:
+                node_data = graph.nodes[ent]
+                reference_snippets = node_data.get("properties", {}).get("reference_snippets", [])
+                for snippet in reference_snippets:
+                    all_snippets.add(snippet)
+
+            # 将 snippets 合并为 context
+            context = "\n\n".join(list(all_snippets)) if all_snippets else ""
 
             ent_list = [{"entity": ent, "description": graph.nodes[ent]["description"]} for ent in ents]
             ent_df = pd.DataFrame(ent_list)
@@ -178,7 +203,12 @@ class CommunityReportsExtractor:
                 "entity_df": ent_df.to_csv(index_label="id"),
                 "relation_df": rela_df.to_csv(index_label="id")
             }
+
+            # 修改提示词，加入 context
             text = perform_variable_replacements(self._extraction_prompt, variables=prompt_variables)
+            if context:
+                text += f"\n\n相关上下文:\n{context}"
+
             response = self._llm_client.call_api(text)
             extract_report_from_response(response, ents)
 
