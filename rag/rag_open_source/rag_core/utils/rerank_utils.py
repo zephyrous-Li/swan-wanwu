@@ -164,9 +164,11 @@ def assemble_search_result(question, sorted_scores, search_list, threshold, retu
         response_info['data']['searchList'] = res_search_list
         response_info['data']['score'] = res_score
         if auto_citation:
-            context = "\n".join([f"\n【{i + 1}^】\n{x['snippet']}" for i, x in enumerate(res_search_list)])
+            # 使用 .get() 方法安全访问 snippet 键，提供空字符串作为默认值
+            context = "\n".join([f"\n【{i + 1}^】\n{x.get('snippet', '')}" for i, x in enumerate(res_search_list)])
         else:
-            context = "\n".join([x['snippet'] for x in res_search_list])
+            # 使用 .get() 方法安全访问 snippet 键，提供空字符串作为默认值
+            context = "\n".join([x.get('snippet', '') for x in res_search_list])
         # 判断是否临时截断 context
         if TRUNCATE_PROMPT:
             context = context[:CONTEXT_LENGTH]
@@ -223,9 +225,11 @@ def gen_rag_list(searchList, es_list):
         tmp_content.append(i["content"])
         search_list.append({"text": i["content"]})
     for i in es_list:
-        if i["snippet"] in tmp_content: continue
-        tmp_content.append(i["snippet"])
-        search_list.append({"text": i["snippet"]})
+        # 使用 .get() 方法安全访问 snippet 键，提供空字符串作为默认值
+        snippet = i.get("snippet", "")
+        if snippet in tmp_content: continue
+        tmp_content.append(snippet)
+        search_list.append({"text": snippet})
     return search_list
 
 def gen_raw_list(searchList, es_list):
@@ -247,9 +251,11 @@ def gen_raw_list(searchList, es_list):
         tmp_content.append(i["content"])
 
     for i in es_list:
-        if i["snippet"] in tmp_content: continue
+        # 使用 .get() 方法安全访问 snippet 键，提供空字符串作为默认值
+        snippet = i.get("snippet", "")
+        if snippet in tmp_content: continue
         raw_search_list.append(i)
-        tmp_content.append(i["snippet"])
+        tmp_content.append(snippet)
 
     return raw_search_list
 
@@ -265,10 +271,12 @@ def gen_rerank_search_list(milvus_list, es_list, search_field="content"):
                                    "meta_data": i["meta_data"], "content": i["content"]})
         milvus_dup_content.append(i["content"])
     for i in es_list:
-        if i["snippet"] in es_dup_content: continue
-        es_search_list.append({"title": i["title"], "snippet": i["snippet"], "kb_name": i["kb_name"],
-                               "meta_data": i["meta_data"], "content": i["snippet"]})
-        es_dup_content.append(i["snippet"])
+        # 使用 .get() 方法安全访问 snippet 键，提供空字符串作为默认值
+        snippet = i.get("snippet", "")
+        if snippet in es_dup_content: continue
+        es_search_list.append({"title": i["title"], "snippet": snippet, "kb_name": i["kb_name"],
+                               "meta_data": i["meta_data"], "content": snippet})
+        es_dup_content.append(snippet)
     return milvus_search_list, es_search_list
 
 def extract_keyword_entities(query):
@@ -319,8 +327,8 @@ def get_keyword_tfidf_scores(keyword_entities, search_list):
     def jieba_tokenize(text):
         return jieba.lcut(text)  # 使用精确模式分词
 
-    # 提取搜索结果中的文本片段
-    context_list = [x["snippet"] for x in search_list]
+    # 提取搜索结果中的文本片段，使用 .get() 方法安全访问 snippet 键
+    context_list = [x.get("snippet", "") for x in search_list]
 
     # 初始化TfidfVectorizer，并传入自定义分词函数
     vectorizer = TfidfVectorizer(tokenizer=jieba_tokenize, lowercase=False)
@@ -357,7 +365,8 @@ def get_sequence_entities_scores(sequence_entities, search_list):
         list: 每个搜索结果中序列实体的得分列表。
     """
     sn_scores = []
-    context_list = [x["snippet"] for x in search_list]
+    # 使用 .get() 方法安全访问 snippet 键，提供空字符串作为默认值
+    context_list = [x.get("snippet", "") for x in search_list]
     for i, context in enumerate(context_list):
         score = 0
         for s_n in sequence_entities:

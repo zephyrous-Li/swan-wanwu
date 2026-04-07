@@ -1499,7 +1499,8 @@ def snippet_rescore(request_json=None):
 
             search_list.extend(temp_search_list)
             bm25_scores.extend(result["scores"])
-            contents = [item["snippet"] for item in search_list]
+            # 使用 .get() 方法安全访问 snippet 键，提供空字符串作为默认值
+            contents = [item.get("snippet", "") for item in search_list]
             cosine_scores.extend(emb_util.calculate_cosine(query, contents, embedding_model_id))
             logger.info(f"uer_id: {user_id}, rescore bm25_scores: {bm25_scores}, cosine_scores: {cosine_scores}")
 

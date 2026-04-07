@@ -605,10 +605,12 @@ def get_knowledge_based_answer(knowledge_base_info, question, rate, top_k, chunk
                                                     metadata_filtering_conditions=metadata_filtering_conditions)
                 logger.info(repr(user_id) + repr(kb_names) + repr(question) + '问题es库查询结果：' + json.dumps(repr(es_search_list), ensure_ascii=False))
                 for item in es_search_list:
-                    if item["snippet"] in temp_duplicate_set: continue
+                    # 使用 .get() 方法安全访问 snippet 键，提供空字符串作为默认值
+                    snippet = item.get("snippet", "")
+                    if snippet in temp_duplicate_set: continue
                     item["user_id"] = user_id
                     user_search_list.append(item)
-                    temp_duplicate_set.add(item["snippet"])
+                    temp_duplicate_set.add(snippet)
 
             # ========== 标签召回通道判断及调用==========
             unique_labels = set()   # 获取到所有的chunk标签
@@ -664,8 +666,10 @@ def get_knowledge_based_answer(knowledge_base_info, question, rate, top_k, chunk
                     if item["file_url"] in duplicate_set: continue
                     duplicate_set.add(item["file_url"])
                 else:
-                    if item["snippet"] in duplicate_set: continue
-                    duplicate_set.add(item["snippet"])
+                    # 使用 .get() 方法安全访问 snippet 键，提供空字符串作为默认值
+                    snippet = item.get("snippet", "")
+                    if snippet in duplicate_set: continue
+                    duplicate_set.add(snippet)
                 vector_text_search_list.append(item)
 
             # ========= 图谱召回---增强关联片段以及三元组以及社区报告 start =========
@@ -678,9 +682,11 @@ def get_knowledge_based_answer(knowledge_base_info, question, rate, top_k, chunk
                 # 根据 duplicate_set 去重，将图谱关联出来的chunk 再加入 vector_text_search_list
                 for item in temp_graph_search_list:
                     item["user_id"] = user_id
-                    if item["snippet"] in duplicate_set: continue
+                    # 使用 .get() 方法安全访问 snippet 键，提供空字符串作为默认值
+                    snippet = item.get("snippet", "")
+                    if snippet in duplicate_set: continue
                     vector_text_search_list.append(item)
-                    duplicate_set.add(item["snippet"])
+                    duplicate_set.add(snippet)
 
         # 多路召回融合
         # reank重排
@@ -699,9 +705,11 @@ def get_knowledge_based_answer(knowledge_base_info, question, rate, top_k, chunk
                     if enable_vision and "content_type" in item and item["content_type"] == "image":
                         documents.append({item["content_type"]: item["file_url"]})
                     else:
-                        documents.append({"text": item["snippet"]})
+                        # 使用 .get() 方法安全访问 snippet 键，提供空字符串作为默认值
+                        documents.append({"text": item.get("snippet", "")})
                 else:
-                    documents.append(item["snippet"])
+                    # 使用 .get() 方法安全访问 snippet 键，提供空字符串作为默认值
+                    documents.append(item.get("snippet", ""))
 
             query = question
             if is_support_multimodal:
@@ -748,11 +756,13 @@ def get_knowledge_based_answer(knowledge_base_info, question, rate, top_k, chunk
                 if item["content_id"] not in tmp_sl_content:
                     new_search_list.append(item)
                     new_scores.append(1)
-                    tmp_sl_content[item['content_id']] = item['snippet']
+                    # 使用 .get() 方法安全访问 snippet 键，提供空字符串作为默认值
+                    tmp_sl_content[item['content_id']] = item.get('snippet', "")
 
             for s, x in zip(sorted_scores, sorted_search_list):
                 if x['content_id'] not in tmp_sl_content:
-                    tmp_sl_content[x['content_id']] = x['snippet']
+                    # 使用 .get() 方法安全访问 snippet 键，提供空字符串作为默认值
+                    tmp_sl_content[x['content_id']] = x.get('snippet', "")
                     new_search_list.append(x)
                     new_scores.append(s)
 
@@ -833,7 +843,7 @@ def aggregate_chunks(sorted_scores, sorted_search_list):
             else:
                 parent_items[content_id]["rerank_info"].append({
                     "type": "text",
-                    "content": item["snippet"],
+                    "content": item.get("snippet", ""),
                     "score": sorted_scores[index]
                 })
 
@@ -859,7 +869,8 @@ def aggregate_chunks(sorted_scores, sorted_search_list):
 
             child_score_list = []
             for index, item in enumerate(children["search_list"]):
-                item["child_snippet"] = item["snippet"]
+                # 使用 .get() 方法安全访问 snippet 键，提供空字符串作为默认值
+                item["child_snippet"] = item.get("snippet", "")
                 child_score_list.append(children["score"][index])
 
             max_score = max(child_score_list)
@@ -884,9 +895,10 @@ def aggregate_chunks(sorted_scores, sorted_search_list):
                     "score": sorted_scores[index]
                 })
             else:
+                # 使用 .get() 方法安全访问 snippet 键，提供空字符串作为默认值
                 parent_items[content_id]["rerank_info"].append({
                     "type": "text",
-                    "content": item["snippet"],
+                    "content": item.get("snippet", ""),
                     "score": sorted_scores[index]
                 })
 
@@ -919,8 +931,8 @@ def replace_minio_ip(rerank_result):
     if 'searchList' not in rerank_result['data']:
         return rerank_result
     for i in range(len(rerank_result['data']['searchList'])):
-        # content中的 minio url 更新替换
-        text = rerank_result['data']['searchList'][i]['snippet']
+        # content中的 minio url 更新替换，使用 .get() 方法安全访问 snippet 键
+        text = rerank_result['data']['searchList'][i].get('snippet', '')
         # 正则表达式匹配 https://ip:port/minio/download/api/ 部分
         pattern = r'http?://[^/]+/minio/download/api/'
         # 替换文本中的URL

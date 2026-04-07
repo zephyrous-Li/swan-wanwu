@@ -154,7 +154,8 @@ def get_prompt(question: str,
     current_context_tokens = 0
 
     for i, x in enumerate(search_list):
-        snippet = x['snippet']
+        # 使用 .get() 方法安全访问 snippet 键，提供空字符串作为默认值
+        snippet = x.get('snippet', '')
         item_text = f"\n【{i + 1}^】\n{snippet}" if auto_citation else snippet
         item_tokens = len(encoding.encode(item_text))
 
@@ -440,7 +441,9 @@ async def search(request: Request):
         num_tokens += calculate_multimodal_tokens([end_content_item])
         valid_search_list = []
         for i, item in enumerate(search_list):
-            processed_snippet = curate_reference_text(item['snippet'])
+            # 使用 .get() 方法安全访问 snippet 键，提供空字符串作为默认值
+            snippet = item.get('snippet', '')
+            processed_snippet = curate_reference_text(snippet)
             content_items = [
                 {"type": "text", "text": f"\n【{i + 1}^】\n"},
                 {"type": "text", "text": f"{processed_snippet}\n"}

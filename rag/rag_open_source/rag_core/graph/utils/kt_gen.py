@@ -148,8 +148,13 @@ class KTBuilder:
             "novel": "novel_chs",
             "novel_eng": "novel_eng"
         }
-        # 判断 chunk_str 是否是英文，选择不同模版
-        chunk_str = f"{chunk['title']} {chunk['snippet']}".strip() if isinstance(chunk, dict) else str(chunk)
+        # 判断 chunk_str 是否是英文，选择不同模版，使用 .get() 方法安全访问字段
+        if isinstance(chunk, dict):
+            title = chunk.get('title', '')
+            snippet = chunk.get('snippet', '')
+            chunk_str = f"{title} {snippet}".strip()
+        else:
+            chunk_str = str(chunk)
         if self._is_english(chunk_str):
             prompt_type = prompt_type_map.get(self.dataset_name, "general_eng")
         else:

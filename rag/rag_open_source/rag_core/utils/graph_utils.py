@@ -549,7 +549,9 @@ def get_graph_search_list(user_id, kb_names, question, top_k, kb_ids=[], filter_
         tmp_content = []
         graph_search_list = []
         for i in es_graph_search_list:  # 去重
-            i["snippet"] = i["meta_data"]["reference_snippet"]
+            # 使用 .get() 方法安全地访问字典键，避免 KeyError
+            meta_data = i.get("meta_data", {})
+            i["snippet"] = meta_data.get("reference_snippet", "")
             if i["snippet"] in tmp_content:
                 continue
             graph_search_list.append(i)

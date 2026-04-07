@@ -285,7 +285,9 @@ def snippet_bulk_add_index_data(index_name, kb_name, data):
                     content_str = kb_name + item["graph_data_text"] + item["meta_data"]["file_name"] + str(
                         item["meta_data"]["chunk_current_num"])
                 else:
-                    content_str = kb_name + item["snippet"] + item["meta_data"]["file_name"] + str(
+                    # 使用 .get() 方法安全访问 snippet 键，提供空字符串作为默认值
+                    snippet = item.get("snippet", "")
+                    content_str = kb_name + snippet + item["meta_data"]["file_name"] + str(
                         item["meta_data"]["chunk_current_num"])
 
                 content_id = generate_md5(content_str)
