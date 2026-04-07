@@ -36,3 +36,8 @@ frontend
 project
 log
 docs/swan-workflow-design
+/MEMORY
+# Claude Code local configurations
+CLAUDE.local.md
+.claude/settings.local.json
+.claude
