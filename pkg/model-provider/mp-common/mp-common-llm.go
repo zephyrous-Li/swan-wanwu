@@ -158,7 +158,7 @@ type OpenAIReqMsg struct {
 	Role             MsgRole       `json:"role"` // "system" | "user" | "assistant" | "function(已弃用)"
 	Content          interface{}   `json:"content"`
 	ToolCallId       *string       `json:"tool_call_id,omitempty"`
-	ReasoningContent *string       `json:"reasoning_content,omitempty"`
+	ReasoningContent *string       `json:"reasoning,omitempty"` // 修改为匹配 API 返回的字段名
 	Name             *string       `json:"name,omitempty"`
 	FunctionCall     *FunctionCall `json:"function_call,omitempty"`
 	ToolCalls        []*ToolCall   `json:"tool_calls,omitempty"`
@@ -196,10 +196,23 @@ type OpenAIMsg struct {
 	Role             MsgRole       `json:"role"` // "system" | "user" | "assistant" | "function(已弃用)"
 	Content          string        `json:"content"`
 	ToolCallId       *string       `json:"tool_call_id,omitempty"`
-	ReasoningContent *string       `json:"reasoning_content,omitempty"`
+	ReasoningContent *string       `json:"reasoning,omitempty"` // 修改为匹配 API 返回的字段名
 	Name             *string       `json:"name,omitempty"`
 	FunctionCall     *FunctionCall `json:"function_call,omitempty"`
 	ToolCalls        []*ToolCall   `json:"tool_calls,omitempty"`
+}
+
+// MarshalJSON 自定义序列化方法，同时输出 reasoning 和 reasoning_content 以保持向后兼容
+func (m OpenAIMsg) MarshalJSON() ([]byte, error) {
+	type Alias OpenAIMsg
+	aux := &struct {
+		ReasoningContent *string `json:"reasoning_content,omitempty"` // 向后兼容字段
+		*Alias
+	}{
+		ReasoningContent: m.ReasoningContent,
+		Alias:           (*Alias)(&m),
+	}
+	return json.Marshal(aux)
 }
 
 type Thinking struct {
